@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Warehouse, ShoppingBag, Users, FileText,
   BarChart3, Settings, ChevronLeft, Menu, X, Tag, Shield,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, path: "/admin" },
@@ -23,6 +25,35 @@ export default function AdminLayout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const { permissions } = usePermissions();
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-foreground text-sm">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !user) {
+    console.warn('[AdminLayout] Access denied: Not authenticated');
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Redirect to home if user doesn't have admin role
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'manager';
+  if (!isAdmin) {
+    console.warn('[AdminLayout] Access denied: User role is', user.role, 'but admin role required');
+    return <Navigate to="/" replace />;
+  }
+
+  console.log('[AdminLayout] Access granted for:', user.email, 'with role:', user.role);
 
   const currentPage = navItems.find(
     (item) => location.pathname === item.path || (item.path !== "/admin" && location.pathname.startsWith(item.path))
