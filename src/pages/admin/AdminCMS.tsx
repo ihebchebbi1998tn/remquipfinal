@@ -1,19 +1,89 @@
 import React, { useState } from "react";
-import { Edit, Eye, Plus, Search, FileText, Globe } from "lucide-react";
+import { Edit, Eye, Plus, Search, FileText, Globe, Loader2, AlertCircle, Trash2, X } from "lucide-react";
+import { useCMSPages, useApiMutation } from "@/hooks/useApi";
+import { api } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
 
-const cmsPages = [
-  { id: "cms-1", title: "Homepage", slug: "/", status: "published", lastModified: "2026-03-10", sections: 6, views: 4280 },
-  { id: "cms-2", title: "About Us", slug: "/about", status: "published", lastModified: "2026-03-05", sections: 3, views: 890 },
-  { id: "cms-3", title: "Contact", slug: "/contact", status: "published", lastModified: "2026-03-01", sections: 2, views: 1240 },
-  { id: "cms-4", title: "Terms & Conditions", slug: "/terms", status: "published", lastModified: "2026-02-20", sections: 1, views: 320 },
-  { id: "cms-5", title: "Privacy Policy", slug: "/privacy", status: "published", lastModified: "2026-02-20", sections: 1, views: 280 },
-  { id: "cms-6", title: "Shipping Policy", slug: "/shipping", status: "draft", lastModified: "2026-02-15", sections: 1, views: 0 },
-  { id: "cms-7", title: "Refund Policy", slug: "/refund", status: "draft", lastModified: "2026-02-15", sections: 1, views: 0 },
-];
+interface CMSPage {
+  id: string;
+  title: string;
+  slug: string;
+  status: "published" | "draft";
+  content?: string;
+  meta_title?: string;
+  meta_description?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function AdminCMS() {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    title: "",
+    slug: "",
+    content: "",
+    status: "draft" as "published" | "draft",
+    meta_title: "",
+    meta_description: "",
+  });
 
+  const queryClient = useQueryClient();
+
+  // Fetch CMS pages from API
+  const { data: pagesResponse, isLoading, isError, error } = useCMSPages(page, 50);
+
+  // Mutations
+  const createPageMutation = useApiMutation(
+    (data: any) => api.createCMSPage(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['cms'] });
+        setShowForm(false);
+        resetForm();
+      },
+    }
+  );
+
+  const updatePageMutation = useApiMutation(
+    ({ id, data }: { id: string; data: any }) => api.updateCMSPage(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['cms'] });
+        setShowForm(false);
+        setEditingId(null);
+        resetForm();
+      },
+    }
+  );
+
+  const deletePageMutation = useApiMutation(
+    (id: string) => api.deleteCMSPage(id),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['cms'] });
+      },
+    }
+  );
+
+  function resetForm() {
+    setForm({
+      title: "",
+      slug: "",
+      content: "",
+      status: "draft",
+      meta_title: "",
+      meta_description: "",
+    });
+  }
+
+  // Get data from responses
+  const cmsPages: CMSPage[] = pagesResponse?.data || [];
+  const pagination = pagesResponse?.pagination;
+
+  // Filter pages locally
   const filtered = cmsPages.filter((p) =>
     !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.slug.includes(search.toLowerCase())
   );
@@ -21,12 +91,93 @@ export default function AdminCMS() {
   const publishedCount = cmsPages.filter(p => p.status === "published").length;
   const draftCount = cmsPages.filter(p => p.status === "draft").length;
 
+  const handleSubmit = () => {
+    if (!form.title || !form.slug) return;
+
+    const data = {
+      title: form.title,
+      slug: form.slug.startsWith("/") ? form.slug : `/${form.slug}`,
+      content: form.content,
+      status: form.status,
+      meta_title: form.meta_title || form.title,
+      meta_description: form.meta_description,
+    };
+
+    if (editingId) {
+      updatePageMutation.mutate({ id: editingId, data });
+    } else {
+      createPageMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (page: CMSPage) => {
+    setForm({
+      title: page.title,
+      slug: page.slug,
+      content: page.content || "",
+      status: page.status,
+      meta_title: page.meta_title || "",
+      meta_description: page.meta_description || "",
+    });
+    setEditingId(page.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this page?")) {
+      deletePageMutation.mutate(id);
+    }
+  };
+
+  const handleToggleStatus = (page: CMSPage) => {
+    const newStatus = page.status === "published" ? "draft" : "published";
+    updatePageMutation.mutate({
+      id: page.id,
+      data: { status: newStatus }
+    });
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <span className="ml-2 text-muted-foreground">Loading CMS pages...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="font-display font-bold text-lg mb-2">Failed to load CMS pages</h3>
+        <p className="text-muted-foreground text-sm mb-4">
+          {error instanceof Error ? error.message : "An error occurred while fetching CMS pages."}
+        </p>
+        <button 
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['cms'] })}
+          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="font-display font-bold text-lg md:text-xl">CMS Page Editor</h2>
-        <button className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 self-start">
-          <Plus className="h-4 w-4" /> New Page
+        <div>
+          <h2 className="font-display font-bold text-lg md:text-xl">CMS Page Editor</h2>
+          {pagination && <p className="text-sm text-muted-foreground">{pagination.total} total pages</p>}
+        </div>
+        <button 
+          onClick={() => { resetForm(); setEditingId(null); setShowForm(!showForm); }}
+          className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 self-start"
+        >
+          {showForm ? <><X className="h-4 w-4" /> Cancel</> : <><Plus className="h-4 w-4" /> New Page</>}
         </button>
       </div>
 
@@ -50,6 +201,96 @@ export default function AdminCMS() {
           <p className="text-xl md:text-2xl font-bold font-display text-warning">{draftCount}</p>
         </div>
       </div>
+
+      {/* Create/Edit Form */}
+      {showForm && (
+        <div className="dashboard-card">
+          <h3 className="font-display font-bold text-sm uppercase mb-4">
+            {editingId ? "Edit Page" : "Create New Page"}
+          </h3>
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Title *</label>
+                <input
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="Page Title"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Slug *</label>
+                <input
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                  placeholder="/page-slug"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Content</label>
+              <textarea
+                value={form.content}
+                onChange={(e) => setForm({ ...form, content: e.target.value })}
+                placeholder="Page content (HTML or Markdown)"
+                rows={6}
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent font-mono"
+              />
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Status</label>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value as "published" | "draft" })}
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Meta Title</label>
+                <input
+                  value={form.meta_title}
+                  onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
+                  placeholder="SEO Title"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Meta Description</label>
+                <input
+                  value={form.meta_description}
+                  onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
+                  placeholder="SEO Description"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleSubmit}
+                disabled={createPageMutation.isLoading || updatePageMutation.isLoading}
+                className="btn-accent px-6 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+              >
+                {(createPageMutation.isLoading || updatePageMutation.isLoading) && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                {editingId ? "Update Page" : "Create Page"}
+              </button>
+              <button
+                onClick={() => { setShowForm(false); setEditingId(null); resetForm(); }}
+                className="px-6 py-2 border border-border rounded-sm text-sm font-medium hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-card">
         <div className="flex items-center gap-3 mb-4">
@@ -76,15 +317,29 @@ export default function AdminCMS() {
                 <span className={page.status === "published" ? "badge-success" : "badge-warning"}>{page.status}</span>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{page.sections} sections · {page.views} views</span>
-                <span>{page.lastModified}</span>
+                <span>Updated: {new Date(page.updated_at).toLocaleDateString()}</span>
               </div>
               <div className="flex gap-2 mt-3">
-                <button className="flex-1 text-xs py-1.5 border border-border rounded-sm hover:bg-secondary transition-colors flex items-center justify-center gap-1">
+                <a 
+                  href={page.slug} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1 text-xs py-1.5 border border-border rounded-sm hover:bg-secondary transition-colors flex items-center justify-center gap-1"
+                >
                   <Eye className="h-3 w-3" /> Preview
-                </button>
-                <button className="flex-1 text-xs py-1.5 btn-accent rounded-sm flex items-center justify-center gap-1">
+                </a>
+                <button 
+                  onClick={() => handleEdit(page)}
+                  className="flex-1 text-xs py-1.5 btn-accent rounded-sm flex items-center justify-center gap-1"
+                >
                   <Edit className="h-3 w-3" /> Edit
+                </button>
+                <button 
+                  onClick={() => handleDelete(page.id)}
+                  disabled={deletePageMutation.isLoading}
+                  className="px-3 py-1.5 border border-destructive rounded-sm text-destructive text-xs hover:bg-destructive/10 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3 w-3" />
                 </button>
               </div>
             </div>
@@ -98,8 +353,6 @@ export default function AdminCMS() {
               <tr className="table-header">
                 <th className="text-left px-3 py-2">Page</th>
                 <th className="text-left px-3 py-2">Slug</th>
-                <th className="text-right px-3 py-2">Sections</th>
-                <th className="text-right px-3 py-2">Views</th>
                 <th className="text-left px-3 py-2">Status</th>
                 <th className="text-left px-3 py-2">Last Modified</th>
                 <th className="text-right px-3 py-2">Actions</th>
@@ -110,16 +363,39 @@ export default function AdminCMS() {
                 <tr key={page.id} className="hover:bg-secondary/50 transition-colors">
                   <td className="px-3 py-3 font-medium">{page.title}</td>
                   <td className="px-3 py-3 text-muted-foreground font-mono text-xs">{page.slug}</td>
-                  <td className="px-3 py-3 text-right">{page.sections}</td>
-                  <td className="px-3 py-3 text-right text-muted-foreground">{page.views.toLocaleString()}</td>
                   <td className="px-3 py-3">
-                    <span className={page.status === "published" ? "badge-success" : "badge-warning"}>{page.status}</span>
+                    <button 
+                      onClick={() => handleToggleStatus(page)}
+                      disabled={updatePageMutation.isLoading}
+                      className="cursor-pointer disabled:opacity-50"
+                    >
+                      <span className={page.status === "published" ? "badge-success" : "badge-warning"}>{page.status}</span>
+                    </button>
                   </td>
-                  <td className="px-3 py-3 text-muted-foreground">{page.lastModified}</td>
+                  <td className="px-3 py-3 text-muted-foreground">{new Date(page.updated_at).toLocaleDateString()}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button className="p-1.5 hover:bg-secondary rounded-sm transition-colors"><Eye className="h-4 w-4" /></button>
-                      <button className="p-1.5 hover:bg-secondary rounded-sm transition-colors"><Edit className="h-4 w-4" /></button>
+                      <a 
+                        href={page.slug} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="p-1.5 hover:bg-secondary rounded-sm transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </a>
+                      <button 
+                        onClick={() => handleEdit(page)}
+                        className="p-1.5 hover:bg-secondary rounded-sm transition-colors"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(page.id)}
+                        disabled={deletePageMutation.isLoading}
+                        className="p-1.5 hover:bg-secondary rounded-sm transition-colors text-destructive disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -127,24 +403,29 @@ export default function AdminCMS() {
             </tbody>
           </table>
         </div>
-      </div>
 
-      {/* CMS structure preview */}
-      <div className="dashboard-card">
-        <h3 className="font-display font-bold text-sm uppercase mb-4">Content Structure (JSON)</h3>
-        <pre className="bg-secondary rounded-sm p-4 text-xs overflow-x-auto text-muted-foreground">
-{JSON.stringify({
-  page: "homepage",
-  sections: [
-    { type: "hero", data: { titleKey: "hero.title", subtitleKey: "hero.subtitle", ctaKey: "hero.cta" } },
-    { type: "features", data: { items: ["features.experience", "features.fleet", "features.canadian", "features.quality"] } },
-    { type: "about", data: { titleKey: "about.title", descriptionKey: "about.description" } },
-    { type: "products", data: { titleKey: "products.new", limit: 4 } },
-    { type: "banner", data: { titleKey: "banner.stock.title" } },
-    { type: "wholesale", data: { titleKey: "wholesale.title" } },
-  ],
-}, null, 2)}
-        </pre>
+        {filtered.length === 0 && <div className="text-center py-8 text-sm text-muted-foreground">No pages found.</div>}
+
+        {/* Pagination */}
+        {pagination && pagination.pages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-muted-foreground">Page {page} of {pagination.pages}</span>
+            <button
+              onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
+              disabled={page === pagination.pages}
+              className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
