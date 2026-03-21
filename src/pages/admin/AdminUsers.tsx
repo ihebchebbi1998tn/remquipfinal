@@ -1,15 +1,11 @@
 import React, { useState } from "react";
-import { Plus, Search, Edit, Trash2, Eye, Check, X, Mail, Shield, Clock } from "lucide-react";
-import { AdminUser, UserRole } from "@/types/admin";
+import { Plus, Search, Edit, Trash2, Check, X, Mail, Shield, Clock, Loader2, AlertCircle } from "lucide-react";
+import { useUsers, useApiMutation } from "@/hooks/useApi";
+import { api, User } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
 
-const mockUsers: AdminUser[] = [
-  { id: "user-1", name: "Marc Dupont", email: "marc@remquip.ca", role: "admin", status: "active", created: "2024-01-15", lastLogin: "2026-03-18" },
-  { id: "user-2", name: "Julie Martin", email: "julie@remquip.ca", role: "manager", status: "active", created: "2024-02-20", lastLogin: "2026-03-17" },
-  { id: "user-3", name: "Pierre Gagnon", email: "pierre@remquip.ca", role: "manager", status: "active", created: "2024-03-10", lastLogin: "2026-03-16" },
-  { id: "user-4", name: "Sarah Johnson", email: "sarah@remquip.ca", role: "user", status: "active", created: "2024-06-05", lastLogin: "2026-03-15" },
-  { id: "user-5", name: "David Chen", email: "david@remquip.ca", role: "user", status: "inactive", created: "2024-08-12", lastLogin: "2026-02-20" },
-  { id: "user-6", name: "Lisa Rousseau", email: "lisa@remquip.ca", role: "user", status: "active", created: "2025-01-08", lastLogin: "2026-03-10" },
-];
+type UserRole = "admin" | "manager" | "user";
+type UserStatus = "active" | "inactive" | "suspended";
 
 const roleColors: Record<UserRole, string> = {
   admin: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -20,67 +16,150 @@ const roleColors: Record<UserRole, string> = {
 const statusStyles: Record<string, string> = {
   active: "badge-success",
   inactive: "badge-warning",
+  suspended: "badge-destructive",
 };
 
 export default function AdminUsers() {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole | "">();
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "user" as UserRole });
-  const [users, setUsers] = useState(mockUsers);
+  const [formData, setFormData] = useState({ 
+    full_name: "", 
+    email: "", 
+    password: "", 
+    role: "user" as UserRole 
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const filtered = users.filter((u) => {
-    const matchesSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+  const queryClient = useQueryClient();
+
+  // Fetch users from API
+  const { data: usersResponse, isLoading, isError, error } = useUsers(page, 50);
+
+  // Mutations
+  const createUserMutation = useApiMutation(
+    (data: any) => api.createUser(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        setShowForm(false);
+        setFormData({ full_name: "", email: "", password: "", role: "user" });
+      },
+    }
+  );
+
+  const updateUserMutation = useApiMutation(
+    ({ id, data }: { id: string; data: any }) => api.updateUser(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        setShowForm(false);
+        setEditingId(null);
+        setFormData({ full_name: "", email: "", password: "", role: "user" });
+      },
+    }
+  );
+
+  const deleteUserMutation = useApiMutation(
+    (id: string) => api.deleteUser(id),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        setSelectedUser(null);
+      },
+    }
+  );
+
+  // Get users array from response
+  const users = usersResponse?.data || [];
+  const pagination = usersResponse?.pagination;
+
+  // Filter users locally (in case server-side filtering isn't available)
+  const filtered = users.filter((u: User) => {
+    const matchesSearch = !search || 
+      u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
+      u.email.toLowerCase().includes(search.toLowerCase());
     const matchesRole = !roleFilter || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
   const handleCreateUser = () => {
-    if (!formData.name || !formData.email) return;
+    if (!formData.full_name || !formData.email) return;
 
     if (editingId) {
-      setUsers(users.map((u) => u.id === editingId ? { ...u, name: formData.name, email: formData.email, role: formData.role as UserRole } : u));
-      setEditingId(null);
-    } else {
-      setUsers([
-        ...users,
-        {
-          id: `user-${Date.now()}`,
-          name: formData.name,
+      updateUserMutation.mutate({
+        id: editingId,
+        data: {
+          full_name: formData.full_name,
           email: formData.email,
-          role: formData.role as UserRole,
-          status: "active",
-          created: new Date().toISOString().split("T")[0],
-        },
-      ]);
+          role: formData.role,
+        }
+      });
+    } else {
+      createUserMutation.mutate({
+        full_name: formData.full_name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
     }
-
-    setFormData({ name: "", email: "", password: "", role: "user" });
-    setShowForm(false);
   };
 
-  const handleEditUser = (user: AdminUser) => {
-    setFormData({ name: user.name, email: user.email, password: "", role: user.role });
+  const handleEditUser = (user: User) => {
+    setFormData({ 
+      full_name: user.full_name || "", 
+      email: user.email, 
+      password: "", 
+      role: user.role 
+    });
     setEditingId(user.id);
     setShowForm(true);
   };
 
   const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter((u) => u.id !== userId));
-    setSelectedUser(null);
+    if (confirm("Are you sure you want to delete this user?")) {
+      deleteUserMutation.mutate(userId);
+    }
   };
 
-  const handleToggleStatus = (userId: string) => {
-    setUsers(
-      users.map((u) =>
-        u.id === userId
-          ? { ...u, status: u.status === "active" ? "inactive" : "active" }
-          : u
-      )
-    );
+  const handleToggleStatus = (user: User) => {
+    const newStatus: UserStatus = user.status === "active" ? "inactive" : "active";
+    updateUserMutation.mutate({
+      id: user.id,
+      data: { status: newStatus }
+    });
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <span className="ml-2 text-muted-foreground">Loading users...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="font-display font-bold text-lg mb-2">Failed to load users</h3>
+        <p className="text-muted-foreground text-sm mb-4">
+          {error instanceof Error ? error.message : "An error occurred while fetching users."}
+        </p>
+        <button 
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -88,10 +167,16 @@ export default function AdminUsers() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold">User Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create and manage admin users. Assign page access separately in Access Control.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Create and manage admin users. {pagination && `${pagination.total} total users.`}
+          </p>
         </div>
         <button
-          onClick={() => { setFormData({ name: "", email: "", password: "", role: "user" }); setEditingId(null); setShowForm(!showForm); }}
+          onClick={() => { 
+            setFormData({ full_name: "", email: "", password: "", role: "user" }); 
+            setEditingId(null); 
+            setShowForm(!showForm); 
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
         >
           <Plus className="h-4 w-4" />
@@ -107,8 +192,8 @@ export default function AdminUsers() {
             <input
               type="text"
               placeholder="Full Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             />
             <input
@@ -139,8 +224,12 @@ export default function AdminUsers() {
             <div className="flex gap-2">
               <button
                 onClick={handleCreateUser}
-                className="flex-1 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+                disabled={createUserMutation.isLoading || updateUserMutation.isLoading}
+                className="flex-1 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
+                {(createUserMutation.isLoading || updateUserMutation.isLoading) && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
                 {editingId ? "Update User" : "Create User"}
               </button>
               <button
@@ -181,7 +270,7 @@ export default function AdminUsers() {
       {/* Users Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.length > 0 ? (
-          filtered.map((user) => (
+          filtered.map((user: User) => (
             <div
               key={user.id}
               onClick={() => setSelectedUser(user)}
@@ -189,7 +278,7 @@ export default function AdminUsers() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="font-medium text-sm truncate">{user.name}</h3>
+                  <h3 className="font-medium text-sm truncate">{user.full_name || "No name"}</h3>
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                     <Mail className="h-3 w-3" />
                     {user.email}
@@ -208,15 +297,15 @@ export default function AdminUsers() {
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Created</span>
-                  <span>{user.created}</span>
+                  <span>{new Date(user.created_at).toLocaleDateString()}</span>
                 </div>
-                {user.lastLogin && (
+                {user.last_login && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       Last Login
                     </span>
-                    <span>{user.lastLogin}</span>
+                    <span>{new Date(user.last_login).toLocaleDateString()}</span>
                   </div>
                 )}
               </div>
@@ -235,9 +324,10 @@ export default function AdminUsers() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleToggleStatus(user.id);
+                    handleToggleStatus(user);
                   }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs border border-border rounded hover:bg-secondary transition-colors"
+                  disabled={updateUserMutation.isLoading}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs border border-border rounded hover:bg-secondary transition-colors disabled:opacity-50"
                 >
                   {user.status === "active" ? (
                     <>
@@ -256,7 +346,8 @@ export default function AdminUsers() {
                     e.stopPropagation();
                     handleDeleteUser(user.id);
                   }}
-                  className="px-2 py-1.5 text-xs border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors"
+                  disabled={deleteUserMutation.isLoading}
+                  className="px-2 py-1.5 text-xs border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -270,6 +361,29 @@ export default function AdminUsers() {
         )}
       </div>
 
+      {/* Pagination */}
+      {pagination && pagination.pages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-secondary disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {pagination.pages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
+            disabled={page === pagination.pages}
+            className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-secondary disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
       {/* Selected User Detail */}
       {selectedUser && (
         <div className="fixed inset-0 bg-foreground/20 flex items-center justify-center z-50 p-4" onClick={() => setSelectedUser(null)}>
@@ -277,7 +391,7 @@ export default function AdminUsers() {
             className="bg-card rounded-lg shadow-lg max-w-md w-full p-6 border border-border"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-display font-bold mb-4">{selectedUser.name}</h2>
+            <h2 className="text-xl font-display font-bold mb-4">{selectedUser.full_name || "User Details"}</h2>
             <div className="space-y-3 mb-6">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Email</span>
@@ -293,12 +407,18 @@ export default function AdminUsers() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Created</span>
-                <span>{selectedUser.created}</span>
+                <span>{new Date(selectedUser.created_at).toLocaleDateString()}</span>
               </div>
-              {selectedUser.lastLogin && (
+              {selectedUser.last_login && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Last Login</span>
-                  <span>{selectedUser.lastLogin}</span>
+                  <span>{new Date(selectedUser.last_login).toLocaleDateString()}</span>
+                </div>
+              )}
+              {selectedUser.phone && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Phone</span>
+                  <span>{selectedUser.phone}</span>
                 </div>
               )}
             </div>
