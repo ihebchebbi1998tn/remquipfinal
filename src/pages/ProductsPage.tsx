@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, X, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
 import { categories, products } from "@/config/products";
+import { api, Product, ProductCategory } from "@/lib/api";
 
 type SortOption = "featured" | "price_low" | "price_high" | "newest";
 
@@ -29,12 +30,52 @@ export default function ProductsPage() {
   const [stockOnly, setStockOnly] = useState(false);
   const [mobileFilters, setMobileFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
+  const [apiProducts, setApiProducts] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<ProductCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const category = categorySlug ? categories.find((c) => c.slug === categorySlug) : null;
-  const pageTitle = category ? t(category.translationKey) : searchFromUrl ? `Search: "${searchFromUrl}"` : t("cat.shop_all");
+  // Fetch products from API on component mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        console.log('[v0] Fetching products from API');
+        const response = await api.getProducts(1, 100);
+        if (response.data) {
+          setApiProducts(response.data);
+          console.log('[v0] Fetched', response.data.length, 'products');
+        }
+      } catch (err) {
+        console.warn('[v0] Products API failed, using fallback', err);
+        setApiProducts(products);
+      }
+    };
+
+    const fetchCategories = async () => {
+      try {
+        const response = await api.getCategories();
+        if (response.data) {
+          setCategoriesList(response.data);
+        }
+      } catch (err) {
+        console.warn('[v0] Categories API failed, using fallback');
+        setCategoriesList(categories);
+      }
+    };
+
+    const load = async () => {
+      await Promise.all([fetchProducts(), fetchCategories()]);
+      setIsLoading(false);
+    };
+
+    load();
+  }, []);
+
+  const category = categorySlug ? categoriesList.find((c) => c.slug === categorySlug) || categories.find((c) => c.slug === categorySlug) : null;
+  const pageTitle = category ? (category.name || (category as any).translationKey) : searchFromUrl ? `Search: "${searchFromUrl}"` : t("cat.shop_all");
 
   const filtered = useMemo(() => {
-    let list = categorySlug ? products.filter((p) => p.categorySlug === categorySlug) : [...products];
+    const productList = apiProducts.length > 0 ? apiProducts : products;
+    let list = categorySlug ? productList.filter((p) => p.category_id === category?.id || (p as any).categorySlug === categorySlug) : [...productList];
 
     // Apply search query (from URL or local)
     const q = (searchQuery || searchFromUrl).toLowerCase().trim();
@@ -42,9 +83,8 @@ export default function ProductsPage() {
       list = list.filter((p) =>
         p.name.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        (p.compatibility && p.compatibility.some(c => c.toLowerCase().includes(q)))
+        (p.category && p.category.toLowerCase().includes(q)) ||
+        (p.description && p.description.toLowerCase().includes(q))
       );
     }
 
@@ -54,17 +94,17 @@ export default function ProductsPage() {
     }
 
     if (stockOnly) {
-      list = list.filter((p) => p.stock > 0);
+      list = list.filter((p) => p.stock_quantity > 0);
     }
 
     switch (sort) {
       case "price_low": list.sort((a, b) => a.price - b.price); break;
       case "price_high": list.sort((a, b) => b.price - a.price); break;
-      case "newest": list.sort((a, b) => b.id.localeCompare(a.id)); break;
+      case "newest": list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
     }
 
     return list;
-  }, [categorySlug, sort, priceRange, stockOnly, searchQuery, searchFromUrl]);
+  }, [categorySlug, sort, priceRange, stockOnly, searchQuery, searchFromUrl, apiProducts, category]);
 
   const hasActiveFilters = priceRange !== null || stockOnly || searchQuery.length >= 2;
 
@@ -99,13 +139,13 @@ export default function ProductsPage() {
               {t("cat.shop_all")}
             </Link>
           </li>
-          {categories.map((cat) => (
+          {(categoriesList.length > 0 ? categoriesList : categories).map((cat) => (
             <li key={cat.id}>
               <Link
                 to={`/products/${cat.slug}`}
                 className={`text-sm transition-colors ${cat.slug === categorySlug ? "text-accent font-medium" : "text-muted-foreground hover:text-foreground"}`}
               >
-                {t(cat.translationKey)}
+                {cat.name || (cat as any).translationKey}
               </Link>
             </li>
           ))}
@@ -207,35 +247,41 @@ export default function ProductsPage() {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
-            {filtered.map((product) => (
-              <div key={product.id} className="product-card group">
-                <div className="aspect-square overflow-hidden bg-secondary relative">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                  {product.stock === 0 && (
-                    <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                      <span className="text-sm font-medium text-destructive uppercase">{t("products.out_of_stock")}</span>
-                    </div>
-                  )}
-                  {product.stock > 0 && product.stock <= 20 && (
-                    <span className="absolute top-2 left-2 badge-warning text-xs">{t("products.low_stock")}</span>
-                  )}
+            {filtered.map((product) => {
+              const primaryImage = product.images?.find(img => img.is_primary)?.image_url || product.images?.[0]?.image_url || (product as any).image;
+              const slug = (product as any).slug || product.id;
+              return (
+                <div key={product.id} className="product-card group">
+                  <div className="aspect-square overflow-hidden bg-secondary relative">
+                    {primaryImage && (
+                      <img src={primaryImage} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                    )}
+                    {product.stock_quantity === 0 && (
+                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                        <span className="text-sm font-medium text-destructive uppercase">{t("products.out_of_stock")}</span>
+                      </div>
+                    )}
+                    {product.stock_quantity > 0 && product.stock_quantity <= 20 && (
+                      <span className="absolute top-2 left-2 badge-warning text-xs">{t("products.low_stock")}</span>
+                    )}
+                  </div>
+                  <div className="p-3 md:p-4">
+                    <Link to={`/product/${slug}`} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-2 uppercase">
+                      {product.name}
+                    </Link>
+                    <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
+                    <p className="text-sm font-bold text-foreground mt-1">{formatPrice(product.price)}</p>
+                    <button
+                      onClick={() => addItem(product as any)}
+                      disabled={product.stock_quantity === 0}
+                      className="mt-2 w-full btn-accent text-xs py-2 rounded-sm font-medium uppercase tracking-wide disabled:opacity-50"
+                    >
+                      {t("products.add_to_cart")}
+                    </button>
+                  </div>
                 </div>
-                <div className="p-3 md:p-4">
-                  <Link to={`/product/${product.slug}`} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-2 uppercase">
-                    {product.name}
-                  </Link>
-                  <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
-                  <p className="text-sm font-bold text-foreground mt-1">{formatPrice(product.price)}</p>
-                  <button
-                    onClick={() => addItem(product)}
-                    disabled={product.stock === 0}
-                    className="mt-2 w-full btn-accent text-xs py-2 rounded-sm font-medium uppercase tracking-wide disabled:opacity-50"
-                  >
-                    {t("products.add_to_cart")}
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {filtered.length === 0 && (

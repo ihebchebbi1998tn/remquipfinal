@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Truck, Wrench, CheckCircle, ArrowRight, Package, Phone, Users, BarChart3 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
-import { categories, products } from "@/config/products";
+import { categories } from "@/config/products";
+import { api, Product, ProductCategory } from "@/lib/api";
 import heroImage from "@/assets/images/hero-truck.jpg";
 import warehouseImage from "@/assets/images/warehouse-banner.jpg";
 
@@ -22,7 +23,45 @@ export default function HomePage() {
   const { t } = useLanguage();
   const { formatPrice } = useCurrency();
   const { addItem } = useCart();
-  const featuredProducts = products.slice(0, 4);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<ProductCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        console.log('[v0] Fetching featured products and categories');
+        
+        // Try to fetch from API, fallback to hardcoded data if API fails
+        try {
+          const featuredResponse = await api.getFeaturedProducts();
+          if (featuredResponse.data) {
+            setFeaturedProducts(featuredResponse.data.slice(0, 4));
+          }
+        } catch (err) {
+          console.warn('[v0] Featured products API failed, using fallback');
+          setFeaturedProducts([]);
+        }
+
+        try {
+          const categoriesResponse = await api.getCategories();
+          if (categoriesResponse.data) {
+            setCategoriesList(categoriesResponse.data);
+          }
+        } catch (err) {
+          console.warn('[v0] Categories API failed, using fallback');
+          setCategoriesList(categories);
+        }
+      } catch (err) {
+        console.error('[v0] Error fetching homepage data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <>
@@ -135,22 +174,24 @@ export default function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            {categories.map((cat) => (
+            {(categoriesList.length > 0 ? categoriesList : categories).map((cat) => (
               <motion.div key={cat.id} variants={fadeUp}>
                 <Link
-                  to={`/products/${cat.slug}`}
+                  to={`/products/${cat.slug || ''}`}
                   className="group block relative rounded-sm overflow-hidden aspect-[4/3]"
                 >
-                  <img
-                    src={cat.image}
-                    alt={cat.name}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                    loading="lazy"
-                  />
+                  {cat.image_url && (
+                    <img
+                      src={cat.image_url}
+                      alt={cat.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/85 via-primary/30 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-4">
                     <span className="text-sm sm:text-base font-bold uppercase tracking-wide text-primary-foreground">
-                      {t(cat.translationKey)}
+                      {cat.name}
                     </span>
                     <span className="block text-primary-foreground/50 text-xs mt-0.5 group-hover:text-primary-foreground/70 transition-colors">
                       {t("cat.shop_all")} →

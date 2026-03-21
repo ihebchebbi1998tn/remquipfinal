@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -52,9 +53,10 @@ function PageLoader() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <CurrencyProvider>
-        <CartProvider>
+    <AuthProvider>
+      <LanguageProvider>
+        <CurrencyProvider>
+          <CartProvider>
           <TooltipProvider>
             <ErrorBoundary>
               <Toaster />
@@ -111,6 +113,7 @@ const App = () => (
         </CartProvider>
       </CurrencyProvider>
     </LanguageProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

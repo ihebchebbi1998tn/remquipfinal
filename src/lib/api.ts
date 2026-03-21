@@ -6,6 +6,7 @@
  */
 
 import { API_BASE_URL } from '@/config/constants';
+import { API_ENDPOINTS } from './api-endpoints';
 import { ApiError, handleError, logError, getDetailedErrorMessage } from './error-handler';
 import { showErrorToast, showSuccessToast } from './toast';
 
