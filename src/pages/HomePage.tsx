@@ -66,14 +66,14 @@ export default function HomePage() {
   return (
     <>
       {/* ═══ HERO ═══ */}
-      <section className="relative min-h-[500px] sm:min-h-[580px] md:min-h-[680px] flex items-center overflow-hidden bg-gradient-to-b from-primary via-primary to-primary/95">
+      <section className="relative min-h-[500px] sm:min-h-[580px] md:min-h-[680px] flex items-center overflow-hidden bg-tertiary">
         <img
           src={heroImage}
           alt="Heavy-duty truck fleet"
-          className="absolute inset-0 w-full h-full object-cover opacity-20"
+          className="absolute inset-0 w-full h-full object-cover opacity-25"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/98 via-primary/85 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-tertiary/95 via-tertiary/80 to-transparent" />
 
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
           <div className="max-w-3xl">
@@ -83,31 +83,31 @@ export default function HomePage() {
               transition={{ duration: 0.6, ease: "easeOut" }}
             >
               <div className="inline-block mb-6">
-                <span className="inline-flex items-center gap-2 bg-accent/20 text-accent px-4 py-2 rounded-full text-xs sm:text-sm font-semibold uppercase tracking-[0.15em]">
+                <span className="inline-flex items-center gap-2 bg-accent/15 text-accent px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold uppercase tracking-[0.15em]">
                   <span className="inline-block w-2 h-2 bg-accent rounded-full" />
                   {t("site.tagline")}
                 </span>
               </div>
               
-              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.15] mb-6 tracking-tight">
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.15] mb-6 tracking-tight" style={{ letterSpacing: '-0.02em' }}>
                 {t("hero.title")}
               </h1>
               
-              <p className="text-lg sm:text-xl text-primary-foreground/80 leading-relaxed mb-10 max-w-2xl font-light">
+              <p className="text-lg sm:text-xl text-primary-foreground/75 leading-relaxed mb-10 max-w-2xl font-light">
                 {t("hero.subtitle")}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
                 <Link
                   to="/products"
-                  className="inline-flex items-center justify-center gap-2 bg-accent text-accent-foreground px-8 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider hover:bg-accent/90 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="inline-flex items-center justify-center gap-2 btn-gradient text-accent-foreground px-8 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider transition-all shadow-lg hover:shadow-xl hover:scale-105"
                 >
                   {t("banner.stock.cta")}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center gap-2 border-2 border-primary-foreground/40 text-primary-foreground px-8 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider hover:bg-primary-foreground/10 transition-all backdrop-blur-sm"
+                  className="inline-flex items-center justify-center gap-2 border border-primary-foreground/30 text-primary-foreground px-8 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider hover:bg-primary-foreground/10 transition-all glassmorphism"
                 >
                   {t("wholesale.cta")}
                 </Link>
@@ -127,9 +127,9 @@ export default function HomePage() {
               { value: "48h", label: "Avg. Delivery" },
               { value: "15+", label: "Years Experience" },
             ].map((stat) => (
-              <div key={stat.label} className="border-l border-accent/30 pl-4 sm:pl-6">
+              <div key={stat.label} className="border-l border-accent/40 pl-4 sm:pl-6">
                 <p className="text-3xl sm:text-4xl font-bold text-accent font-display mb-1">{stat.value}</p>
-                <p className="text-primary-foreground/60 text-xs sm:text-sm font-medium">{stat.label}</p>
+                <p className="text-primary-foreground/70 text-xs sm:text-sm font-medium">{stat.label}</p>
               </div>
             ))}
           </motion.div>
@@ -137,16 +137,16 @@ export default function HomePage() {
       </section>
 
       {/* ═══ VALUE PROPS ═══ */}
-      <section className="border-b border-border bg-card">
+      <section className="surface-container">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-0">
             {[
               { icon: Shield, text: t("features.quality") },
               { icon: Truck, text: t("features.canadian") },
               { icon: Wrench, text: t("features.experience") },
               { icon: CheckCircle, text: t("features.fleet") },
             ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3 px-4 sm:px-6 py-5">
+              <div key={text} className="flex items-center gap-3 px-4 sm:px-6 py-5 border-r border-b border-border last:border-r-0 lg:last:border-b-0" style={{borderColor: 'hsla(var(--border), 0.3)'}}>
                 <Icon className="h-5 w-5 text-accent flex-shrink-0" strokeWidth={1.8} />
                 <span className="text-xs sm:text-sm font-medium text-foreground leading-snug">{text}</span>
               </div>
@@ -156,7 +156,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ CATEGORIES ═══ */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
+      <section className="surface-section container mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
         <motion.div
           variants={stagger}
           initial="hidden"
@@ -209,7 +209,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ FEATURED PRODUCTS ═══ */}
-      <section className="bg-secondary/40 border-y border-border">
+      <section className="surface-container-low">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
           <motion.div
             variants={stagger}
@@ -230,8 +230,8 @@ export default function HomePage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {featuredProducts.map((product) => (
                 <motion.div key={product.id} variants={fadeUp}>
-                  <Link to={`/product/${product.slug}`} className="bg-card border border-border rounded-sm overflow-hidden group h-full flex flex-col hover:border-accent/50 transition-colors cursor-pointer block">
-                    <div className="block aspect-square overflow-hidden bg-secondary">
+                  <Link to={`/product/${product.slug}`} className="bg-surface-container-lowest rounded-lg overflow-hidden group h-full flex flex-col hover:shadow-md transition-all cursor-pointer block">
+                    <div className="block aspect-square overflow-hidden bg-surface-container">
                       <img
                         src={product.image}
                         alt={product.name}
@@ -244,7 +244,7 @@ export default function HomePage() {
                       <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors line-clamp-2 mt-1 mb-auto leading-snug">
                         {product.name}
                       </span>
-                      <div className="mt-3 pt-3 border-t border-border">
+                      <div className="mt-3 pt-3" style={{borderTop: '1px solid hsla(var(--border), 0.2)'}}>
                         <div className="flex items-center justify-between mb-2.5">
                           <p className="text-base font-bold text-foreground">{formatPrice(product.price)}</p>
                           {product.stock > 0 && (
@@ -260,7 +260,7 @@ export default function HomePage() {
                             e.stopPropagation();
                             addItem(product);
                           }}
-                          className="w-full btn-accent text-xs py-2 rounded-sm font-semibold uppercase tracking-wide"
+                          className="w-full btn-gradient text-accent-foreground text-xs py-2 rounded-md font-semibold uppercase tracking-wide"
                         >
                           {t("products.add_to_cart")}
                         </button>
@@ -279,7 +279,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ WHY REMQUIP ═══ */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
+      <section className="surface-section container mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
         <motion.div
           variants={stagger}
           initial="hidden"
@@ -301,8 +301,8 @@ export default function HomePage() {
               { icon: BarChart3, title: t("features.experience"), desc: t("wholesale.details") },
             ].map(({ icon: Icon, title, desc }, i) => (
               <motion.div key={i} variants={fadeUp}>
-                <div className="border border-border rounded-sm p-6 h-full bg-card hover:border-accent/30 transition-colors">
-                  <div className="w-10 h-10 rounded-sm bg-accent/10 flex items-center justify-center mb-4">
+                <div className="rounded-lg p-6 h-full bg-surface-container-lowest hover:shadow-md transition-all" style={{backgroundColor: 'hsl(var(--surface-container-lowest))'}}>
+                  <div className="w-10 h-10 rounded-md flex items-center justify-center mb-4" style={{backgroundColor: 'hsla(var(--accent), 0.1)'}}>
                     <Icon className="h-5 w-5 text-accent" strokeWidth={1.8} />
                   </div>
                   <h3 className="font-display text-sm sm:text-base font-semibold text-foreground mb-2 leading-snug">{title}</h3>
@@ -315,33 +315,33 @@ export default function HomePage() {
       </section>
 
       {/* ═══ WHOLESALE CTA ═══ */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden bg-tertiary">
         <img
           src={warehouseImage}
           alt="REMQUIP warehouse"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover opacity-20"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-primary/85" />
+        <div className="absolute inset-0 bg-gradient-to-r from-tertiary/90 via-tertiary/75 to-transparent" />
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
           <div className="max-w-xl mx-auto text-center sm:text-left sm:mx-0">
             <p className="text-accent text-xs font-semibold uppercase tracking-[0.15em] mb-2">For Businesses</p>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-primary-foreground mb-3 leading-tight">
               {t("wholesale.title")}
             </h2>
-            <p className="text-primary-foreground/60 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
+            <p className="text-primary-foreground/70 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
               {t("wholesale.description")} {t("wholesale.details")}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center gap-2 bg-accent text-accent-foreground px-7 py-3 rounded-sm font-semibold text-sm uppercase tracking-wide hover:opacity-90 transition-opacity"
+                className="inline-flex items-center justify-center gap-2 btn-gradient text-accent-foreground px-7 py-3 rounded-lg font-semibold text-sm uppercase tracking-wide transition-all hover:shadow-lg"
               >
                 {t("wholesale.cta")} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/contact"
-                className="inline-flex items-center justify-center gap-2 border border-primary-foreground/30 text-primary-foreground px-7 py-3 rounded-sm font-medium text-sm hover:bg-primary-foreground/10 transition-colors"
+                className="inline-flex items-center justify-center gap-2 border border-primary-foreground/30 text-primary-foreground px-7 py-3 rounded-lg font-medium text-sm hover:bg-primary-foreground/10 transition-colors"
               >
                 <Phone className="h-4 w-4" /> {t("footer.contact")}
               </Link>
