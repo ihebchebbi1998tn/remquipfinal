@@ -772,6 +772,72 @@ class APIService {
     );
   }
 
+  // ==================== USER DASHBOARD METHODS ====================
+
+  async getUserDashboardProfile(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.PROFILE);
+  }
+
+  async getUserOrders(page: number = 1, limit: number = 10): Promise<PaginatedResponse> {
+    return this.request('GET', `${API_ENDPOINTS.USER_DASHBOARD.ORDERS}?page=${page}&limit=${limit}`);
+  }
+
+  async getUserOrderSummary(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.ORDER_SUMMARY);
+  }
+
+  async getUserAddresses(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.ADDRESSES);
+  }
+
+  async getUserSettings(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.SETTINGS);
+  }
+
+  async updateUserSettings(data: any): Promise<ApiResponse> {
+    return this.request('PUT', API_ENDPOINTS.USER_DASHBOARD.UPDATE_SETTINGS, data);
+  }
+
+  async getAdminContacts(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.CONTACT_US);
+  }
+
+  // ==================== ADMIN CONTACTS METHODS ====================
+
+  async getAllAdminContacts(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ADMIN_CONTACTS.LIST);
+  }
+
+  async getAdminContact(id: string): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ADMIN_CONTACTS.GET.replace(':id', id));
+  }
+
+  async getAdminContactsByDepartment(department: string): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ADMIN_CONTACTS.BY_DEPARTMENT.replace(':department', department));
+  }
+
+  async getAdminContactsBySpecialization(specialization: string): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ADMIN_CONTACTS.BY_SPECIALIZATION.replace(':specialization', specialization));
+  }
+
+  async getAvailableAdminContacts(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ADMIN_CONTACTS.AVAILABLE);
+  }
+
+  // ==================== ADMIN PERMISSIONS METHODS ====================
+
+  async getUserPermissions(userId: string): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ADMIN_PERMISSIONS.GET_USER_PERMISSIONS.replace(':userId', userId));
+  }
+
+  async updateUserPermissions(userId: string, permissions: any): Promise<ApiResponse> {
+    return this.request('PUT', API_ENDPOINTS.ADMIN_PERMISSIONS.UPDATE_PERMISSIONS.replace(':userId', userId), permissions);
+  }
+
+  async getAllPermissions(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ADMIN_PERMISSIONS.GET_ALL_PERMISSIONS);
+  }
+
   // ==================== STATIC METHODS ====================
 
   static getInstance(): APIService {

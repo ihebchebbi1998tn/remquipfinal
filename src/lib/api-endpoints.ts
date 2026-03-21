@@ -77,8 +77,10 @@ export const API_ENDPOINTS = {
     DELETE: '/api/orders/:id',
     SEARCH: '/api/orders/search',
     STATUS: '/api/orders/:id/status',
+    TRACKING: '/api/orders/:id/tracking',
     ADD_NOTE: '/api/orders/:id/notes',
     GET_NOTES: '/api/orders/:id/notes',
+    USER_ORDERS: '/api/users/:userId/orders',
   },
 
   // ==================== DISCOUNTS ENDPOINTS ====================
@@ -129,5 +131,32 @@ export const API_ENDPOINTS = {
   AUDIT: {
     LOGS: '/api/audit/logs',
     USER_LOGS: '/api/audit/users/:userId/logs',
+  },
+
+  // ==================== ADMIN CONTACTS ENDPOINTS ====================
+  ADMIN_CONTACTS: {
+    LIST: '/api/admin-contacts',
+    GET: '/api/admin-contacts/:id',
+    BY_DEPARTMENT: '/api/admin-contacts/department/:department',
+    BY_SPECIALIZATION: '/api/admin-contacts/specialization/:specialization',
+    AVAILABLE: '/api/admin-contacts/available',
+  },
+
+  // ==================== ADMIN PERMISSIONS ENDPOINTS ====================
+  ADMIN_PERMISSIONS: {
+    GET_USER_PERMISSIONS: '/api/admin/permissions/user/:userId',
+    UPDATE_PERMISSIONS: '/api/admin/permissions/user/:userId',
+    GET_ALL_PERMISSIONS: '/api/admin/permissions',
+  },
+
+  // ==================== USER DASHBOARD ENDPOINTS ====================
+  USER_DASHBOARD: {
+    PROFILE: '/api/user/dashboard/profile',
+    ORDERS: '/api/user/dashboard/orders',
+    ORDER_SUMMARY: '/api/user/dashboard/orders/summary',
+    ADDRESSES: '/api/user/dashboard/addresses',
+    SETTINGS: '/api/user/dashboard/settings',
+    UPDATE_SETTINGS: '/api/user/dashboard/settings',
+    CONTACT_US: '/api/user/dashboard/contacts',
   },
 } as const;
