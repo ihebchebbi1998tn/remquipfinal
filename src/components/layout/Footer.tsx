@@ -11,19 +11,20 @@ export default function Footer() {
   const { currency, setCurrency } = useCurrency();
 
   return (
-    <footer className="bg-gradient-to-b from-primary to-primary/95 text-primary-foreground border-t border-primary/30">
+    <footer className="bg-tertiary text-primary-foreground border-t" style={{borderColor: 'hsla(var(--border), 0.2)'}}>
       {/* Newsletter Section */}
-      <div className="bg-primary/80 backdrop-blur-sm border-b border-primary-foreground/10">
+      <div className="bg-tertiary-container/50 backdrop-blur-sm" style={{backgroundColor: 'hsla(var(--primary-container), 0.15)'}}>
         <div className="container mx-auto px-4 py-12 md:py-14 text-center">
           <h3 className="font-display text-2xl md:text-3xl font-bold mb-3 tracking-tight">{t("newsletter.title")}</h3>
-          <p className="text-primary-foreground/70 text-sm md:text-base mb-6 max-w-lg mx-auto">{t("newsletter.subtitle") || "Get exclusive deals and industry insights delivered to your inbox."}</p>
+          <p className="text-primary-foreground/75 text-sm md:text-base mb-6 max-w-lg mx-auto">{t("newsletter.subtitle") || "Get exclusive deals and industry insights delivered to your inbox."}</p>
           <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-3">
             <input
               type="email"
               placeholder={t("newsletter.placeholder")}
-              className="flex-1 px-5 py-3 border border-primary-foreground/20 rounded-lg bg-primary-foreground/10 text-primary-foreground text-sm outline-none focus:ring-2 focus:ring-accent focus:border-transparent backdrop-blur-sm placeholder:text-primary-foreground/50 transition-all"
+              className="flex-1 px-5 py-3 border rounded-lg bg-primary-foreground/10 text-primary-foreground text-sm outline-none focus:ring-2 focus:ring-accent focus:border-transparent backdrop-blur-sm placeholder:text-primary-foreground/50 transition-all"
+              style={{borderColor: 'hsla(var(--primary-foreground), 0.2)'}}
             />
-            <button className="bg-accent hover:bg-accent/90 text-accent-foreground px-7 py-3 rounded-lg text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+            <button className="btn-gradient text-accent-foreground px-7 py-3 rounded-lg text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
               {t("newsletter.cta")}
             </button>
           </div>
@@ -32,22 +33,22 @@ export default function Footer() {
 
       {/* Main footer content */}
       <div className="container mx-auto px-4 py-12 md:py-16">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-10 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-10 mb-12">
             {/* Company info */}
             <div className="lg:col-span-1">
-              <h4 className="font-display font-bold text-lg tracking-[0.1em] mb-5 text-accent">REMQUIP</h4>
-              <p className="text-sm text-primary-foreground/70 mb-5 leading-relaxed">Heavy-duty truck parts and equipment supplier. Trusted by fleets across North America.</p>
-              <div className="space-y-3 text-sm text-primary-foreground/70">
+              <h4 className="font-display font-bold text-lg tracking-[0.1em] mb-5 text-accent" style={{letterSpacing: '-0.02em'}}>REMQUIP</h4>
+              <p className="text-sm text-primary-foreground/75 mb-5 leading-relaxed">Heavy-duty truck parts and equipment supplier. Trusted by fleets across North America.</p>
+              <div className="space-y-3 text-sm text-primary-foreground/75">
                 <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-accent/70" />
+                  <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-accent" />
                   <span>Quebec City, QC, Canada</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 flex-shrink-0 text-accent/70" />
+                  <Phone className="h-5 w-5 flex-shrink-0 text-accent" />
                   <a href="tel:1-800-555-0199" className="hover:text-primary-foreground transition-colors">1-800-555-0199</a>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 flex-shrink-0 text-accent/70" />
+                  <Mail className="h-5 w-5 flex-shrink-0 text-accent" />
                   <a href="mailto:info@remquip.ca" className="hover:text-primary-foreground transition-colors">info@remquip.ca</a>
                 </div>
               </div>
@@ -59,13 +60,13 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {categories.slice(0, 4).map((cat) => (
                   <li key={cat.id}>
-                    <Link to={`/products/${cat.slug}`} className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">
+                    <Link to={`/products/${cat.slug}`} className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">
                       {t(cat.translationKey)}
                     </Link>
                   </li>
                 ))}
                 <li>
-                  <Link to="/products" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">
+                  <Link to="/products" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">
                     {t("cat.shop_all")}
                   </Link>
                 </li>
@@ -76,10 +77,10 @@ export default function Footer() {
             <div>
               <h4 className="font-display font-semibold uppercase text-xs tracking-widest mb-4 text-primary-foreground">{t("footer.information")}</h4>
               <ul className="space-y-2.5">
-                <li><Link to="/about" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">{t("footer.about")}</Link></li>
-                <li><Link to="/shipping" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">{t("footer.shipping")}</Link></li>
-                <li><Link to="/contact" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">{t("footer.contact")}</Link></li>
-                <li><Link to="/faq" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">FAQ</Link></li>
+                <li><Link to="/about" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">{t("footer.about")}</Link></li>
+                <li><Link to="/shipping" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">{t("footer.shipping")}</Link></li>
+                <li><Link to="/contact" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">{t("footer.contact")}</Link></li>
+                <li><Link to="/faq" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">FAQ</Link></li>
               </ul>
             </div>
 
@@ -87,10 +88,10 @@ export default function Footer() {
             <div>
               <h4 className="font-display font-semibold uppercase text-xs tracking-widest mb-4 text-primary-foreground">{t("footer.legal")}</h4>
               <ul className="space-y-2.5">
-                <li><Link to="/terms" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">{t("footer.terms")}</Link></li>
-                <li><Link to="/privacy" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">{t("footer.privacy")}</Link></li>
-                <li><Link to="/refund" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">{t("footer.refund")}</Link></li>
-                <li><Link to="/cookie" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors font-light">{t("footer.cookie")}</Link></li>
+                <li><Link to="/terms" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">{t("footer.terms")}</Link></li>
+                <li><Link to="/privacy" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">{t("footer.privacy")}</Link></li>
+                <li><Link to="/refund" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">{t("footer.refund")}</Link></li>
+                <li><Link to="/cookie" className="text-sm text-primary-foreground/75 hover:text-accent transition-colors font-light">{t("footer.cookie")}</Link></li>
               </ul>
             </div>
 
@@ -134,10 +135,9 @@ export default function Footer() {
         </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-primary-foreground/10 bg-primary/50 backdrop-blur-sm">
+      <div className="border-t backdrop-blur-sm" style={{borderColor: 'hsla(var(--border), 0.2)', backgroundColor: 'hsla(var(--tertiary), 0.5)'}}>
         <div className="container mx-auto px-4 py-6 text-center">
-          <p className="text-xs text-primary-foreground/50 mb-2">{t("footer.copyright")}</p>
-          <p className="text-xs text-primary-foreground/40">© 2024 REMQUIP. All rights reserved.</p>
+          <p className="text-xs text-primary-foreground/60">© {new Date().getFullYear()} REMQUIP. All rights reserved.</p>
         </div>
       </div>
     </footer>
