@@ -53,6 +53,8 @@ export default defineConfig({
       'lucide-react',
       'clsx',
       'date-fns',
+      'leaflet',
+      'react-leaflet',
     ],
     exclude: ['lovable-tagger'],
   },

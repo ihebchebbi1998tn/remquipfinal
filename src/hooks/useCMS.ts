@@ -54,6 +54,7 @@ export function useUpdateCMSContent() {
         queryClient.invalidateQueries({
           queryKey: CMS_QUERY_KEYS.page(data.page_name),
         });
+        queryClient.invalidateQueries({ queryKey: ['cms', 'page', data.page_name] });
         queryClient.invalidateQueries({ queryKey: ['cms', 'page', 'home'] });
       }
     },
@@ -72,6 +73,8 @@ export function useCreateCMSContent() {
         queryClient.invalidateQueries({
           queryKey: CMS_QUERY_KEYS.page(data.page_name),
         });
+        queryClient.invalidateQueries({ queryKey: ['cms', 'page', data.page_name] });
+        queryClient.invalidateQueries({ queryKey: ['cms', 'page', 'home'] });
       }
     },
   });

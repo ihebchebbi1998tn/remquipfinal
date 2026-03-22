@@ -7,10 +7,11 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { categories } from "@/config/products";
-import { api, ProductCategory, unwrapApiList } from "@/lib/api";
+import { api, ProductCategory, unwrapApiList, resolveUploadImageUrl } from "@/lib/api";
 import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
 import { useCMSPage } from "@/hooks/useApi";
 import { EditableSection } from "@/components/EditableSection";
+import LandingThemeScope from "@/components/landing/LandingThemeScope";
 import heroImage from "@/assets/images/hero-truck.jpg";
 import warehouseImage from "@/assets/images/warehouse-banner.jpg";
 
@@ -59,10 +60,15 @@ export default function HomePage() {
   }, [cmsResponse]);
 
   const hero = sections.hero ?? {};
-  const heroCta = parseJson<{ cta_primary_label?: string; cta_primary_link?: string; cta_secondary_label?: string; cta_secondary_link?: string }>(
-    hero.content,
-    {}
-  );
+  const heroCta = parseJson<{
+    cta_primary_label?: string;
+    cta_primary_link?: string;
+    cta_secondary_label?: string;
+    cta_secondary_link?: string;
+    hero_image_alt?: string;
+  }>(hero.content, {});
+  const heroBgSrc = hero.image_url?.trim() ? resolveUploadImageUrl(hero.image_url.trim()) : heroImage;
+  const heroBgAlt = heroCta.hero_image_alt?.trim() || "Industrial truck parts";
   const valueProps = parseJson<{ icon: string; text: string }[]>(sections.value_props?.content, [
     { icon: "Shield", text: "Certified & Tested" },
     { icon: "Truck", text: "Fast Delivery" },
@@ -71,6 +77,16 @@ export default function HomePage() {
   ]);
   const catIntro = sections.categories_intro ?? {};
   const featIntro = sections.featured_intro ?? {};
+  const catIntroExtras = parseJson<{ view_all_label?: string }>(catIntro.content, {});
+  const featIntroExtras = parseJson<{ view_all_label?: string }>(featIntro.content, {});
+  const viewAllCategories = catIntroExtras.view_all_label?.trim() || t("products.view_all");
+  const viewAllFeatured = featIntroExtras.view_all_label?.trim() || t("products.view_all");
+  const statsSection = sections.stats ?? {};
+  const statsItems = parseJson<{ value: string; label: string }[]>(statsSection.content, [
+    { value: "500+", label: "SKUs in Stock" },
+    { value: "48h", label: "Avg. Delivery" },
+    { value: "15+", label: "Years Experience" },
+  ]);
   const whyRemquip = sections.why_remquip ?? {};
   const whyData = parseJson<{ subtitle?: string; cards?: { icon: string; title: string; desc: string }[] }>(
     whyRemquip.content,
@@ -84,6 +100,12 @@ export default function HomePage() {
     cta_secondary_label?: string;
     cta_secondary_link?: string;
   }>(wholesaleCta.content, {});
+  const wholesaleBannerSrc = wholesaleCta.image_url?.trim()
+    ? resolveUploadImageUrl(wholesaleCta.image_url.trim())
+    : warehouseImage;
+  const wholesaleBannerAlt = wholesaleCta.description?.trim()
+    ? `${wholesaleCta.title || "Fleet"} — ${wholesaleCta.description.slice(0, 80)}`
+    : "Industrial warehouse";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,11 +145,11 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <EditableSection sectionKey="hero" showEdit={isAdmin}>
+      <EditableSection sectionKey="hero" showEdit={isAdmin} variant="dark">
       <section className="relative min-h-[500px] sm:min-h-[580px] md:min-h-[680px] flex items-center overflow-hidden bg-tertiary">
         <img
-          src={heroImage}
-          alt="Industrial truck parts"
+          src={heroBgSrc}
+          alt={heroBgAlt}
           className="absolute inset-0 w-full h-full object-cover opacity-20"
           loading="eager"
         />
@@ -141,13 +163,13 @@ export default function HomePage() {
               transition={{ duration: 0.6, ease: "easeOut" }}
             >
               <h1
-                className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.1] mb-8 tracking-tight"
+                className="font-display landing-hero-title font-bold text-primary-foreground mb-8 tracking-tight"
                 style={{ letterSpacing: "-0.02em" }}
               >
                 {hero.title || "Industrial-Grade Parts For North American Fleets"}
               </h1>
 
-              <p className="text-lg sm:text-xl text-primary-foreground/80 leading-relaxed mb-12 max-w-2xl font-light">
+              <p className="landing-hero-subtitle text-primary-foreground/80 mb-12 max-w-2xl font-light">
                 {hero.description || "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years."}
               </p>
 
@@ -172,6 +194,22 @@ export default function HomePage() {
       </section>
       </EditableSection>
 
+      {/* Stats (CMS: stats) */}
+      <EditableSection sectionKey="stats" showEdit={isAdmin}>
+        <section className="border-b border-border bg-muted/35">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 py-10 md:py-12 text-center">
+              {statsItems.map((s, i) => (
+                <div key={`${s.label}-${i}`}>
+                  <p className="font-display landing-stats-value font-bold text-foreground tracking-tight">{s.value}</p>
+                  <p className="landing-stats-label text-muted-foreground mt-1.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </EditableSection>
+
       {/* Value props */}
       <EditableSection sectionKey="value_props" showEdit={isAdmin}>
       <section className="bg-background border-b border-border/80">
@@ -182,7 +220,7 @@ export default function HomePage() {
               return (
                 <div key={text} className="flex items-center gap-2.5">
                   <Icon className="h-4 w-4 text-accent flex-shrink-0" strokeWidth={2} />
-                  <span className="text-sm text-foreground">{text}</span>
+                  <span className="landing-value-prop-text text-foreground">{text}</span>
                 </div>
               );
             })}
@@ -198,10 +236,10 @@ export default function HomePage() {
           <div className="flex items-end justify-between mb-12">
             <div>
               <p className="section-eyebrow mb-2">{catIntro.title || "Browse Solutions"}</p>
-              <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{catIntro.description || "Explore Product Categories"}</h2>
+              <h2 className="font-display landing-section-heading font-semibold text-foreground tracking-tight">{catIntro.description || "Explore Product Categories"}</h2>
             </div>
             <Link to="/products" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              {viewAllCategories} <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
           </div>
 
@@ -232,7 +270,7 @@ export default function HomePage() {
           </div>
 
           <Link to="/products" className="sm:hidden flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mt-8">
-            {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            {viewAllCategories} <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </Link>
         </div>
       </section>
@@ -245,10 +283,10 @@ export default function HomePage() {
           <div className="flex items-end justify-between mb-12">
             <div>
               <p className="section-eyebrow mb-2">{featIntro.title || "In High Demand"}</p>
-              <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{featIntro.description || "Popular Products"}</h2>
+              <h2 className="font-display landing-section-heading font-semibold text-foreground tracking-tight">{featIntro.description || "Popular Products"}</h2>
             </div>
             <Link to="/products" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              {viewAllFeatured} <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
           </div>
 
@@ -300,7 +338,7 @@ export default function HomePage() {
           </div>
 
           <Link to="/products" className="sm:hidden flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mt-8">
-            {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            {viewAllFeatured} <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </Link>
         </div>
       </section>
@@ -312,7 +350,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="section-eyebrow mb-2">{whyRemquip.title || "Why Choose REMQUIP"}</p>
-            <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{whyRemquip.description || "Built for Fleet Operations"}</h2>
+            <h2 className="font-display landing-section-heading font-semibold text-foreground tracking-tight">{whyRemquip.description || "Built for Fleet Operations"}</h2>
             <p className="text-muted-foreground text-sm mt-4 leading-relaxed">
               {whyData.subtitle || "We specialize in quality parts, competitive pricing, and customer service that keeps your fleet running smoothly."}
             </p>
@@ -346,10 +384,10 @@ export default function HomePage() {
         <div className="grid md:grid-cols-2 min-h-[320px] md:min-h-[380px]">
           <div className="flex flex-col justify-center px-6 sm:px-8 lg:px-12 py-14 md:py-20 order-2 md:order-1 max-w-xl">
             <p className="section-eyebrow mb-3">{wholesaleCta.title || "Fleet Solutions"}</p>
-            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-semibold text-foreground mb-4 leading-tight tracking-tight">
+            <h2 className="font-display landing-wholesale-heading font-semibold text-foreground mb-4 tracking-tight">
               {wholesaleCta.description || "Wholesale Programs for Fleet Operators"}
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-8">
+            <p className="landing-wholesale-body text-muted-foreground leading-relaxed mb-8">
               {wholesaleData.body || "Get competitive bulk pricing, dedicated account support, and streamlined ordering for your fleet operation."}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -369,8 +407,8 @@ export default function HomePage() {
           </div>
           <div className="relative min-h-[200px] md:min-h-full order-1 md:order-2">
             <img
-              src={warehouseImage}
-              alt="Industrial warehouse"
+              src={wholesaleBannerSrc}
+              alt={wholesaleBannerAlt}
               className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"
             />
@@ -378,6 +416,6 @@ export default function HomePage() {
         </div>
       </section>
       </EditableSection>
-    </>
+    </LandingThemeScope>
   );
 }

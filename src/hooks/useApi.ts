@@ -4,7 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import { api, ApiResponse, PaginatedResponse, type StorefrontRates } from '@/lib/api';
+import { api, ApiResponse, PaginatedResponse, type ContactMapPayload, type LandingThemePayload, type StorefrontRates } from '@/lib/api';
 
 // ==================== GENERIC HOOKS ====================
 
@@ -32,10 +32,12 @@ export function useApiMutation<TData = any, TError = any, TVariables = any>(
   mutationFn: (variables: TVariables) => Promise<ApiResponse<TData>>,
   options?: Omit<UseMutationOptions<ApiResponse<TData>, TError, TVariables>, 'mutationFn'>
 ) {
-  return useMutation(mutationFn, {
-    ...options,
+  const { onSuccess, ...rest } = options ?? {};
+  return useMutation({
+    mutationFn,
+    ...rest,
     onSuccess: (data, variables, context) => {
-      options?.onSuccess?.(data, variables, context);
+      onSuccess?.(data, variables, context);
     },
   });
 }
@@ -577,6 +579,39 @@ export function useStorefrontRates() {
   return useApiQuery<StorefrontRates>(['settings', 'storefront'], () => api.getStorefrontSettings(), {
     staleTime: 1000 * 60 * 10,
     retry: 1,
+  });
+}
+
+/** Contact page map — public GET; invalidate after admin save. Read pin with `data?.data`. */
+export function useContactMap() {
+  return useApiQuery<ContactMapPayload>(['contact-map'], () => api.getContactMap(), {
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+  });
+}
+
+export function useUpdateContactMap() {
+  const queryClient = useQueryClient();
+  return useApiMutation((body: Parameters<typeof api.updateContactMap>[0]) => api.updateContactMap(body), {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-map'] });
+    },
+  });
+}
+
+export function useLandingTheme() {
+  return useApiQuery<LandingThemePayload>(['landing-theme'], () => api.getLandingTheme(), {
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+  });
+}
+
+export function useUpdateLandingTheme() {
+  const queryClient = useQueryClient();
+  return useApiMutation((body: Partial<LandingThemePayload>) => api.updateLandingTheme(body), {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['landing-theme'] });
+    },
   });
 }
 

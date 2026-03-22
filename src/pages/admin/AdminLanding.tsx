@@ -13,15 +13,16 @@ import { useCMSPageContent, useUpdateCMSContent, useCreateCMSContent } from "@/h
 import { useStorefrontRates } from "@/hooks/useApi";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
+import AdminLandingTheme from "./AdminLandingTheme";
 
 const SECTION_LABELS: Record<string, string> = {
-  hero: "Hero (headline & CTAs)",
-  stats: "Stats bar",
+  hero: "Hero (headline, background image & CTAs)",
+  stats: "Stats bar (numbers under hero)",
   value_props: "Value propositions",
-  categories_intro: "Categories section intro",
-  featured_intro: "Featured products intro",
+  categories_intro: "Categories section intro & “View all” label",
+  featured_intro: "Featured products intro & “View all” label",
   why_remquip: "Why REMQUIP cards",
-  wholesale_cta: "Wholesale CTA",
+  wholesale_cta: "Wholesale CTA (copy & banner image)",
 };
 
 function parseJson<T>(raw: string, fallback: T): T {
@@ -45,7 +46,12 @@ function SectionCard({
   children: React.ReactNode;
   defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const { hash } = useLocation();
+  const hashMatch = Boolean(id && hash === `#${id}`);
+  const [open, setOpen] = useState(() => defaultOpen || hashMatch);
+  useEffect(() => {
+    if (hashMatch) setOpen(true);
+  }, [hashMatch]);
   return (
     <div id={id} className="border border-border rounded-lg overflow-hidden bg-card scroll-mt-24">
       <button
@@ -83,10 +89,13 @@ export default function AdminLanding() {
   // Scroll to section when hash is present (e.g. from landing page Edit links)
   useEffect(() => {
     const hash = location.hash?.slice(1);
-    if (hash?.startsWith("section-")) {
-      const el = document.getElementById(hash);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (!hash?.startsWith("section-")) return;
+    const scroll = () => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    scroll();
+    const t = window.setTimeout(scroll, 120);
+    return () => window.clearTimeout(t);
   }, [location.hash, sections.length]);
 
   const sectionMap = Object.fromEntries(
@@ -159,6 +168,8 @@ export default function AdminLanding() {
         )}
       </div>
 
+      <AdminLandingTheme />
+
       <div className="space-y-4">
         {/* Hero */}
         {sectionMap.hero && (
@@ -216,12 +227,13 @@ export default function AdminLanding() {
               type="button"
               onClick={async () => {
                 const defaults = [
-                  { section_key: "hero", title: "Industrial-Grade Parts For North American Fleets", description: "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years.", content: JSON.stringify({ cta_primary_label: "Browse Catalog", cta_primary_link: "/products", cta_secondary_label: "Wholesale Program", cta_secondary_link: "/register" }) },
+                  { section_key: "hero", title: "Industrial-Grade Parts For North American Fleets", description: "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years.", image_url: "", content: JSON.stringify({ cta_primary_label: "Browse Catalog", cta_primary_link: "/products", cta_secondary_label: "Wholesale Program", cta_secondary_link: "/register", hero_image_alt: "Industrial truck parts" }) },
+                  { section_key: "stats", title: "", description: "", image_url: "", content: JSON.stringify([{ value: "500+", label: "SKUs in Stock" }, { value: "48h", label: "Avg. Delivery" }, { value: "15+", label: "Years Experience" }]) },
                   { section_key: "value_props", content: JSON.stringify([{ icon: "Shield", text: "Certified & Tested" }, { icon: "Truck", text: "Fast Delivery" }, { icon: "Wrench", text: "Expert Support" }, { icon: "CheckCircle", text: "In Stock" }]) },
-                  { section_key: "categories_intro", title: "Browse Solutions", description: "Explore Product Categories" },
-                  { section_key: "featured_intro", title: "In High Demand", description: "Popular Products" },
+                  { section_key: "categories_intro", title: "Browse Solutions", description: "Explore Product Categories", content: JSON.stringify({ view_all_label: "View all products" }) },
+                  { section_key: "featured_intro", title: "In High Demand", description: "Popular Products", content: JSON.stringify({ view_all_label: "View all products" }) },
                   { section_key: "why_remquip", title: "Why Choose REMQUIP", description: "Built for Fleet Operations", content: JSON.stringify({ subtitle: "We specialize in quality parts, competitive pricing, and customer service that keeps your fleet running smoothly.", cards: [{ icon: "Package", title: "Extensive Inventory", desc: "500+ SKUs ready to ship. Most items in stock for immediate delivery to fleets across North America." }, { icon: "Users", title: "Dedicated Support", desc: "Expert team standing by. Get technical guidance, bulk quotes, and personalized service for your fleet needs." }, { icon: "BarChart3", title: "Proven Track Record", desc: "15+ years serving trucking operations. Trusted by fleet managers for reliability and competitive pricing." }] }) },
-                  { section_key: "wholesale_cta", title: "Fleet Solutions", description: "Wholesale Programs for Fleet Operators", content: JSON.stringify({ body: "Get competitive bulk pricing, dedicated account support, and streamlined ordering for your fleet operation.", cta_primary_label: "Join Wholesale", cta_primary_link: "/register", cta_secondary_label: "Contact Sales", cta_secondary_link: "/contact" }) },
+                  { section_key: "wholesale_cta", title: "Fleet Solutions", description: "Wholesale Programs for Fleet Operators", image_url: "", content: JSON.stringify({ body: "Get competitive bulk pricing, dedicated account support, and streamlined ordering for your fleet operation.", cta_primary_label: "Join Wholesale", cta_primary_link: "/register", cta_secondary_label: "Contact Sales", cta_secondary_link: "/contact" }) },
                 ];
                 try {
                   for (const d of defaults) {
@@ -246,6 +258,9 @@ export default function AdminLanding() {
   );
 }
 
+const fieldClass =
+  "w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent";
+
 function Field({
   label,
   value,
@@ -259,17 +274,26 @@ function Field({
   placeholder?: string;
   rows?: number;
 }) {
-  const Input = rows ? "textarea" : "input";
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
-      />
+      {rows ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          className={fieldClass}
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={fieldClass}
+        />
+      )}
     </div>
   );
 }
@@ -279,30 +303,55 @@ function HeroSectionForm({
   onSave,
   loading,
 }: {
-  section: { title: string; description: string; content: string };
-  onSave: (d: { title?: string; description?: string; content?: string }) => void;
+  section: { title: string; description: string; content: string; image_url?: string };
+  onSave: (d: { title?: string; description?: string; content?: string; image_url?: string }) => void;
   loading: boolean;
 }) {
-  const cta = parseJson<{ cta_primary_label?: string; cta_primary_link?: string; cta_secondary_label?: string; cta_secondary_link?: string }>(
-    section.content,
-    {}
-  );
+  const cta = parseJson<{
+    cta_primary_label?: string;
+    cta_primary_link?: string;
+    cta_secondary_label?: string;
+    cta_secondary_link?: string;
+    hero_image_alt?: string;
+  }>(section.content, {});
   const [title, setTitle] = useState(section.title);
   const [desc, setDesc] = useState(section.description);
+  const [imageUrl, setImageUrl] = useState(section.image_url ?? "");
+  const [heroImageAlt, setHeroImageAlt] = useState(cta.hero_image_alt ?? "");
   const [primaryLabel, setPrimaryLabel] = useState(cta.cta_primary_label ?? "Browse Catalog");
   const [primaryLink, setPrimaryLink] = useState(cta.cta_primary_link ?? "/products");
   const [secondaryLabel, setSecondaryLabel] = useState(cta.cta_secondary_label ?? "Wholesale Program");
   const [secondaryLink, setSecondaryLink] = useState(cta.cta_secondary_link ?? "/register");
 
+  useEffect(() => {
+    const c = parseJson<{
+      cta_primary_label?: string;
+      cta_primary_link?: string;
+      cta_secondary_label?: string;
+      cta_secondary_link?: string;
+      hero_image_alt?: string;
+    }>(section.content, {});
+    setTitle(section.title);
+    setDesc(section.description);
+    setImageUrl(section.image_url ?? "");
+    setHeroImageAlt(c.hero_image_alt ?? "");
+    setPrimaryLabel(c.cta_primary_label ?? "Browse Catalog");
+    setPrimaryLink(c.cta_primary_link ?? "/products");
+    setSecondaryLabel(c.cta_secondary_label ?? "Wholesale Program");
+    setSecondaryLink(c.cta_secondary_link ?? "/register");
+  }, [section.title, section.description, section.content, section.image_url]);
+
   const save = () => {
     onSave({
       title,
       description: desc,
+      image_url: imageUrl.trim(),
       content: JSON.stringify({
         cta_primary_label: primaryLabel,
         cta_primary_link: primaryLink,
         cta_secondary_label: secondaryLabel,
         cta_secondary_link: secondaryLink,
+        hero_image_alt: heroImageAlt.trim() || undefined,
       }),
     });
   };
@@ -311,6 +360,13 @@ function HeroSectionForm({
     <div className="space-y-4">
       <Field label="Headline" value={title} onChange={setTitle} placeholder="Industrial-Grade Parts..." />
       <Field label="Subtitle" value={desc} onChange={setDesc} placeholder="500+ SKUs in stock..." rows={2} />
+      <Field
+        label="Background image URL (optional)"
+        value={imageUrl}
+        onChange={setImageUrl}
+        placeholder="Leave empty for default; or /Backend/uploads/images/..."
+      />
+      <Field label="Background image alt text (accessibility)" value={heroImageAlt} onChange={setHeroImageAlt} placeholder="Industrial truck parts" />
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Primary CTA label" value={primaryLabel} onChange={setPrimaryLabel} />
         <Field label="Primary CTA link" value={primaryLink} onChange={setPrimaryLink} />
@@ -345,6 +401,14 @@ function StatsSectionForm({
     { value: "15+", label: "Years Experience" },
   ]);
   const [stats, setStats] = useState(items);
+
+  useEffect(() => {
+    setStats(parseJson<{ value: string; label: string }[]>(section.content, [
+      { value: "500+", label: "SKUs in Stock" },
+      { value: "48h", label: "Avg. Delivery" },
+      { value: "15+", label: "Years Experience" },
+    ]));
+  }, [section.content]);
 
   const update = (i: number, key: "value" | "label", v: string) => {
     const next = [...stats];
@@ -403,6 +467,17 @@ function ValuePropsSectionForm({
   const [props, setProps] = useState(items);
   const icons = ["Shield", "Truck", "Wrench", "CheckCircle", "Package", "Users", "BarChart3"];
 
+  useEffect(() => {
+    setProps(
+      parseJson<{ icon: string; text: string }[]>(section.content, [
+        { icon: "Shield", text: "Certified & Tested" },
+        { icon: "Truck", text: "Fast Delivery" },
+        { icon: "Wrench", text: "Expert Support" },
+        { icon: "CheckCircle", text: "In Stock" },
+      ])
+    );
+  }, [section.content]);
+
   const update = (i: number, key: "icon" | "text", v: string) => {
     const next = [...props];
     next[i] = { ...next[i], [key]: v };
@@ -450,19 +525,41 @@ function IntroSectionForm({
   onSave,
   loading,
 }: {
-  section: { title: string; description: string };
-  onSave: (d: { title?: string; description?: string }) => void;
+  section: { title: string; description: string; content?: string };
+  onSave: (d: { title?: string; description?: string; content?: string }) => void;
   loading: boolean;
 }) {
+  const extras = parseJson<{ view_all_label?: string }>(section.content ?? "", {});
   const [title, setTitle] = useState(section.title);
   const [desc, setDesc] = useState(section.description);
+  const [viewAllLabel, setViewAllLabel] = useState(extras.view_all_label ?? "");
 
-  const save = () => onSave({ title, description: desc });
+  useEffect(() => {
+    const ex = parseJson<{ view_all_label?: string }>(section.content ?? "", {});
+    setTitle(section.title);
+    setDesc(section.description);
+    setViewAllLabel(ex.view_all_label ?? "");
+  }, [section.title, section.description, section.content]);
+
+  const save = () =>
+    onSave({
+      title,
+      description: desc,
+      content: JSON.stringify({
+        view_all_label: viewAllLabel.trim() || undefined,
+      }),
+    });
 
   return (
     <div className="space-y-4">
       <Field label="Eyebrow / small label" value={title} onChange={setTitle} />
       <Field label="Heading" value={desc} onChange={setDesc} />
+      <Field
+        label="“View all” link label (optional; overrides site default)"
+        value={viewAllLabel}
+        onChange={setViewAllLabel}
+        placeholder="View all products"
+      />
       <button
         type="button"
         onClick={save}
@@ -500,6 +597,25 @@ function WhyRemquipSectionForm({
     ]
   );
   const icons = ["Package", "Users", "BarChart3", "Shield", "Truck", "Wrench", "CheckCircle"];
+
+  useEffect(() => {
+    const d = parseJson<{ subtitle?: string; cards?: { icon: string; title: string; desc: string }[] }>(
+      section.content,
+      { subtitle: "", cards: [] }
+    );
+    setTitle(section.title);
+    setDesc(section.description);
+    setSubtitle(d.subtitle ?? "");
+    setCards(
+      d.cards?.length
+        ? d.cards
+        : [
+            { icon: "Package", title: "Extensive Inventory", desc: "500+ SKUs ready to ship..." },
+            { icon: "Users", title: "Dedicated Support", desc: "Expert team standing by..." },
+            { icon: "BarChart3", title: "Proven Track Record", desc: "15+ years serving..." },
+          ]
+    );
+  }, [section.title, section.description, section.content]);
 
   const updateCard = (i: number, key: "icon" | "title" | "desc", v: string) => {
     const next = [...cards];
@@ -565,8 +681,8 @@ function WholesaleCtaSectionForm({
   onSave,
   loading,
 }: {
-  section: { title: string; description: string; content: string };
-  onSave: (d: { title?: string; description?: string; content?: string }) => void;
+  section: { title: string; description: string; content: string; image_url?: string };
+  onSave: (d: { title?: string; description?: string; content?: string; image_url?: string }) => void;
   loading: boolean;
 }) {
   const data = parseJson<{
@@ -578,16 +694,36 @@ function WholesaleCtaSectionForm({
   }>(section.content, {});
   const [title, setTitle] = useState(section.title);
   const [desc, setDesc] = useState(section.description);
+  const [bannerUrl, setBannerUrl] = useState(section.image_url ?? "");
   const [body, setBody] = useState(data.body ?? "");
   const [primaryLabel, setPrimaryLabel] = useState(data.cta_primary_label ?? "Join Wholesale");
   const [primaryLink, setPrimaryLink] = useState(data.cta_primary_link ?? "/register");
   const [secondaryLabel, setSecondaryLabel] = useState(data.cta_secondary_label ?? "Contact Sales");
   const [secondaryLink, setSecondaryLink] = useState(data.cta_secondary_link ?? "/contact");
 
+  useEffect(() => {
+    const d = parseJson<{
+      body?: string;
+      cta_primary_label?: string;
+      cta_primary_link?: string;
+      cta_secondary_label?: string;
+      cta_secondary_link?: string;
+    }>(section.content, {});
+    setTitle(section.title);
+    setDesc(section.description);
+    setBannerUrl(section.image_url ?? "");
+    setBody(d.body ?? "");
+    setPrimaryLabel(d.cta_primary_label ?? "Join Wholesale");
+    setPrimaryLink(d.cta_primary_link ?? "/register");
+    setSecondaryLabel(d.cta_secondary_label ?? "Contact Sales");
+    setSecondaryLink(d.cta_secondary_link ?? "/contact");
+  }, [section.title, section.description, section.content, section.image_url]);
+
   const save = () =>
     onSave({
       title,
       description: desc,
+      image_url: bannerUrl.trim(),
       content: JSON.stringify({
         body,
         cta_primary_label: primaryLabel,
@@ -601,6 +737,12 @@ function WholesaleCtaSectionForm({
     <div className="space-y-4">
       <Field label="Eyebrow" value={title} onChange={setTitle} />
       <Field label="Heading" value={desc} onChange={setDesc} />
+      <Field
+        label="Banner image URL (optional)"
+        value={bannerUrl}
+        onChange={setBannerUrl}
+        placeholder="Leave empty for default warehouse image; or /Backend/uploads/images/..."
+      />
       <Field label="Body text" value={body} onChange={setBody} rows={3} />
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Primary CTA label" value={primaryLabel} onChange={setPrimaryLabel} />

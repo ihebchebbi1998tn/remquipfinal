@@ -33,6 +33,18 @@ export const API_ENDPOINTS = {
     LIST: '/settings',
   },
 
+  /** Contact page Leaflet location — `remquip_contact_map` (Backend/routes/contact-map.php). */
+  CONTACT_MAP: {
+    GET: '/contact-map',
+    UPDATE: '/contact-map',
+  },
+
+  /** Landing page design tokens — `remquip_landing_theme` (Backend/routes/landing-theme.php). */
+  LANDING_THEME: {
+    GET: '/landing-theme',
+    UPDATE: '/landing-theme',
+  },
+
   // ==================== AUTH ENDPOINTS ====================
   AUTH: {
     LOGIN: '/auth/login',

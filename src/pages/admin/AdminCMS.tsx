@@ -1,9 +1,11 @@
-import React, { useState } from "react";
-import { Edit, Eye, Plus, Search, FileText, Globe, Loader2, AlertCircle, Trash2, X } from "lucide-react";
-import { useCMSPages, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
+import React, { useState, useEffect } from "react";
+import { Edit, Eye, Plus, Search, FileText, Globe, Loader2, AlertCircle, Trash2, X, MapPin, Save } from "lucide-react";
+import { useCMSPages, useApiMutation, useStorefrontRates, useContactMap, useUpdateContactMap } from "@/hooks/useApi";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { api, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
+import AdminContactCopy from "./AdminContactCopy";
 
 interface CMSPage {
   id: string;
@@ -40,6 +42,54 @@ export default function AdminCMS() {
   const otherLocales = supportedLocales.filter((l) => l !== defaultLocale);
 
   const queryClient = useQueryClient();
+
+  const { data: contactMapRes, isLoading: contactMapLoading } = useContactMap();
+  const updateContactMapMutation = useUpdateContactMap();
+  const [mapForm, setMapForm] = useState({
+    latitude: "",
+    longitude: "",
+    zoom: "13",
+    marker_title: "",
+    address_line: "",
+  });
+
+  useEffect(() => {
+    if (!contactMapRes?.success || !contactMapRes.data) return;
+    const d = contactMapRes.data;
+    setMapForm({
+      latitude: String(d.latitude),
+      longitude: String(d.longitude),
+      zoom: String(d.zoom),
+      marker_title: d.marker_title ?? "",
+      address_line: d.address_line ?? "",
+    });
+  }, [contactMapRes]);
+
+  const handleSaveContactMap = async () => {
+    const lat = parseFloat(mapForm.latitude);
+    const lng = parseFloat(mapForm.longitude);
+    const zoom = parseInt(mapForm.zoom, 10);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      showErrorToast("Enter valid latitude and longitude");
+      return;
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      showErrorToast("Coordinates out of range");
+      return;
+    }
+    try {
+      await updateContactMapMutation.mutateAsync({
+        latitude: lat,
+        longitude: lng,
+        zoom: Number.isNaN(zoom) ? 13 : Math.min(19, Math.max(1, zoom)),
+        marker_title: mapForm.marker_title.trim() || null,
+        address_line: mapForm.address_line.trim() || null,
+      });
+      showSuccessToast("Contact map updated");
+    } catch {
+      showErrorToast("Failed to save contact map");
+    }
+  };
 
   // Fetch CMS pages from API
   const { data: pagesResponse, isLoading, isError, error } = useCMSPages(page, 50);
@@ -235,6 +285,99 @@ export default function AdminCMS() {
         >
           {showForm ? <><X className="h-4 w-4" /> Cancel</> : <><Plus className="h-4 w-4" /> New Page</>}
         </button>
+      </div>
+
+      <AdminContactCopy />
+
+      <div className="dashboard-card">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="rounded-md bg-accent/10 p-2 text-accent">
+            <MapPin className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-display font-bold text-sm uppercase tracking-wide">Contact page map</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-2xl">
+              Public <code className="text-[11px]">/contact</code> uses Leaflet with these coordinates. Default seed is Montréal, QC — change to any address in Canada or elsewhere.
+            </p>
+          </div>
+        </div>
+        {contactMapLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading map settings…
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Latitude</label>
+              <input
+                value={mapForm.latitude}
+                onChange={(e) => setMapForm((f) => ({ ...f, latitude: e.target.value }))}
+                placeholder="45.5017"
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Longitude</label>
+              <input
+                value={mapForm.longitude}
+                onChange={(e) => setMapForm((f) => ({ ...f, longitude: e.target.value }))}
+                placeholder="-73.5673"
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Zoom (1–19)</label>
+              <input
+                type="number"
+                min={1}
+                max={19}
+                value={mapForm.zoom}
+                onChange={(e) => setMapForm((f) => ({ ...f, zoom: e.target.value }))}
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background"
+              />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-2">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Marker title</label>
+              <input
+                value={mapForm.marker_title}
+                onChange={(e) => setMapForm((f) => ({ ...f, marker_title: e.target.value }))}
+                placeholder="REMQUIP"
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background"
+              />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-5">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Address (popup + contact column)</label>
+              <textarea
+                value={mapForm.address_line}
+                onChange={(e) => setMapForm((f) => ({ ...f, address_line: e.target.value }))}
+                placeholder="Street, city, province, postal code, country"
+                rows={2}
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background resize-y min-h-[2.75rem]"
+              />
+            </div>
+          </div>
+        )}
+        {!contactMapLoading && (
+          <div className="flex flex-wrap items-center gap-2 mt-4">
+            <button
+              type="button"
+              onClick={() => void handleSaveContactMap()}
+              disabled={updateContactMapMutation.isPending}
+              className="btn-accent px-4 py-2 rounded-sm text-sm font-medium inline-flex items-center gap-2 disabled:opacity-50"
+            >
+              {updateContactMapMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save map
+            </button>
+            <a
+              href="/contact"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-accent hover:underline"
+            >
+              Open contact page
+            </a>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-3 md:gap-4">

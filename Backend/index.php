@@ -36,7 +36,7 @@ $segments = array_values(array_filter(explode('/', $path), 'strlen'));
 $knownResources = [
     'auth', 'users', 'products', 'categories', 'inventory', 'customers',
     'orders', 'discounts', 'uploads', 'analytics', 'cms', 'health',
-    'dashboard', 'audit', 'user', 'admin', 'admin-contacts', 'settings',
+    'dashboard', 'audit', 'user', 'admin', 'admin-contacts', 'settings', 'contact-map', 'landing-theme',
 ];
 while (!empty($segments) && !in_array($segments[0], $knownResources, true)) {
     array_shift($segments);
@@ -120,6 +120,12 @@ switch ($resource) {
         break;
     case 'settings':
         require_once __DIR__ . '/routes/settings.php';
+        break;
+    case 'contact-map':
+        require_once __DIR__ . '/routes/contact-map.php';
+        break;
+    case 'landing-theme':
+        require_once __DIR__ . '/routes/landing-theme.php';
         break;
     default:
         ResponseHelper::sendError('Resource not found', 404);

@@ -200,61 +200,79 @@ export default function Header() {
     </div>
   );
 
+  const path = location.pathname;
+  const navLinkClass = (to: string, exact?: boolean) => {
+    const active = exact ? path === to : path === to || (to !== "/" && path.startsWith(to));
+    return [
+      "relative px-3 py-2 rounded-md text-sm font-medium transition-colors",
+      active
+        ? "text-nav-accent after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-nav-accent"
+        : "text-nav-foreground/85 hover:text-nav-foreground hover:bg-white/[0.06]",
+    ].join(" ");
+  };
+
   return (
-    <header className="sticky top-0 z-50 shadow-sm">
-      {/* Main bar */}
-      <div className="nav-bar border-b border-white/10">
-        <div className="container mx-auto px-4 flex items-center justify-between h-14 md:h-[60px] gap-4">
-          {/* Logo */}
-          <Link to="/" className="font-display text-base md:text-lg font-semibold tracking-[0.12em] text-nav-foreground flex-shrink-0 uppercase">
-            {brandName}
-          </Link>
+    <header className="site-header-shell">
+      {/* Primary row: brand + nav | search | utilities */}
+      <div className="nav-bar">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 md:h-[60px] items-center gap-3 md:gap-4">
+            {/* Brand + desktop nav */}
+            <div className="flex min-w-0 flex-shrink-0 items-center gap-6 lg:gap-8">
+              <Link
+                to="/"
+                className="font-display text-[15px] md:text-base font-semibold tracking-[0.1em] text-nav-foreground transition-opacity hover:opacity-90 uppercase"
+              >
+                {brandName}
+              </Link>
+              <nav className="hidden lg:flex items-center gap-0.5" aria-label="Principal">
+                <Link to="/products" className={navLinkClass("/products")}>
+                  {t("nav.products")}
+                </Link>
+                <Link to="/about" className={navLinkClass("/about", true)}>
+                  {t("nav.about")}
+                </Link>
+                <Link to="/contact" className={navLinkClass("/contact", true)}>
+                  {t("nav.contact")}
+                </Link>
+              </nav>
+            </div>
 
-          {/* Desktop nav links */}
-          <nav className="hidden lg:flex items-center gap-1">
-            <Link to="/products" className="px-4 py-2 text-sm font-medium text-nav-foreground/90 hover:text-nav-accent transition-colors">
-              {t("nav.products")}
-            </Link>
-            <Link to="/about" className="px-4 py-2 text-sm font-medium text-nav-foreground/90 hover:text-nav-accent transition-colors">
-              {t("nav.about")}
-            </Link>
-            <Link to="/contact" className="px-4 py-2 text-sm font-medium text-nav-foreground/90 hover:text-nav-accent transition-colors">
-              {t("nav.contact")}
-            </Link>
-          </nav>
+            {/* Search (center, grows) */}
+            <div className="hidden min-w-0 flex-1 md:flex md:justify-center" ref={searchRef}>
+              <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md lg:max-w-lg xl:max-w-xl">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nav-foreground/45" aria-hidden />
+                <input
+                  type="search"
+                  autoComplete="off"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
+                  placeholder={t("nav.search.placeholder")}
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.08] py-2.5 pl-10 pr-3 text-sm text-nav-foreground outline-none transition-[box-shadow,background-color] placeholder:text-nav-foreground/45 focus:border-white/20 focus:bg-white/[0.11] focus:ring-2 focus:ring-white/15"
+                />
+                {showResults && (
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1.5">
+                    <SearchResultsList
+                      results={searchResults}
+                      query={searchQuery.trim()}
+                      loading={showSearchPending}
+                    />
+                  </div>
+                )}
+              </form>
+            </div>
 
-          {/* Desktop search */}
-          <div className="hidden md:flex flex-1 max-w-sm mx-4 lg:max-w-md" ref={searchRef}>
-            <form onSubmit={handleSearchSubmit} className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-nav-foreground/50 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
-                placeholder={t("nav.search.placeholder")}
-                className="w-full pl-9 pr-3 py-2 rounded border-0 bg-white/10 text-nav-foreground text-sm focus:ring-1 focus:ring-white/30 outline-none placeholder:text-nav-foreground/50"
-              />
-              {showResults && (
-                <div className="absolute top-full left-0 right-0 mt-1.5">
-                  <SearchResultsList
-                    results={searchResults}
-                    query={searchQuery.trim()}
-                    loading={showSearchPending}
-                  />
-                </div>
-              )}
-            </form>
-          </div>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Locale, currency, account, cart */}
+            <div className="ml-auto flex flex-shrink-0 items-center gap-0.5 sm:gap-1 md:border-l md:border-white/10 md:pl-3 lg:pl-4">
             {/* Language */}
             <div className="relative hidden md:block" ref={langRef}>
               <button
+                type="button"
                 onClick={() => { setLangOpen(!langOpen); setCurrOpen(false); }}
-                className="flex items-center gap-1.5 text-sm text-nav-foreground hover:text-nav-accent transition-colors px-2 py-1.5 rounded-sm"
+                className="flex items-center gap-1.5 rounded-md px-2 py-2 text-sm text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground"
                 aria-label="Language"
+                aria-expanded={langOpen}
               >
                 <FlagIcon country={langFlag} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
                 <span className="hidden lg:inline text-xs font-medium">{lang === "en" ? "EN" : "FR"}</span>
@@ -279,9 +297,11 @@ export default function Header() {
             {/* Currency */}
             <div className="relative hidden md:block" ref={currRef}>
               <button
+                type="button"
                 onClick={() => { setCurrOpen(!currOpen); setLangOpen(false); }}
-                className="flex items-center gap-1.5 text-sm text-nav-foreground hover:text-nav-accent transition-colors px-2 py-1.5 rounded-sm"
+                className="flex items-center gap-1.5 rounded-md px-2 py-2 text-sm text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground"
                 aria-label="Currency"
+                aria-expanded={currOpen}
               >
                 <FlagIcon country={currFlag} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
                 <span className="hidden lg:inline text-xs font-medium">{currency}</span>
@@ -304,13 +324,20 @@ export default function Header() {
             </div>
 
             {/* Account */}
-            <Link to="/login" className="hidden md:flex items-center gap-1.5 text-nav-foreground hover:text-nav-accent transition-colors px-2 py-1.5 rounded-sm" aria-label="Sign in">
-              <User className="h-4.5 w-4.5" />
-              <span className="hidden lg:inline text-xs font-medium">{t("nav.signin")}</span>
+            <Link
+              to="/login"
+              className="hidden items-center gap-1.5 rounded-md px-2 py-2 text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground md:flex"
+              aria-label={t("nav.signin")}
+            >
+              <User className="h-[18px] w-[18px]" strokeWidth={2} />
+              <span className="hidden text-xs font-medium lg:inline">{t("nav.signin")}</span>
             </Link>
 
-            {/* Cart */}
-            <Link to="/cart" className="flex items-center text-nav-foreground hover:text-nav-accent transition-colors relative p-1.5 rounded-sm" aria-label="Cart">
+            <Link
+              to="/cart"
+              className="relative flex items-center rounded-md p-2 text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground"
+              aria-label="Cart"
+            >
               <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 && (
                 <span
@@ -324,35 +351,52 @@ export default function Header() {
             </Link>
 
             {/* Mobile toggle */}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-nav-foreground p-1" aria-label="Menu">
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <button
+              type="button"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="rounded-md p-2 text-nav-foreground transition-colors hover:bg-white/[0.08] md:hidden"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
             </button>
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Category bar (desktop) */}
-      <nav className="category-bar hidden md:block">
-        <div className="container mx-auto px-4 flex items-center justify-center gap-px">
-          {categories.map((cat) => (
+      {/* Category strip — horizontal scroll on narrow viewports */}
+      <nav className="site-header-category-strip category-bar hidden md:block" aria-label={t("footer.categories")}>
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="-mx-1 flex items-stretch justify-start gap-px overflow-x-auto py-0 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {categories.map((cat) => {
+              const catPath = `/products/${cat.slug}`;
+              const catActive = path === catPath;
+              return (
+                <Link
+                  key={cat.id}
+                  to={catPath}
+                  className={`flex-shrink-0 whitespace-nowrap px-4 py-3 text-xs font-medium tracking-wide transition-colors lg:px-5 ${
+                    catActive
+                      ? "bg-category-bar-active text-foreground shadow-sm"
+                      : "text-category-bar-foreground/95 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  {t(cat.translationKey)}
+                </Link>
+              );
+            })}
             <Link
-              key={cat.id}
-              to={`/products/${cat.slug}`}
-              className={`px-4 lg:px-5 py-3 text-xs font-medium transition-colors ${
-                location.pathname === `/products/${cat.slug}`
-                  ? "bg-category-bar-active text-foreground"
-                  : "text-category-bar-foreground/95 hover:bg-white/5"
+              to="/products"
+              className={`flex-shrink-0 whitespace-nowrap px-4 py-3 text-xs font-medium tracking-wide transition-colors lg:px-5 ${
+                path === "/products"
+                  ? "bg-category-bar-active text-foreground shadow-sm"
+                  : "text-category-bar-foreground/95 hover:bg-white/[0.06]"
               }`}
             >
-              {t(cat.translationKey)}
+              {t("cat.shop_all")}
             </Link>
-          ))}
-          <Link
-            to="/products"
-            className="px-4 lg:px-5 py-3 text-xs font-medium text-category-bar-foreground/95 hover:bg-white/5 transition-colors"
-          >
-            {t("cat.shop_all")}
-          </Link>
+          </div>
         </div>
       </nav>
 

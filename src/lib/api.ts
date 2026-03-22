@@ -69,6 +69,29 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+/** GET/PUT /landing-theme — homepage-only design tokens. */
+export interface LandingThemePayload {
+  id?: string | null;
+  updated_at?: string | null;
+  css_variables: Record<string, string>;
+  font_heading_stack: string;
+  font_body_stack: string;
+  google_fonts_url: string | null;
+  font_sizes: Record<string, string>;
+  custom_css: string | null;
+}
+
+/** GET /contact-map — pin for Contact page map (admin: PUT). */
+export interface ContactMapPayload {
+  id: string;
+  latitude: number;
+  longitude: number;
+  zoom: number;
+  marker_title: string | null;
+  address_line: string | null;
+  updated_at: string;
+}
+
 /** GET /settings/storefront — aligned with Admin Settings tax/shipping fields. */
 export interface StorefrontRates {
   tax_gst_rate: number;
@@ -721,6 +744,30 @@ class APIService {
       flat[k] = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
     }
     return this.request('PATCH', API_ENDPOINTS.SETTINGS.LIST, { settings: flat });
+  }
+
+  /** Public — Leaflet center + marker copy for /contact */
+  async getContactMap(): Promise<ApiResponse<ContactMapPayload>> {
+    return this.request('GET', API_ENDPOINTS.CONTACT_MAP.GET);
+  }
+
+  /** Admin — update map location */
+  async updateContactMap(body: {
+    latitude: number;
+    longitude: number;
+    zoom?: number;
+    marker_title?: string | null;
+    address_line?: string | null;
+  }): Promise<ApiResponse<ContactMapPayload>> {
+    return this.request('PUT', API_ENDPOINTS.CONTACT_MAP.UPDATE, body);
+  }
+
+  async getLandingTheme(): Promise<ApiResponse<LandingThemePayload>> {
+    return this.request('GET', API_ENDPOINTS.LANDING_THEME.GET);
+  }
+
+  async updateLandingTheme(body: Partial<LandingThemePayload>): Promise<ApiResponse<LandingThemePayload>> {
+    return this.request('PUT', API_ENDPOINTS.LANDING_THEME.UPDATE, body);
   }
 
   // ==================== USER METHODS ====================
