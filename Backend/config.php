@@ -123,4 +123,3 @@ if (!is_dir(UPLOAD_DIR)) {
 if (!is_dir(LOG_DIR)) {
     @mkdir(LOG_DIR, 0755, true);
 }
-?>

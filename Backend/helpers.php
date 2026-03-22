@@ -933,4 +933,3 @@ function remquip_notify_order_status_changed($conn, $orderId, $prevStatus, $newS
 
 // Initialize on include
 Logger::init();
-?>

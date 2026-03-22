@@ -162,4 +162,3 @@ class Database {
         return (int)$stmt->fetchColumn();
     }
 }
-?>
