@@ -243,14 +243,15 @@ export default function Header() {
   const navLinkClass = (to: string, exact?: boolean) => {
     const active = exact ? path === to : path === to || (to !== "/" && path.startsWith(to));
     return [
-      "relative px-3 py-2 rounded-md text-[13px] font-semibold transition-colors",
+      "relative whitespace-nowrap px-1 py-2 text-[13px] font-medium tracking-wide transition-colors border-b-2 -mb-px",
       active
-        ? "text-nav-accent after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-nav-accent"
-        : "text-nav-foreground/88 hover:text-nav-foreground hover:bg-white/[0.07]",
+        ? "text-nav-foreground border-nav-accent"
+        : "text-nav-foreground/65 border-transparent hover:text-nav-foreground hover:border-white/20",
     ].join(" ");
   };
 
-  const mobileOverlayTop = showAnnouncement ? "top-[92px]" : "top-14";
+  /* Main bar can be two rows on small screens (identity + search); keep menu below shell */
+  const mobileOverlayTop = showAnnouncement ? "top-[10rem]" : "top-[7rem]";
 
   const headerEditLink = canEditHeader ? (
     <Link
@@ -301,32 +302,32 @@ export default function Header() {
         </div>
       )}
 
-      {/* Primary row: brand + nav | search | utilities */}
-      <div className="nav-bar">
+      {/* Primary row — retail-style: identity | search | utilities */}
+      <div className="site-header-main nav-bar">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-14 md:h-16 items-center gap-3 md:gap-5">
-            {/* Brand + desktop nav */}
-            <div className="flex min-w-0 flex-shrink-0 items-center gap-5 lg:gap-8">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-y-2 gap-x-3 md:gap-x-4 lg:gap-x-6 min-h-[52px] md:min-h-[56px] py-2 md:py-2.5 border-b border-white/[0.07]">
+            {/* Brand + primary nav */}
+            <div className="flex min-w-0 flex-1 md:flex-none items-center justify-between md:justify-start gap-4 lg:gap-8">
               <Link
                 to="/"
-                className="flex items-center gap-2.5 min-w-0 group transition-opacity hover:opacity-95"
+                className="flex items-center gap-2.5 min-w-0 shrink-0 group transition-opacity hover:opacity-95"
               >
                 {logoUrl ? (
                   <img
                     src={logoUrl}
                     alt=""
-                    className="h-8 md:h-9 w-auto max-w-[120px] sm:max-w-[160px] object-contain object-left"
+                    className="h-8 md:h-[38px] w-auto max-w-[120px] sm:max-w-[168px] object-contain object-left"
                   />
                 ) : null}
                 <span
-                  className={`font-display font-semibold tracking-[0.08em] text-nav-foreground uppercase truncate max-w-[7rem] sm:max-w-none ${
-                    logoUrl ? "text-xs sm:text-[17px]" : "text-[15px] md:text-[17px]"
+                  className={`font-display font-semibold tracking-[0.06em] text-nav-foreground uppercase truncate max-w-[7rem] sm:max-w-none ${
+                    logoUrl ? "text-xs sm:text-[16px]" : "text-[15px] md:text-[17px]"
                   }`}
                 >
                   {brandName}
                 </span>
               </Link>
-              <nav className="hidden lg:flex items-center gap-1" aria-label="Principal">
+              <nav className="hidden lg:flex items-center gap-5 border-l border-white/10 pl-6 ml-1" aria-label="Principal">
                 <Link to="/products" className={navLinkClass("/products")}>
                   {t("nav.products")}
                 </Link>
@@ -339,19 +340,33 @@ export default function Header() {
               </nav>
             </div>
 
-            {/* Search (center, grows) */}
-            <div className="hidden min-w-0 flex-1 md:flex md:justify-center px-2 lg:px-6" ref={searchRef}>
-              <form onSubmit={handleSearchSubmit} className="relative w-full max-w-lg xl:max-w-2xl">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                <input
-                  type="search"
-                  autoComplete="off"
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
-                  placeholder={t("nav.search.placeholder")}
-                  className="w-full rounded-md border border-border/70 bg-white py-2.5 pl-10 pr-3 text-sm text-foreground shadow-sm outline-none transition-[box-shadow,border-color] placeholder:text-muted-foreground focus:border-accent/50 focus:ring-2 focus:ring-accent/25"
-                />
+            {/* Search — full-width row on tablet; centered column on desktop */}
+            <div
+              className="order-last md:order-none w-full md:w-auto md:flex-1 md:min-w-0 md:max-w-none flex justify-stretch md:px-2 lg:px-4"
+              ref={searchRef}
+            >
+              <form onSubmit={handleSearchSubmit} className="relative w-full md:max-w-xl lg:max-w-2xl mx-auto">
+                <div className="flex rounded-md overflow-hidden border border-border/80 bg-white shadow-sm transition-[box-shadow,border-color] focus-within:border-accent/45 focus-within:ring-2 focus-within:ring-accent/20">
+                  <div className="relative flex-1 flex items-center min-w-0">
+                    <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+                    <input
+                      type="search"
+                      autoComplete="off"
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
+                      placeholder={t("nav.search.placeholder")}
+                      className="w-full min-w-0 border-0 bg-transparent py-2.5 pl-9 pr-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="shrink-0 px-3 sm:px-4 bg-accent text-accent-foreground text-xs sm:text-sm font-semibold uppercase tracking-wide hover:brightness-105 transition-[filter] disabled:opacity-50"
+                    disabled={searchQuery.trim().length < 2}
+                  >
+                    {t("nav.search.button")}
+                  </button>
+                </div>
                 {showResults && (
                   <div className="absolute left-0 right-0 top-full z-50 mt-1.5">
                     <SearchResultsList
@@ -365,7 +380,7 @@ export default function Header() {
             </div>
 
             {/* Locale, currency, account, cart */}
-            <div className="ml-auto flex flex-shrink-0 items-center gap-0.5 sm:gap-1 md:border-l md:border-white/12 md:pl-3 lg:pl-5">
+            <div className="flex flex-shrink-0 items-center gap-0 sm:gap-0.5 md:gap-1 md:border-l md:border-white/12 md:pl-3 lg:pl-4">
             {!showAnnouncement && headerEditLink ? (
               <span className="hidden md:inline-flex mr-1 lg:mr-2">{headerEditLink}</span>
             ) : null}
@@ -469,10 +484,10 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Category strip — horizontal scroll on narrow viewports */}
+      {/* Category strip — tab-style navigation */}
       <nav className="site-header-category-strip category-bar hidden md:block" aria-label={t("footer.categories")}>
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="-mx-1 flex items-stretch justify-start gap-px overflow-x-auto py-0 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-end justify-start gap-1 overflow-x-auto py-0 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-t border-white/[0.06]">
             {categories.map((cat) => {
               const catPath = `/products/${cat.slug}`;
               const catActive = path === catPath;
@@ -480,10 +495,10 @@ export default function Header() {
                 <Link
                   key={cat.id}
                   to={catPath}
-                  className={`flex-shrink-0 whitespace-nowrap px-4 py-3 text-xs font-medium tracking-wide transition-colors lg:px-5 ${
+                  className={`site-header-cat-link flex-shrink-0 whitespace-nowrap px-3 lg:px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors border-b-2 -mb-px ${
                     catActive
-                      ? "bg-category-bar-active text-foreground shadow-sm"
-                      : "text-category-bar-foreground/95 hover:bg-white/[0.06]"
+                      ? "text-foreground border-accent bg-category-bar-active/30"
+                      : "text-category-bar-foreground/75 border-transparent hover:text-foreground hover:border-white/15 hover:bg-white/[0.04]"
                   }`}
                 >
                   {t(cat.translationKey)}
@@ -492,10 +507,10 @@ export default function Header() {
             })}
             <Link
               to="/products"
-              className={`flex-shrink-0 whitespace-nowrap px-4 py-3 text-xs font-medium tracking-wide transition-colors lg:px-5 ${
+              className={`site-header-cat-link flex-shrink-0 whitespace-nowrap px-3 lg:px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors border-b-2 -mb-px ${
                 path === "/products"
-                  ? "bg-category-bar-active text-foreground shadow-sm"
-                  : "text-category-bar-foreground/95 hover:bg-white/[0.06]"
+                  ? "text-foreground border-accent bg-category-bar-active/30"
+                  : "text-category-bar-foreground/75 border-transparent hover:text-foreground hover:border-white/15 hover:bg-white/[0.04]"
               }`}
             >
               {t("cat.shop_all")}

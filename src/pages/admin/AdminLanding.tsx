@@ -20,7 +20,6 @@ import AdminLandingTheme from "./AdminLandingTheme";
 const SECTION_LABELS: Record<string, string> = {
   site_header: "Site header (announcement bar, logo, trust chips)",
   hero: "Hero (headline, gallery, layout & CTAs)",
-  stats: "Stats bar (numbers under hero)",
   value_props: "Value propositions",
   categories_intro: "Categories section intro & “View all” label",
   featured_intro: "Featured products intro & “View all” label",
@@ -192,13 +191,6 @@ export default function AdminLanding() {
           </SectionCard>
         )}
 
-        {/* Stats */}
-        {sectionMap.stats && (
-          <SectionCard id="section-stats" title={SECTION_LABELS.stats}>
-            <StatsSectionForm section={sectionMap.stats} onSave={(d) => handleSave("stats", d)} loading={updateMutation.isPending} />
-          </SectionCard>
-        )}
-
         {/* Value props */}
         {sectionMap.value_props && (
           <SectionCard id="section-value_props" title={SECTION_LABELS.value_props}>
@@ -313,7 +305,6 @@ export default function AdminLanding() {
                       ],
                     }),
                   },
-                  { section_key: "stats", title: "", description: "", image_url: "", content: JSON.stringify([{ value: "500+", label: "SKUs in Stock" }, { value: "48h", label: "Avg. Delivery" }, { value: "15+", label: "Years Experience" }]) },
                   { section_key: "value_props", content: JSON.stringify([{ icon: "Shield", text: "Certified & Tested" }, { icon: "Truck", text: "Fast Delivery" }, { icon: "Wrench", text: "Expert Support" }, { icon: "CheckCircle", text: "In Stock" }]) },
                   { section_key: "categories_intro", title: "Browse Solutions", description: "Explore Product Categories", content: JSON.stringify({ view_all_label: "View all products" }) },
                   { section_key: "featured_intro", title: "In High Demand", description: "Popular Products", content: JSON.stringify({ view_all_label: "View all products" }) },
@@ -663,69 +654,6 @@ function HeroSectionForm({
         <Field label="Secondary CTA label" value={secondaryLabel} onChange={setSecondaryLabel} />
         <Field label="Secondary CTA link" value={secondaryLink} onChange={setSecondaryLink} />
       </div>
-      <button
-        type="button"
-        onClick={save}
-        disabled={loading}
-        className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        <Save className="h-4 w-4" /> Save
-      </button>
-    </div>
-  );
-}
-
-function StatsSectionForm({
-  section,
-  onSave,
-  loading,
-}: {
-  section: { content: string };
-  onSave: (d: { content?: string }) => void;
-  loading: boolean;
-}) {
-  const items = parseJson<{ value: string; label: string }[]>(section.content, [
-    { value: "500+", label: "SKUs in Stock" },
-    { value: "48h", label: "Avg. Delivery" },
-    { value: "15+", label: "Years Experience" },
-  ]);
-  const [stats, setStats] = useState(items);
-
-  useEffect(() => {
-    setStats(parseJson<{ value: string; label: string }[]>(section.content, [
-      { value: "500+", label: "SKUs in Stock" },
-      { value: "48h", label: "Avg. Delivery" },
-      { value: "15+", label: "Years Experience" },
-    ]));
-  }, [section.content]);
-
-  const update = (i: number, key: "value" | "label", v: string) => {
-    const next = [...stats];
-    next[i] = { ...next[i], [key]: v };
-    setStats(next);
-  };
-
-  const save = () => onSave({ content: JSON.stringify(stats) });
-
-  return (
-    <div className="space-y-4">
-      {stats.map((s, i) => (
-        <div key={i} className="flex gap-3 items-center">
-          <input
-            value={s.value}
-            onChange={(e) => update(i, "value", e.target.value)}
-            placeholder="500+"
-            className="w-24 px-3 py-2 border border-border rounded-sm text-sm bg-background"
-          />
-          <input
-            value={s.label}
-            onChange={(e) => update(i, "label", e.target.value)}
-            placeholder="SKUs in Stock"
-            className="flex-1 px-3 py-2 border border-border rounded-sm text-sm bg-background"
-          />
-        </div>
-      ))}
       <button
         type="button"
         onClick={save}

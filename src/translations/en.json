@@ -2,6 +2,7 @@
   "site.name": "REMQUIP",
   "site.tagline": "Heavy-Duty Parts Distributor",
   "nav.search.placeholder": "Search products, SKUs...",
+  "nav.search.button": "Search",
   "nav.signin": "Sign in",
   "nav.register": "Register",
   "nav.or": "or",

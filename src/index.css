@@ -245,9 +245,15 @@
     -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.12);
   }
+  .site-header-main {
+    @apply min-w-0;
+  }
   .site-header-category-strip {
     @apply border-t border-white/5;
     background-color: hsl(var(--category-bar) / 0.98);
+  }
+  .site-header-cat-link:focus-visible {
+    @apply outline-none ring-2 ring-accent/40 ring-offset-2 ring-offset-[hsl(var(--category-bar))];
   }
 
   /* Contact page — Leaflet (Carto light + accent pin) */

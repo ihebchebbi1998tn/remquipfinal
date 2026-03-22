@@ -43,7 +43,6 @@ export default function HomePage() {
   const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "manager";
   const [featuredProducts, setFeaturedProducts] = useState<StorefrontProduct[]>([]);
   const [categoriesList, setCategoriesList] = useState<ProductCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const { data: sectionRows = [] } = useCMSPageContent("home", lang);
   const sections = useMemo(() => {
@@ -66,12 +65,6 @@ export default function HomePage() {
   const featIntroExtras = parseJson<{ view_all_label?: string }>(featIntro.content, {});
   const viewAllCategories = catIntroExtras.view_all_label?.trim() || t("products.view_all");
   const viewAllFeatured = featIntroExtras.view_all_label?.trim() || t("products.view_all");
-  const statsSection = sections.stats ?? {};
-  const statsItems = parseJson<{ value: string; label: string }[]>(statsSection.content, [
-    { value: "500+", label: "SKUs in Stock" },
-    { value: "48h", label: "Avg. Delivery" },
-    { value: "15+", label: "Years Experience" },
-  ]);
   const whyRemquip = sections.why_remquip ?? {};
   const whyData = parseJson<{ subtitle?: string; cards?: { icon: string; title: string; desc: string }[] }>(
     whyRemquip.content,
@@ -95,8 +88,6 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
-        
         // Try to fetch from API, fallback to hardcoded data if API fails
         try {
           const featuredResponse = await api.getFeaturedProducts();
@@ -119,8 +110,6 @@ export default function HomePage() {
         }
       } catch {
         // Error handled by individual try blocks
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -132,22 +121,6 @@ export default function HomePage() {
       {/* Hero */}
       <EditableSection sectionKey="hero" showEdit={isAdmin} variant="dark">
         <LandingHero hero={hero} heroCta={heroCta} />
-      </EditableSection>
-
-      {/* Stats (CMS: stats) */}
-      <EditableSection sectionKey="stats" showEdit={isAdmin}>
-        <section className="border-b border-border bg-muted/35">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 py-10 md:py-12 text-center">
-              {statsItems.map((s, i) => (
-                <div key={`${s.label}-${i}`}>
-                  <p className="font-display landing-stats-value font-bold text-foreground tracking-tight">{s.value}</p>
-                  <p className="landing-stats-label text-muted-foreground mt-1.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
       </EditableSection>
 
       {/* Value props */}
