@@ -1,10 +1,24 @@
-// Admin API Integration Layer
-// Prepared for backend connection
-// All endpoints are designed to work with a REST API backend
+/**
+ * Admin API Integration Layer
+ * 
+ * @deprecated This file is deprecated. Use the main api.ts instead which has
+ * comprehensive admin functionality including:
+ * - User management (getUsers, createUser, updateUser, deleteUser)
+ * - Permissions (getUserPermissions, updateUserPermissions)
+ * - CMS (getCMSPages, createCMSPage, updateCMSPage, deleteCMSPage)
+ * - Access Control (via admin permissions endpoints)
+ * 
+ * Import from: import { api } from '@/lib/api';
+ * 
+ * This file is kept for backwards compatibility but should not be used
+ * for new implementations.
+ */
 
 import { AdminUser, AdminPage, AccessRecord, BulkAccessRequest } from "@/types/admin";
+import { API_BASE_URL } from "@/config/constants";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+// Use the same token key as main API for consistency
+const TOKEN_STORAGE_KEY = "remquip_auth_token";
 
 export const apiAdmin = {
   // ==================== USERS ====================
@@ -16,7 +30,7 @@ export const apiAdmin = {
     
     const response = await fetch(`${API_BASE_URL}/users?${params}`, {
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
     });
@@ -28,7 +42,7 @@ export const apiAdmin = {
   async getUser(userId: string): Promise<AdminUser> {
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
       },
     });
     
@@ -45,7 +59,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
@@ -59,7 +73,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       method: "PATCH",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
@@ -73,7 +87,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       method: "DELETE",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
       },
     });
     
@@ -88,7 +102,7 @@ export const apiAdmin = {
     
     const response = await fetch(`${API_BASE_URL}/pages?${params}`, {
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
       },
     });
     
@@ -99,7 +113,7 @@ export const apiAdmin = {
   async getPage(pageId: string): Promise<AdminPage> {
     const response = await fetch(`${API_BASE_URL}/pages/${pageId}`, {
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
       },
     });
     
@@ -111,7 +125,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/pages`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
@@ -125,7 +139,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/pages/${pageId}`, {
       method: "PATCH",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
@@ -139,7 +153,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/pages/${pageId}`, {
       method: "DELETE",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
       },
     });
     
@@ -158,7 +172,7 @@ export const apiAdmin = {
     
     const response = await fetch(`${API_BASE_URL}/access?${params}`, {
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
       },
     });
     
@@ -174,7 +188,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/access`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ userId, pageId, ...permissions }),
@@ -192,7 +206,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/access/${userId}/${pageId}`, {
       method: "PATCH",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(permissions),
@@ -206,7 +220,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/access/${userId}/${pageId}`, {
       method: "DELETE",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
       },
     });
     
@@ -219,7 +233,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/access/bulk-assign`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(request),
@@ -233,7 +247,7 @@ export const apiAdmin = {
     const response = await fetch(`${API_BASE_URL}/access/bulk-revoke`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Authorization": `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ userIds, pageIds }),
