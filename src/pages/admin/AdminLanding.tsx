@@ -16,6 +16,7 @@ import { useStorefrontRates } from "@/hooks/useApi";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import AdminLandingTheme from "./AdminLandingTheme";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 const SECTION_LABELS: Record<string, string> = {
   site_header: "Site header (announcement bar, logo, trust chips)",
@@ -124,9 +125,8 @@ export default function AdminLanding() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px] gap-2">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
-        <span className="text-muted-foreground">Loading landing content...</span>
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading landing content" />
       </div>
     );
   }

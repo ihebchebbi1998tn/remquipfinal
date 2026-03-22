@@ -6,6 +6,7 @@ import { useProduct, useCategories } from "@/hooks/useApi";
 import { api, unwrapApiList, resolveUploadImageUrl, type ProductCategory } from "@/lib/api";
 import { productDetailHref } from "@/lib/storefront-product";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 type ProductStatus = "active" | "draft" | "archived";
 
@@ -300,9 +301,8 @@ export default function AdminProductEdit() {
 
   if (!isNew && productLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] gap-2 text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        Loading product…
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading product" />
       </div>
     );
   }

@@ -10,6 +10,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { CartProvider } from "@/contexts/CartContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import PublicLayout from "@/components/layout/PublicLayout";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 // Lazy-loaded routes
 const HomePage = lazy(() => import("@/pages/HomePage"));
@@ -47,11 +48,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const queryClient = new QueryClient();
 
 function PageLoader() {
-  return (
-    <div className="min-h-[400px] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  return <RemquipLoadingScreen variant="fullscreen" message="Loading" />;
 }
 
 const App = () => (

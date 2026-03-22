@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowUpDown, ArrowLeftRight, Search, ChevronDown, Chevro
 import { useProducts, useLowStockProducts, useInventoryLogs, useAdjustInventory } from "@/hooks/useApi";
 import { Product, InventoryLog, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 export default function AdminInventory() {
   const [page, setPage] = useState(1);
@@ -65,9 +66,8 @@ export default function AdminInventory() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <span className="ml-2 text-muted-foreground">Loading inventory...</span>
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading inventory" />
       </div>
     );
   }

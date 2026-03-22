@@ -5,6 +5,7 @@ import {
   BarChart3, Settings, ChevronLeft, Menu, X, Tag, Shield, Layers, LayoutTemplate,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { usePermissions } from "@/hooks/usePermissions";
 
 const navItems = [
@@ -32,14 +33,7 @@ export default function AdminLayout() {
 
   // Show loading state while checking auth
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-foreground text-sm">Verifying admin access...</p>
-        </div>
-      </div>
-    );
+    return <RemquipLoadingScreen variant="fullscreen" message="Verifying admin access" />;
   }
 
   // Redirect to login if not authenticated

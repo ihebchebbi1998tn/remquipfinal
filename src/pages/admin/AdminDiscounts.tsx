@@ -3,6 +3,7 @@ import { Plus, Search, Edit, Trash2, Copy, Tag, Percent, DollarSign, Calendar, C
 import { useDiscounts, useApiMutation } from "@/hooks/useApi";
 import { api, Discount, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 const statusStyles: Record<string, string> = {
   active: "badge-success",
@@ -162,9 +163,8 @@ export default function AdminDiscounts() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <span className="ml-2 text-muted-foreground">Loading discounts...</span>
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading discounts" />
       </div>
     );
   }

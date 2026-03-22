@@ -9,6 +9,7 @@ import {
 } from "@/hooks/useApi";
 import { unwrapApiList } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 const periods = ["7d", "30d", "90d", "12m"] as const;
 
@@ -142,9 +143,8 @@ export default function AdminAnalytics() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <span className="ml-2 text-muted-foreground">Loading analytics...</span>
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading analytics" />
       </div>
     );
   }

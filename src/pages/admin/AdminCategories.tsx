@@ -14,6 +14,7 @@ import { localeLabel } from "@/contexts/LanguageContext";
 import { useAdminCategoriesList, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
 import { api, unwrapApiList, unwrapPagination, type ProductCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 type LocForm = { name: string; description: string };
 
@@ -175,9 +176,8 @@ export default function AdminCategories() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[320px] gap-2 text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        Loading categories…
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading categories" />
       </div>
     );
   }

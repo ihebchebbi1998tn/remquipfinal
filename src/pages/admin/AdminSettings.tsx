@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Save, CheckCircle, Loader2, Upload, Trash2, ExternalLink } from "lucide-react";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import {
   useAdminSettingsList,
   usePatchSettingsBulk,
@@ -85,9 +86,8 @@ export default function AdminSettings() {
 
   if (loadingSettings && rows.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[320px] gap-2 text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        Loading settings…
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading settings" />
       </div>
     );
   }

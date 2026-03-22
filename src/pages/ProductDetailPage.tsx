@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from "react"
 import { useParams, Link } from "react-router-dom";
 import {
   Minus, Plus, ShoppingCart, CheckCircle, ChevronRight, ChevronLeft,
-  ZoomIn, X, Truck, Shield, FileText, Package, Loader2,
+  ZoomIn, X, Truck, Shield, FileText, Package,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useProduct, useProducts } from "@/hooks/useApi";
 import { unwrapApiList, type Product } from "@/lib/api";
 import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
+import { RemquipPageBlockLoader } from "@/components/RemquipLoadingScreen";
 
 export default function ProductDetailPage() {
   const { slug: routeParam } = useParams<{ slug: string }>();
@@ -77,9 +78,8 @@ export default function ProductDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-16 flex items-center justify-center gap-2 text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        Loading…
+      <div className="container mx-auto px-4">
+        <RemquipPageBlockLoader message={t("products.loading")} />
       </div>
     );
   }

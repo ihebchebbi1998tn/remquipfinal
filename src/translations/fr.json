@@ -96,6 +96,7 @@
   "products.count": "produits",
   "products.specifications": "Spécifications",
   "products.not_found": "Aucun produit trouvé dans cette catégorie.",
+  "products.loading": "Chargement du catalogue",
   "products.related": "Produits connexes",
   "products.compatibility": "Compatibilité véhicules",
   "products.request_quote": "Demander un devis",

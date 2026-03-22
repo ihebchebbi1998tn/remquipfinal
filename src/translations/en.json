@@ -96,6 +96,7 @@
   "products.count": "products",
   "products.specifications": "Specifications",
   "products.not_found": "No products found in this category.",
+  "products.loading": "Loading catalog",
   "products.related": "Related Products",
   "products.compatibility": "Vehicle Compatibility",
   "products.request_quote": "Request a Quote",

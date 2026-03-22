@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Grid3x3, User, AlertCircle, Eye, Edit, Trash2, Copy, Loader2 } from "lucide-react";
+import { Plus, Search, Grid3x3, User, AlertCircle, Eye, Edit, Trash2, Copy } from "lucide-react";
 import { AdminUser, AdminPage, AccessRecord } from "@/types/admin";
 import { useUsers, useAllPermissions, useUpdateUserPermissions } from "@/hooks/useApi";
 import { api, unwrapApiList, type User } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 // Fallback when /admin/permissions has no `pages` yet (UI-only; persist uses DB page ids when API provides them)
 const fallbackAdminPages: AdminPage[] = [
@@ -248,8 +249,8 @@ export default function AdminAccess() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center py-16 min-h-[280px]">
+          <RemquipLoadingScreen variant="embedded" message="Loading access" />
         </div>
       )}
 

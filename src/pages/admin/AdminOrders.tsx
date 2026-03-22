@@ -3,6 +3,7 @@ import { Eye, Search, X, ChevronDown, ChevronUp, Package, Truck, CheckCircle, Cl
 import { useOrders, useOrder, useApiMutation } from "@/hooks/useApi";
 import { api, Order, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 const statusStyles: Record<string, string> = {
   pending: "badge-warning",
@@ -140,9 +141,8 @@ export default function AdminOrders() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <span className="ml-2 text-muted-foreground">Loading orders...</span>
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading orders" />
       </div>
     );
   }

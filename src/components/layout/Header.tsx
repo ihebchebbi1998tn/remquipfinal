@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, ChevronDown, CheckCircle, Loader2, Truck, Pencil } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, X, ChevronDown, CheckCircle, Truck, Pencil } from "lucide-react";
 import { useLanguage, localeLabel, localeFlag } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
@@ -11,6 +11,7 @@ import { api, unwrapApiList, type ApiResponse, type Product, resolveUploadImageU
 import { usePublicSettings } from "@/hooks/useApi";
 import { useCMSPageContent } from "@/hooks/useCMS";
 import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
+import { RemquipSearchPulse } from "@/components/RemquipLoadingScreen";
 
 function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   if (!raw?.trim()) return fallback;
@@ -199,12 +200,7 @@ export default function Header() {
           </p>
         </div>
       )}
-      {loading && (
-        <div className="flex items-center justify-center gap-2.5 px-4 py-6 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin text-accent" />
-          Searching…
-        </div>
-      )}
+      {loading && <RemquipSearchPulse />}
       {!loading &&
         results.map((p) => (
           <button

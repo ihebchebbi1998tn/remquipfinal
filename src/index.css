@@ -317,6 +317,143 @@
     box-shadow: none;
   }
 
+  /* REMQUIP — branded loading (logo wave, aurora, shimmer bar) */
+  @keyframes remquip-loader-aurora {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: translateX(-8%) skewX(-6deg);
+    }
+    50% {
+      opacity: 0.55;
+      transform: translateX(8%) skewX(4deg);
+    }
+  }
+  @keyframes remquip-loader-char {
+    0%,
+    100% {
+      opacity: 0.38;
+      transform: translateY(0);
+    }
+    40% {
+      opacity: 1;
+      transform: translateY(-6px);
+    }
+    65% {
+      opacity: 0.72;
+      transform: translateY(-2px);
+    }
+  }
+  @keyframes remquip-loader-shimmer {
+    0% {
+      transform: translateX(-140%);
+    }
+    100% {
+      transform: translateX(320%);
+    }
+  }
+  @keyframes remquip-loader-orbit {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 1px hsl(var(--accent) / 0.14),
+        0 0 28px hsl(var(--accent) / 0.08);
+      transform: scale(1);
+      border-color: hsl(var(--accent) / 0.22);
+    }
+    50% {
+      box-shadow:
+        0 0 0 2px hsl(var(--accent) / 0.32),
+        0 0 44px hsl(var(--accent) / 0.16);
+      transform: scale(1.06);
+      border-color: hsl(var(--accent) / 0.38);
+    }
+  }
+  @keyframes remquip-search-pulse {
+    0%,
+    100% {
+      opacity: 0.2;
+      transform: scale(0.82);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
+  .remquip-loader-root {
+    position: relative;
+    isolation: isolate;
+  }
+  .remquip-loader-fullscreen {
+    background:
+      radial-gradient(ellipse 90% 70% at 50% -18%, hsl(var(--accent) / 0.16), transparent 58%),
+      radial-gradient(ellipse 55% 45% at 105% 95%, hsl(var(--primary) / 0.09), transparent 52%),
+      hsl(var(--background));
+  }
+  .remquip-loader-aurora {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      hsl(var(--accent) / 0.07) 42%,
+      hsl(var(--accent) / 0.12) 50%,
+      hsl(var(--accent) / 0.06) 58%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: remquip-loader-aurora 5s ease-in-out infinite;
+  }
+  .remquip-loader-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, black 15%, transparent 70%);
+  }
+  .remquip-loader-wordmark {
+    letter-spacing: 0.08em;
+  }
+  .remquip-loader-wordmark--sm .remquip-loader-char {
+    font-size: clamp(1.125rem, 3.5vw, 1.875rem);
+  }
+  .remquip-loader-char {
+    display: inline-block;
+    font-size: clamp(1.625rem, 5.5vw, 3.125rem);
+    letter-spacing: 0.06em;
+    animation: remquip-loader-char 1.45s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    will-change: transform, opacity;
+  }
+  .remquip-loader-track {
+    position: relative;
+  }
+  .remquip-loader-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--accent) / 0.25),
+      hsl(var(--accent)),
+      hsl(var(--accent) / 0.85),
+      transparent
+    );
+    animation: remquip-loader-shimmer 1.5s ease-in-out infinite;
+    will-change: transform;
+  }
+  .remquip-loader-orbit {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--accent) / 0.22);
+    animation: remquip-loader-orbit 2.4s ease-in-out infinite;
+  }
+  .remquip-search-pulse-dot {
+    animation: remquip-search-pulse 0.9s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
   /* Homepage — design tokens from GET /landing-theme (scoped variables on .landing-theme-scope) */
   .landing-theme-scope {
     --landing-font-display: 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;

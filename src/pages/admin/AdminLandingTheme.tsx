@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, Palette, Save } from "lucide-react";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { useLandingTheme, useUpdateLandingTheme } from "@/hooks/useApi";
 import type { LandingThemePayload } from "@/lib/api";
 import { LANDING_COLOR_PRESETS, LANDING_FONT_SIZE_KEYS } from "@/lib/landingTheme";
@@ -106,8 +107,8 @@ export default function AdminLandingTheme() {
 
   if (isLoading) {
     return (
-      <div className="dashboard-card flex items-center gap-2 text-sm text-muted-foreground py-8">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading theme…
+      <div className="dashboard-card flex items-center justify-center py-10">
+        <RemquipLoadingScreen variant="panel" message="Loading theme" />
       </div>
     );
   }

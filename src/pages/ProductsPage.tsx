@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { SlidersHorizontal, X, Search, Loader2 } from "lucide-react";
+import { SlidersHorizontal, X, Search } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
@@ -8,6 +8,7 @@ import { categories, products } from "@/config/products";
 import { useProducts, useCategories } from "@/hooks/useApi";
 import { unwrapApiList, type Product, type ProductCategory } from "@/lib/api";
 import { apiProductToStorefront, productDetailHref } from "@/lib/storefront-product";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 type SortOption = "featured" | "price_low" | "price_high" | "newest";
 
@@ -226,8 +227,8 @@ export default function ProductsPage() {
           </div>
 
           {isLoading ? (
-            <div className="col-span-full flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="col-span-full flex justify-center py-12 md:py-16">
+              <RemquipLoadingScreen variant="embedded" message={t("products.loading")} />
             </div>
           ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">

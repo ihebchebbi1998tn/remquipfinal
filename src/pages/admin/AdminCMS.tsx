@@ -6,6 +6,7 @@ import { api, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import AdminContactCopy from "./AdminContactCopy";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 interface CMSPage {
   id: string;
@@ -246,9 +247,8 @@ export default function AdminCMS() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <span className="ml-2 text-muted-foreground">Loading CMS pages...</span>
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading CMS pages" />
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Globe, Loader2, Save } from "lucide-react";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { useStorefrontRates, useCMSPage } from "@/hooks/useApi";
 import { useCMSPageContent, useUpdateCMSContent } from "@/hooks/useCMS";
 import { localeLabel } from "@/contexts/LanguageContext";
@@ -197,8 +198,8 @@ export default function AdminContactCopy() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading sections…
+        <div className="flex items-center justify-center py-10">
+          <RemquipLoadingScreen variant="panel" message="Loading sections" />
         </div>
       ) : (
         <div className="space-y-6">

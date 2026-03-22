@@ -4,6 +4,7 @@ import { useUsers, useApiMutation } from "@/hooks/useApi";
 import { api, unwrapApiList, unwrapPagination, User } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 type UserRole = "admin" | "manager" | "user";
 type UserStatus = "active" | "inactive" | "suspended";
@@ -160,9 +161,8 @@ export default function AdminUsers() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <span className="ml-2 text-muted-foreground">Loading users...</span>
+      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
+        <RemquipLoadingScreen variant="embedded" message="Loading users" />
       </div>
     );
   }

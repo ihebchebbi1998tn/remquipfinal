@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { RemquipLoadingScreen } from '@/components/RemquipLoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -31,14 +32,7 @@ export default function ProtectedRoute({
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-foreground text-sm">Verifying access...</p>
-        </div>
-      </div>
-    );
+    return <RemquipLoadingScreen variant="fullscreen" message="Verifying access" />;
   }
 
   // Not authenticated
