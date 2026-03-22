@@ -15,7 +15,7 @@ export const FLAT_SHIPPING_RATE = 25;
 
 /**
  * Backend API origin. Must use **HTTPS** when the app is served over HTTPS (e.g. Vercel), or the browser blocks requests (mixed content).
- * Must match the folder where `api.php` lives (e.g. `.../remquip/backend`). Requests use `.../api.php?path=...`.
+ * Folder that contains `api.php` and `cms/*.php` (e.g. `.../remquip/backend`). Most API calls use `api.php?path=…`; some use direct `*.php`.
  * Optional: set `VITE_API_BASE_URL` in Vercel / `.env` for a different API host (no trailing slash).
  */
 const envApi =

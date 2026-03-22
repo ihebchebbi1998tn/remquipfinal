@@ -1,10 +1,10 @@
 /**
- * Logical API paths (no .php). The client sends them as `api.php?path=<this without leading slash>`.
+ * Relative to `API_BASE_URL`. Most paths go through `api.php?path=…`; entries ending in `.php` are called as real scripts.
  */
 
 export const API_ENDPOINTS = {
-  /** GET — Backend `index.php` case `health` (no auth). */
-  HEALTH: '/health',
+  /** GET — `health.php` (same handler as `api.php?path=health`). */
+  HEALTH: '/health.php',
 
   /** Files land under `Backend/uploads/*` — see `Backend/routes/uploads.php`. */
   UPLOADS: {
@@ -167,26 +167,30 @@ export const API_ENDPOINTS = {
   },
 
   // ==================== CMS ENDPOINTS ====================
+  /** Public reads use real `Backend/cms/*.php` files; admin writes still use logical paths → api.php. */
   CMS: {
-    PAGES: '/cms/pages',
-    CREATE_PAGE: '/cms/pages',
-    GET_PAGE: '/cms/pages/:slug',
+    PAGES: '/cms/pages.php',
+    CREATE_PAGE: '/cms/pages.php',
+    /** GET ?slug=&locale= */
+    GET_PAGE: '/cms/page.php',
     UPDATE_PAGE: '/cms/pages/:id',
     DELETE_PAGE: '/cms/pages/:id',
-    PAGE_CONTENT: '/cms/pages/:pageName/content',
-    SECTION_CONTENT: '/cms/pages/:pageName/sections/:sectionKey',
+    /** GET ?slug=&locale= */
+    PAGE_CONTENT: '/cms/page-content.php',
+    /** GET ?slug=&section= */
+    SECTION_CONTENT: '/cms/section.php',
     /** POST body creates/updates a section on a page (Backend: cms.php). */
     CONTENT: '/cms/content',
     /** `id` is `pageUuid:sectionKey` (URL-encoded in client). */
     CONTENT_BY_ID: '/cms/content/:id',
-    IMAGES_UPLOAD: '/cms/images/upload',
+    IMAGES_UPLOAD: '/cms/upload-image.php',
     /** GET/PUT — admin; per-locale title/excerpt/content */
     PAGE_TRANSLATIONS: '/cms/pages/:id/translations',
   },
 
   /** Hero / marketing banners (Backend routes/cms.php). */
   CMS_BANNERS: {
-    LIST: '/cms/banners',
+    LIST: '/cms/banners.php',
     CREATE: '/cms/banners',
     UPDATE: '/cms/banners/:id',
     DELETE: '/cms/banners/:id',

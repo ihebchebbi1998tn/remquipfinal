@@ -1,7 +1,7 @@
 /**
  * API Service Layer
  * Handles all API requests to the remquip backend
- * Backend: `API_BASE_URL` + `/api.php?path=...` (see `Backend/api.php`).
+ * Backend: `API_BASE_URL` + `/api.php?path=...`, or direct `*.php` for some CMS/health routes (see `buildApiUrl`).
  * Includes comprehensive error handling and logging
  */
 
@@ -460,14 +460,18 @@ class APIService {
   }
 
   /**
-   * All JSON API calls go through `Backend/api.php?path=...` so hosting works without mod_rewrite.
-   * `endpoint` is still the logical path (e.g. /auth/login, /cms/pages/home?locale=en).
+   * - Paths whose last segment ends with `.php` are requested directly (e.g. `cms/page-content.php?slug=home`).
+   * - All other logical paths use `api.php?path=...` (no mod_rewrite required).
    */
   private buildApiUrl(endpoint: string): string {
     const base = this.baseUrl.replace(/\/+$/, "");
     const raw = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
     const qIdx = raw.indexOf("?");
-    const pathOnly = qIdx >= 0 ? raw.slice(0, qIdx) : raw;
+    const pathOnly = (qIdx >= 0 ? raw.slice(0, qIdx) : raw).trim();
+    const lastSeg = pathOnly.split("/").pop() ?? "";
+    if (lastSeg.toLowerCase().endsWith(".php")) {
+      return `${base}/${raw}`;
+    }
     const params = new URLSearchParams();
     params.set("path", pathOnly);
     if (qIdx >= 0) {
@@ -1288,12 +1292,9 @@ class APIService {
 
   async getCMSPage(slug: string, locale?: string): Promise<ApiResponse> {
     const p = new URLSearchParams();
+    p.set('slug', slug);
     if (locale) p.set('locale', locale);
-    const qs = p.toString();
-    return this.request(
-      'GET',
-      `${API_ENDPOINTS.CMS.GET_PAGE.replace(':slug', encodeURIComponent(slug))}${qs ? `?${qs}` : ''}`
-    );
+    return this.request('GET', `${API_ENDPOINTS.CMS.GET_PAGE}?${p.toString()}`);
   }
 
   async getCMSPageTranslations(pageId: string): Promise<ApiResponse> {
@@ -1308,21 +1309,17 @@ class APIService {
   }
 
   async getCMSPageContent(pageName: string, locale?: string): Promise<ApiResponse<any>> {
-    const qs = locale ? `?locale=${encodeURIComponent(locale)}` : '';
-    return this.request(
-      'GET',
-      `${API_ENDPOINTS.CMS.PAGE_CONTENT.replace(':pageName', encodeURIComponent(pageName))}${qs}`
-    );
+    const p = new URLSearchParams();
+    p.set('slug', pageName);
+    if (locale) p.set('locale', locale);
+    return this.request('GET', `${API_ENDPOINTS.CMS.PAGE_CONTENT}?${p.toString()}`);
   }
 
   async getCMSSectionContent(pageName: string, sectionKey: string): Promise<ApiResponse<any>> {
-    return this.request(
-      'GET',
-      API_ENDPOINTS.CMS.SECTION_CONTENT.replace(':pageName', encodeURIComponent(pageName)).replace(
-        ':sectionKey',
-        encodeURIComponent(sectionKey)
-      )
-    );
+    const p = new URLSearchParams();
+    p.set('slug', pageName);
+    p.set('section', sectionKey);
+    return this.request('GET', `${API_ENDPOINTS.CMS.SECTION_CONTENT}?${p.toString()}`);
   }
 
   async createCMSPage(data: any): Promise<ApiResponse> {
