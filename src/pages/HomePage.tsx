@@ -5,10 +5,12 @@ import { Shield, Truck, Wrench, CheckCircle, ArrowRight, Package, Phone, Users, 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { categories } from "@/config/products";
 import { api, ProductCategory, unwrapApiList } from "@/lib/api";
 import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
 import { useCMSPage } from "@/hooks/useApi";
+import { EditableSection } from "@/components/EditableSection";
 import heroImage from "@/assets/images/hero-truck.jpg";
 import warehouseImage from "@/assets/images/warehouse-banner.jpg";
 
@@ -37,6 +39,8 @@ export default function HomePage() {
   const { t, lang } = useLanguage();
   const { formatPrice } = useCurrency();
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "manager";
   const [featuredProducts, setFeaturedProducts] = useState<StorefrontProduct[]>([]);
   const [categoriesList, setCategoriesList] = useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,11 +63,6 @@ export default function HomePage() {
     hero.content,
     {}
   );
-  const stats = parseJson<{ value: string; label: string }[]>(sections.stats?.content, [
-    { value: "500+", label: "SKUs in Stock" },
-    { value: "48h", label: "Avg. Delivery" },
-    { value: "15+", label: "Years Experience" },
-  ]);
   const valueProps = parseJson<{ icon: string; text: string }[]>(sections.value_props?.content, [
     { icon: "Shield", text: "Certified & Tested" },
     { icon: "Truck", text: "Fast Delivery" },
@@ -124,6 +123,7 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
+      <EditableSection sectionKey="hero" showEdit={isAdmin}>
       <section className="relative min-h-[500px] sm:min-h-[580px] md:min-h-[680px] flex items-center overflow-hidden bg-tertiary">
         <img
           src={heroImage}
@@ -168,24 +168,12 @@ export default function HomePage() {
               </div>
             </motion.div>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-16 md:mt-20 grid grid-cols-3 gap-6 sm:gap-8 max-w-2xl"
-          >
-            {stats.map((stat) => (
-              <div key={stat.label} className="border-l border-accent/40 pl-4 sm:pl-6">
-                <p className="text-3xl sm:text-4xl font-bold text-accent font-display mb-1">{stat.value}</p>
-                <p className="text-primary-foreground/70 text-xs sm:text-sm font-medium">{stat.label}</p>
-              </div>
-            ))}
-          </motion.div>
         </div>
       </section>
+      </EditableSection>
 
       {/* Value props */}
+      <EditableSection sectionKey="value_props" showEdit={isAdmin}>
       <section className="bg-background border-b border-border/80">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="flex flex-wrap justify-center gap-x-10 gap-y-5 py-6 sm:py-7">
@@ -201,9 +189,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </EditableSection>
 
       {/* Categories */}
-      <section id="categories" className="py-20 md:py-28 bg-background">
+      <EditableSection sectionKey="categories_intro" showEdit={isAdmin} id="categories">
+      <section className="py-20 md:py-28 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="flex items-end justify-between mb-12">
             <div>
@@ -246,9 +236,11 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+      </EditableSection>
 
       {/* Featured products */}
-      <section id="products" className="py-20 md:py-28 bg-muted/40">
+      <EditableSection sectionKey="featured_intro" showEdit={isAdmin} id="products">
+      <section className="py-20 md:py-28 bg-muted/40">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="flex items-end justify-between mb-12">
             <div>
@@ -312,9 +304,11 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+      </EditableSection>
 
       {/* Why REMQUIP */}
-      <section id="about" className="py-20 md:py-28 bg-background">
+      <EditableSection sectionKey="why_remquip" showEdit={isAdmin} id="about">
+      <section className="py-20 md:py-28 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="text-center mb-14 max-w-2xl mx-auto">
             <p className="section-eyebrow mb-2">{whyRemquip.title || "Why Choose REMQUIP"}</p>
@@ -344,9 +338,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </EditableSection>
 
       {/* Wholesale CTA */}
-      <section id="wholesale" className="border-t border-border overflow-hidden">
+      <EditableSection sectionKey="wholesale_cta" showEdit={isAdmin} id="wholesale">
+      <section className="border-t border-border overflow-hidden">
         <div className="grid md:grid-cols-2 min-h-[320px] md:min-h-[380px]">
           <div className="flex flex-col justify-center px-6 sm:px-8 lg:px-12 py-14 md:py-20 order-2 md:order-1 max-w-xl">
             <p className="section-eyebrow mb-3">{wholesaleCta.title || "Fleet Solutions"}</p>
@@ -381,6 +377,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </EditableSection>
     </>
   );
 }

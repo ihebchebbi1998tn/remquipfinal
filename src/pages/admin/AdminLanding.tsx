@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Loader2,
   Globe,
@@ -8,7 +9,7 @@ import {
   AlertCircle,
   LayoutTemplate,
 } from "lucide-react";
-import { useCMSPageContent, useUpdateCMSContent } from "@/hooks/useCMS";
+import { useCMSPageContent, useUpdateCMSContent, useCreateCMSContent } from "@/hooks/useCMS";
 import { useStorefrontRates } from "@/hooks/useApi";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
@@ -34,17 +35,19 @@ function parseJson<T>(raw: string, fallback: T): T {
 }
 
 function SectionCard({
+  id,
   title,
   children,
   defaultOpen = false,
 }: {
+  id?: string;
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-card">
+    <div id={id} className="border border-border rounded-lg overflow-hidden bg-card scroll-mt-24">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -72,8 +75,19 @@ export default function AdminLanding() {
   const defaultLocale = supportedLocales[0] ?? "en";
   const [activeLocale, setActiveLocale] = useState(defaultLocale);
 
-  const { data: sections = [], isLoading, isError } = useCMSPageContent("home", activeLocale);
+  const location = useLocation();
+  const { data: sections = [], isLoading, isError, refetch } = useCMSPageContent("home", activeLocale);
   const updateMutation = useUpdateCMSContent();
+  const createMutation = useCreateCMSContent();
+
+  // Scroll to section when hash is present (e.g. from landing page Edit links)
+  useEffect(() => {
+    const hash = location.hash?.slice(1);
+    if (hash?.startsWith("section-")) {
+      const el = document.getElementById(hash);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [location.hash, sections.length]);
 
   const sectionMap = Object.fromEntries(
     sections.map((s: { section_key: string }) => [s.section_key, s])
@@ -148,56 +162,83 @@ export default function AdminLanding() {
       <div className="space-y-4">
         {/* Hero */}
         {sectionMap.hero && (
-          <SectionCard title={SECTION_LABELS.hero} defaultOpen>
+          <SectionCard id="section-hero" title={SECTION_LABELS.hero} defaultOpen>
             <HeroSectionForm section={sectionMap.hero} onSave={(d) => handleSave("hero", d)} loading={updateMutation.isPending} />
           </SectionCard>
         )}
 
         {/* Stats */}
         {sectionMap.stats && (
-          <SectionCard title={SECTION_LABELS.stats}>
+          <SectionCard id="section-stats" title={SECTION_LABELS.stats}>
             <StatsSectionForm section={sectionMap.stats} onSave={(d) => handleSave("stats", d)} loading={updateMutation.isPending} />
           </SectionCard>
         )}
 
         {/* Value props */}
         {sectionMap.value_props && (
-          <SectionCard title={SECTION_LABELS.value_props}>
+          <SectionCard id="section-value_props" title={SECTION_LABELS.value_props}>
             <ValuePropsSectionForm section={sectionMap.value_props} onSave={(d) => handleSave("value_props", d)} loading={updateMutation.isPending} />
           </SectionCard>
         )}
 
         {/* Categories intro */}
         {sectionMap.categories_intro && (
-          <SectionCard title={SECTION_LABELS.categories_intro}>
+          <SectionCard id="section-categories_intro" title={SECTION_LABELS.categories_intro}>
             <IntroSectionForm section={sectionMap.categories_intro} onSave={(d) => handleSave("categories_intro", d)} loading={updateMutation.isPending} />
           </SectionCard>
         )}
 
         {/* Featured intro */}
         {sectionMap.featured_intro && (
-          <SectionCard title={SECTION_LABELS.featured_intro}>
+          <SectionCard id="section-featured_intro" title={SECTION_LABELS.featured_intro}>
             <IntroSectionForm section={sectionMap.featured_intro} onSave={(d) => handleSave("featured_intro", d)} loading={updateMutation.isPending} />
           </SectionCard>
         )}
 
         {/* Why REMQUIP */}
         {sectionMap.why_remquip && (
-          <SectionCard title={SECTION_LABELS.why_remquip}>
+          <SectionCard id="section-why_remquip" title={SECTION_LABELS.why_remquip}>
             <WhyRemquipSectionForm section={sectionMap.why_remquip} onSave={(d) => handleSave("why_remquip", d)} loading={updateMutation.isPending} />
           </SectionCard>
         )}
 
         {/* Wholesale CTA */}
         {sectionMap.wholesale_cta && (
-          <SectionCard title={SECTION_LABELS.wholesale_cta}>
+          <SectionCard id="section-wholesale_cta" title={SECTION_LABELS.wholesale_cta}>
             <WholesaleCtaSectionForm section={sectionMap.wholesale_cta} onSave={(d) => handleSave("wholesale_cta", d)} loading={updateMutation.isPending} />
           </SectionCard>
         )}
 
         {sections.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            No landing sections found. Run the database migration to seed the home page content.
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">No landing sections found.</p>
+            <button
+              type="button"
+              onClick={async () => {
+                const defaults = [
+                  { section_key: "hero", title: "Industrial-Grade Parts For North American Fleets", description: "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years.", content: JSON.stringify({ cta_primary_label: "Browse Catalog", cta_primary_link: "/products", cta_secondary_label: "Wholesale Program", cta_secondary_link: "/register" }) },
+                  { section_key: "value_props", content: JSON.stringify([{ icon: "Shield", text: "Certified & Tested" }, { icon: "Truck", text: "Fast Delivery" }, { icon: "Wrench", text: "Expert Support" }, { icon: "CheckCircle", text: "In Stock" }]) },
+                  { section_key: "categories_intro", title: "Browse Solutions", description: "Explore Product Categories" },
+                  { section_key: "featured_intro", title: "In High Demand", description: "Popular Products" },
+                  { section_key: "why_remquip", title: "Why Choose REMQUIP", description: "Built for Fleet Operations", content: JSON.stringify({ subtitle: "We specialize in quality parts, competitive pricing, and customer service that keeps your fleet running smoothly.", cards: [{ icon: "Package", title: "Extensive Inventory", desc: "500+ SKUs ready to ship. Most items in stock for immediate delivery to fleets across North America." }, { icon: "Users", title: "Dedicated Support", desc: "Expert team standing by. Get technical guidance, bulk quotes, and personalized service for your fleet needs." }, { icon: "BarChart3", title: "Proven Track Record", desc: "15+ years serving trucking operations. Trusted by fleet managers for reliability and competitive pricing." }] }) },
+                  { section_key: "wholesale_cta", title: "Fleet Solutions", description: "Wholesale Programs for Fleet Operators", content: JSON.stringify({ body: "Get competitive bulk pricing, dedicated account support, and streamlined ordering for your fleet operation.", cta_primary_label: "Join Wholesale", cta_primary_link: "/register", cta_secondary_label: "Contact Sales", cta_secondary_link: "/contact" }) },
+                ];
+                try {
+                  for (const d of defaults) {
+                    await createMutation.mutateAsync({ page_name: "home", section_key: d.section_key, ...d });
+                  }
+                  showSuccessToast("Default sections created");
+                  refetch();
+                } catch {
+                  showErrorToast("Failed to create sections");
+                }
+              }}
+              disabled={createMutation.isPending}
+              className="btn-accent px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 mx-auto disabled:opacity-50"
+            >
+              {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Create default sections
+            </button>
           </div>
         )}
       </div>
