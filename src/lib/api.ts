@@ -109,7 +109,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'manager' | 'user';
+  role: 'admin' | 'super_admin' | 'manager' | 'user';
   status: 'active' | 'inactive' | 'suspended';
   avatar_url?: string;
   phone?: string;

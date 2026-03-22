@@ -16,6 +16,7 @@ export const FLAT_SHIPPING_RATE = 25;
 /**
  * Backend API origin (no .env — change here only).
  * Must match `API_URL` in `Backend/config.php` (same host + `/remquip/api` path).
+ * Router: `Backend/index.php` (`$knownResources` must include every first path segment the client calls).
  */
 export const API_BASE_URL = "http://luccibyey.com.tn/remquip/api";
 
