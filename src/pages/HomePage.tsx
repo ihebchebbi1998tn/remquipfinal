@@ -32,14 +32,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeW
   BarChart3,
 };
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } },
-};
-const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } },
-};
 
 export default function HomePage() {
   const { t, lang } = useLanguage();
@@ -194,9 +186,9 @@ export default function HomePage() {
       </section>
 
       {/* Value props */}
-      <section className="bg-background border-b border-border">
+      <section className="bg-background border-b border-border/80">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 py-5 sm:py-6">
+          <div className="flex flex-wrap justify-center gap-x-10 gap-y-5 py-6 sm:py-7">
             {valueProps.map(({ icon: iconKey, text }) => {
               const Icon = ICON_MAP[iconKey] ?? CheckCircle;
               return (
@@ -211,199 +203,171 @@ export default function HomePage() {
       </section>
 
       {/* Categories */}
-      <section id="categories" className="py-16 md:py-24 bg-background">
+      <section id="categories" className="py-20 md:py-28 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-          >
-            <motion.div variants={fadeUp} className="flex items-end justify-between mb-10">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-1.5">{catIntro.title || "Browse Solutions"}</p>
-                <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{catIntro.description || "Explore Product Categories"}</h2>
-              </div>
-              <Link to="/products" className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline underline-offset-2">
-                {t("products.view_all")} <ArrowRight className="h-4 w-4" />
-              </Link>
-            </motion.div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-              {(categoriesList.length > 0 ? categoriesList : categories).map((cat) => (
-                <motion.div key={cat.id} variants={fadeUp}>
-                  <Link
-                    to={`/products/${cat.slug || ''}`}
-                    className="group block relative overflow-hidden aspect-[4/3] rounded"
-                  >
-                    {cat.image_url && (
-                      <img
-                        src={cat.image_url}
-                        alt={cat.name}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                        loading="lazy"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <span className="text-sm font-semibold text-primary-foreground block">
-                        {cat.name}
-                      </span>
-                      <span className="text-xs text-primary-foreground/70 mt-0.5 group-hover:text-primary-foreground/90 transition-colors">
-                        {t("cat.shop_all")} →
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <p className="section-eyebrow mb-2">{catIntro.title || "Browse Solutions"}</p>
+              <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{catIntro.description || "Explore Product Categories"}</h2>
             </div>
-
-            <Link to="/products" className="sm:hidden flex items-center justify-center gap-1 text-sm font-medium text-accent mt-6">
-              {t("products.view_all")} <ArrowRight className="h-4 w-4" />
+            <Link to="/products" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
-          </motion.div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {(categoriesList.length > 0 ? categoriesList : categories).map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/products/${cat.slug || ''}`}
+                className="group block relative overflow-hidden aspect-[4/3] rounded-lg"
+              >
+                {cat.image_url && (
+                  <img
+                    src={cat.image_url}
+                    alt={cat.name}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                    loading="lazy"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <span className="text-sm font-semibold text-primary-foreground block">{cat.name}</span>
+                  <span className="text-xs text-primary-foreground/80 mt-1 group-hover:text-primary-foreground transition-colors inline-flex items-center gap-1">
+                    {t("cat.shop_all")} <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <Link to="/products" className="sm:hidden flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mt-8">
+            {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+          </Link>
         </div>
       </section>
 
       {/* Featured products */}
-      <section id="products" className="py-16 md:py-24 bg-muted/30">
+      <section id="products" className="py-20 md:py-28 bg-muted/40">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-          >
-            <motion.div variants={fadeUp} className="flex items-end justify-between mb-10">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-1.5">{featIntro.title || "In High Demand"}</p>
-                <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{featIntro.description || "Popular Products"}</h2>
-              </div>
-              <Link to="/products" className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline underline-offset-2">
-                {t("products.view_all")} <ArrowRight className="h-4 w-4" />
-              </Link>
-            </motion.div>
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <p className="section-eyebrow mb-2">{featIntro.title || "In High Demand"}</p>
+              <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{featIntro.description || "Popular Products"}</h2>
+            </div>
+            <Link to="/products" className="hidden sm:inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            </Link>
+          </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-              {featuredProducts.map((product) => (
-                <motion.div key={product.id} variants={fadeUp}>
-                  <Link to={productDetailHref(product.id, product.slug)} className="bg-card border border-border rounded overflow-hidden group h-full flex flex-col hover:border-border hover:shadow-sm transition-all cursor-pointer block">
-                    <div className="block aspect-square overflow-hidden bg-muted">
-                      {product.image ? (
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground p-2 text-center">
-                          No image
-                        </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {featuredProducts.map((product) => (
+              <Link key={product.id} to={productDetailHref(product.id, product.slug)} className="product-card rounded-lg group h-full flex flex-col cursor-pointer block">
+                <div className="block aspect-square overflow-hidden bg-muted/80">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground p-4 text-center">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 flex flex-col flex-1">
+                  <p className="text-[10px] text-muted-foreground font-mono tracking-wide">{product.sku}</p>
+                  <span className="text-sm font-medium text-foreground group-hover:text-foreground/90 transition-colors line-clamp-2 mt-1 mb-auto leading-snug">
+                    {product.name}
+                  </span>
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-base font-semibold text-foreground">{formatPrice(product.price)}</p>
+                      {product.stock > 0 && (
+                        <span className="text-[10px] text-success font-medium">
+                          {t("products.in_stock")}
+                        </span>
                       )}
                     </div>
-                    <div className="p-4 flex flex-col flex-1">
-                      <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">{product.sku}</p>
-                      <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors line-clamp-2 mt-1 mb-auto leading-snug">
-                        {product.name}
-                      </span>
-                      <div className="mt-4 pt-3 border-t border-border">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-base font-semibold text-foreground">{formatPrice(product.price)}</p>
-                          {product.stock > 0 && (
-                            <span className="text-[10px] text-success font-medium uppercase tracking-wide">
-                              {t("products.in_stock")}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            addItem(product);
-                          }}
-                          className="w-full btn-gradient text-accent-foreground text-xs py-2.5 rounded font-medium uppercase tracking-wide"
-                        >
-                          {t("products.add_to_cart")}
-                        </button>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addItem(product);
+                      }}
+                      className="w-full bg-foreground text-background text-xs py-2.5 rounded-md font-medium hover:opacity-90 transition-opacity"
+                    >
+                      {t("products.add_to_cart")}
+                    </button>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
 
-            <Link to="/products" className="sm:hidden flex items-center justify-center gap-1 text-sm font-medium text-accent mt-6">
-              {t("products.view_all")} <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
+          <Link to="/products" className="sm:hidden flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mt-8">
+            {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+          </Link>
         </div>
       </section>
 
       {/* Why REMQUIP */}
-      <section id="about" className="py-16 md:py-24 bg-background">
+      <section id="about" className="py-20 md:py-28 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-          >
-            <motion.div variants={fadeUp} className="text-center mb-12 max-w-2xl mx-auto">
-              <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-1.5">{whyRemquip.title || "Why Choose REMQUIP"}</p>
-              <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{whyRemquip.description || "Built for Fleet Operations"}</h2>
-              <p className="text-muted-foreground text-sm mt-4 leading-relaxed">
-                {whyData.subtitle || "We specialize in quality parts, competitive pricing, and customer service that keeps your fleet running smoothly."}
-              </p>
-            </motion.div>
+          <div className="text-center mb-14 max-w-2xl mx-auto">
+            <p className="section-eyebrow mb-2">{whyRemquip.title || "Why Choose REMQUIP"}</p>
+            <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground tracking-tight">{whyRemquip.description || "Built for Fleet Operations"}</h2>
+            <p className="text-muted-foreground text-sm mt-4 leading-relaxed">
+              {whyData.subtitle || "We specialize in quality parts, competitive pricing, and customer service that keeps your fleet running smoothly."}
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-8">
-              {(whyData.cards?.length ? whyData.cards : [
-                { icon: "Package", title: "Extensive Inventory", desc: "500+ SKUs ready to ship. Most items in stock for immediate delivery to fleets across North America." },
-                { icon: "Users", title: "Dedicated Support", desc: "Expert team standing by. Get technical guidance, bulk quotes, and personalized service for your fleet needs." },
-                { icon: "BarChart3", title: "Proven Track Record", desc: "15+ years serving trucking operations. Trusted by fleet managers for reliability and competitive pricing." },
-              ]).map(({ icon: iconKey, title, desc }, i) => {
-                const Icon = ICON_MAP[iconKey] ?? Package;
-                return (
-                  <motion.div key={i} variants={fadeUp}>
-                    <div className="h-full p-6 md:p-8 border border-border rounded bg-card hover:border-accent/30 transition-colors">
-                      <div className="w-10 h-10 rounded flex items-center justify-center mb-4 bg-accent/10">
-                        <Icon className="h-5 w-5 text-accent" strokeWidth={2} />
-                      </div>
-                      <h3 className="font-display text-base font-semibold text-foreground mb-2">{title}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-8">
+            {(whyData.cards?.length ? whyData.cards : [
+              { icon: "Package", title: "Extensive Inventory", desc: "500+ SKUs ready to ship. Most items in stock for immediate delivery to fleets across North America." },
+              { icon: "Users", title: "Dedicated Support", desc: "Expert team standing by. Get technical guidance, bulk quotes, and personalized service for your fleet needs." },
+              { icon: "BarChart3", title: "Proven Track Record", desc: "15+ years serving trucking operations. Trusted by fleet managers for reliability and competitive pricing." },
+            ]).map(({ icon: iconKey, title, desc }, i) => {
+              const Icon = ICON_MAP[iconKey] ?? Package;
+              return (
+                <div key={i} className="h-full p-6 md:p-8 border border-border rounded-lg bg-card transition-colors hover:border-foreground/15">
+                  <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-5 bg-muted/80">
+                    <Icon className="h-5 w-5 text-foreground/80" strokeWidth={1.75} />
+                  </div>
+                  <h3 className="font-display text-base font-semibold text-foreground mb-2">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* Wholesale CTA */}
       <section id="wholesale" className="border-t border-border overflow-hidden">
-        <div className="grid md:grid-cols-2 min-h-[300px] md:min-h-[360px]">
-          <div className="flex flex-col justify-center px-4 sm:px-6 lg:px-10 py-12 md:py-16 order-2 md:order-1 max-w-xl">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-2">{wholesaleCta.title || "Fleet Solutions"}</p>
-            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-semibold text-foreground mb-3 leading-tight tracking-tight">
+        <div className="grid md:grid-cols-2 min-h-[320px] md:min-h-[380px]">
+          <div className="flex flex-col justify-center px-6 sm:px-8 lg:px-12 py-14 md:py-20 order-2 md:order-1 max-w-xl">
+            <p className="section-eyebrow mb-3">{wholesaleCta.title || "Fleet Solutions"}</p>
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-semibold text-foreground mb-4 leading-tight tracking-tight">
               {wholesaleCta.description || "Wholesale Programs for Fleet Operators"}
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-6">
+            <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-8">
               {wholesaleData.body || "Get competitive bulk pricing, dedicated account support, and streamlined ordering for your fleet operation."}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 to={wholesaleData.cta_primary_link || "/register"}
-                className="inline-flex items-center justify-center gap-2 btn-gradient text-accent-foreground px-6 py-3 rounded font-medium text-sm transition-all"
+                className="inline-flex items-center justify-center gap-2 bg-foreground text-background px-6 py-3 rounded-md font-medium text-sm hover:opacity-90 transition-opacity"
               >
-                {wholesaleData.cta_primary_label || "Join Wholesale"} <ArrowRight className="h-4 w-4" />
+                {wholesaleData.cta_primary_label || "Join Wholesale"} <ArrowRight className="h-4 w-4" strokeWidth={2} />
               </Link>
               <Link
                 to={wholesaleData.cta_secondary_link || "/contact"}
-                className="inline-flex items-center justify-center gap-2 border border-border text-foreground px-6 py-3 rounded font-medium text-sm hover:bg-muted/50 transition-colors"
+                className="inline-flex items-center justify-center gap-2 border border-border text-foreground px-6 py-3 rounded-md font-medium text-sm hover:bg-muted/60 transition-colors"
               >
-                <Phone className="h-4 w-4" /> {wholesaleData.cta_secondary_label || "Contact Sales"}
+                <Phone className="h-4 w-4" strokeWidth={2} /> {wholesaleData.cta_secondary_label || "Contact Sales"}
               </Link>
             </div>
           </div>

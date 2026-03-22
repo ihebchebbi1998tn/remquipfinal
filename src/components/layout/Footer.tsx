@@ -19,24 +19,24 @@ export default function Footer() {
 
   return (
     <footer className="bg-background text-foreground border-t border-border">
-      {/* Newsletter */}
-      <div className="border-b border-border bg-muted/40">
-        <div className="container mx-auto px-4 py-12 md:py-14 text-center">
-          <h3 className="font-display text-2xl md:text-3xl font-bold mb-3 tracking-tight text-foreground">
-            {t("newsletter.title")}
-          </h3>
-          <p className="text-muted-foreground text-sm md:text-base mb-6 max-w-lg mx-auto">
-            {t("newsletter.subtitle") || "Get exclusive deals and industry insights delivered to your inbox."}
-          </p>
-          <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-3">
-            <input
-              type="email"
-              placeholder={t("newsletter.placeholder")}
-              className="flex-1 px-5 py-3 rounded-lg bg-card border border-border text-foreground text-sm outline-none focus:ring-2 focus:ring-accent focus:border-transparent placeholder:text-muted-foreground transition-all"
-            />
+      {/* Newsletter — subtle, non-intrusive */}
+      <div className="border-b border-border bg-muted/30">
+        <div className="container mx-auto px-4 py-10 md:py-12">
+          <div className="max-w-xl flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <label htmlFor="newsletter-email" className="block text-sm font-medium text-foreground mb-1.5">
+                {t("newsletter.title")}
+              </label>
+              <input
+                id="newsletter-email"
+                type="email"
+                placeholder={t("newsletter.placeholder")}
+                className="w-full px-4 py-2.5 rounded-md bg-card border border-border text-foreground text-sm outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 placeholder:text-muted-foreground transition-colors"
+              />
+            </div>
             <button
               type="button"
-              className="btn-gradient text-accent-foreground px-7 py-3 rounded-lg text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+              className="self-start sm:self-end px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
             >
               {t("newsletter.cta")}
             </button>
@@ -46,9 +46,9 @@ export default function Footer() {
 
       {/* Main footer */}
       <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-10 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-12 mb-12">
           <div className="lg:col-span-1">
-            <h4 className="font-display font-bold text-lg tracking-[0.1em] mb-5 text-primary" style={{ letterSpacing: "-0.02em" }}>
+            <h4 className="font-display font-semibold text-base tracking-tight mb-4 text-foreground">
               {storeName}
             </h4>
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
@@ -56,17 +56,17 @@ export default function Footer() {
             </p>
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0 text-accent" />
+                <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
                 <span className="whitespace-pre-line text-foreground/90">{storeAddress}</span>
               </div>
               <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 flex-shrink-0 text-accent" />
+                <Phone className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                 <a href={`tel:${contactPhone.replace(/\s/g, "")}`} className="text-foreground hover:text-accent transition-colors">
                   {contactPhone}
                 </a>
               </div>
               <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 flex-shrink-0 text-accent" />
+                <Mail className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                 <a href={`mailto:${contactEmail}`} className="text-foreground hover:text-accent transition-colors">
                   {contactEmail}
                 </a>
@@ -75,7 +75,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-semibold uppercase text-xs tracking-widest mb-4 text-foreground">
+            <h4 className="font-display font-medium text-xs tracking-wide text-muted-foreground mb-4">
               {t("footer.categories")}
             </h4>
             <ul className="space-y-2.5">
@@ -87,7 +87,7 @@ export default function Footer() {
                 </li>
               ))}
               <li>
-                <Link to="/products" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/products" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("cat.shop_all")}
                 </Link>
               </li>
@@ -95,27 +95,27 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-semibold uppercase text-xs tracking-widest mb-4 text-foreground">
+            <h4 className="font-display font-medium text-xs tracking-wide text-muted-foreground mb-4">
               {t("footer.information")}
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <Link to="/about" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("footer.about")}
                 </Link>
               </li>
               <li>
-                <Link to="/shipping" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/shipping" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("footer.shipping")}
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("footer.contact")}
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   FAQ
                 </Link>
               </li>
@@ -123,27 +123,27 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-semibold uppercase text-xs tracking-widest mb-4 text-foreground">
+            <h4 className="font-display font-medium text-xs tracking-wide text-muted-foreground mb-4">
               {t("footer.legal")}
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <Link to="/terms" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("footer.terms")}
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("footer.privacy")}
                 </Link>
               </li>
               <li>
-                <Link to="/refund" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/refund" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("footer.refund")}
                 </Link>
               </li>
               <li>
-                <Link to="/cookie" className="text-sm text-muted-foreground hover:text-accent transition-colors font-light">
+                <Link to="/cookie" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("footer.cookie")}
                 </Link>
               </li>
@@ -151,17 +151,17 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-semibold uppercase text-xs tracking-widest mb-4 text-foreground">{t("language")}</h4>
+            <h4 className="font-display font-medium text-xs tracking-wide text-muted-foreground mb-4">{t("language")}</h4>
             <div className="flex gap-2 mb-5">
               {supportedLocales.map((loc) => (
                 <button
                   key={loc}
                   type="button"
                   onClick={() => setLang(loc)}
-                  className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-md transition-all font-medium border ${
+                  className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-md transition-colors font-medium border ${
                     lang === loc
-                      ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                      : "text-foreground/80 hover:text-foreground border-border hover:border-accent/50 bg-card"
+                      ? "bg-foreground text-background border-foreground"
+                      : "text-muted-foreground hover:text-foreground border-border hover:border-foreground/30 bg-card"
                   }`}
                 >
                   <FlagIcon country={localeFlag(loc)} className="w-4 h-3 rounded-sm overflow-hidden" /> {localeLabel(loc)}
@@ -169,7 +169,7 @@ export default function Footer() {
               ))}
             </div>
 
-            <h4 className="font-display font-semibold uppercase text-xs tracking-widest mb-4 text-foreground">{t("currency")}</h4>
+            <h4 className="font-display font-medium text-xs tracking-wide text-muted-foreground mb-4">{t("currency")}</h4>
             <div className="flex flex-wrap gap-2">
               {(
                 [
@@ -182,10 +182,10 @@ export default function Footer() {
                   key={code}
                   type="button"
                   onClick={() => setCurrency(code as "CAD" | "USD" | "EUR")}
-                  className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-md transition-all font-medium border ${
+                  className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-md transition-colors font-medium border ${
                     currency === code
-                      ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                      : "text-foreground/80 hover:text-foreground border-border hover:border-accent/50 bg-card"
+                      ? "bg-foreground text-background border-foreground"
+                      : "text-muted-foreground hover:text-foreground border-border hover:border-foreground/30 bg-card"
                   }`}
                 >
                   <FlagIcon country={flag} className="w-4 h-3 rounded-sm overflow-hidden" /> {code}
@@ -196,10 +196,10 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-border bg-muted/30">
-        <div className="container mx-auto px-4 py-6 text-center">
+      <div className="border-t border-border">
+        <div className="container mx-auto px-4 py-5">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} REMQUIP. All rights reserved.
+            © {new Date().getFullYear()} {storeName}. All rights reserved.
           </p>
         </div>
       </div>

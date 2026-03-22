@@ -150,9 +150,12 @@
     @apply bg-accent text-accent-foreground hover:opacity-90 transition-opacity;
   }
   .section-heading {
-    @apply text-3xl md:text-4xl font-bold text-foreground tracking-tight;
-    font-family: 'Space Grotesk', sans-serif;
+    @apply text-2xl md:text-3xl font-semibold text-foreground tracking-tight;
+    font-family: 'Manrope', 'Inter', sans-serif;
     letter-spacing: -0.02em;
+  }
+  .section-eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground;
   }
   .font-display {
     font-family: 'Manrope', sans-serif;
@@ -163,9 +166,13 @@
     @apply font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.15] tracking-tight;
   }
   .product-card {
-    @apply bg-card overflow-hidden transition-all hover:shadow-lg;
+    @apply bg-card overflow-hidden transition-all duration-200;
     background-color: hsl(var(--surface-container-lowest));
-    border: none;
+    border: 1px solid hsl(var(--border));
+  }
+  .product-card:hover {
+    @apply shadow-md;
+    border-color: hsl(var(--border));
   }
   /* Tonal layering - no borders, use surface colors instead */
   .surface-section {

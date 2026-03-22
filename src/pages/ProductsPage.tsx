@@ -96,8 +96,8 @@ export default function ProductsPage() {
   const filterPanel = (
     <div className="space-y-4">
       {/* Search within results */}
-      <div className="border border-border rounded-sm p-4">
-        <h3 className="font-display font-bold text-sm uppercase mb-3">Search</h3>
+      <div className="border border-border rounded-md p-4">
+        <h3 className="font-display font-medium text-sm mb-3">Search</h3>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
@@ -110,8 +110,8 @@ export default function ProductsPage() {
       </div>
 
       {/* Categories */}
-      <div className="border border-border rounded-sm p-4">
-        <h3 className="font-display font-bold text-sm uppercase mb-3">{t("footer.categories")}</h3>
+      <div className="border border-border rounded-md p-4">
+        <h3 className="font-display font-medium text-sm mb-3">{t("footer.categories")}</h3>
         <ul className="space-y-2">
           <li>
             <Link to="/products" className={`text-sm transition-colors ${!categorySlug ? "text-accent font-medium" : "text-muted-foreground hover:text-foreground"}`}>
@@ -132,8 +132,8 @@ export default function ProductsPage() {
       </div>
 
       {/* Price range */}
-      <div className="border border-border rounded-sm p-4">
-        <h3 className="font-display font-bold text-sm uppercase mb-3">{t("products.shop_by_price")}</h3>
+      <div className="border border-border rounded-md p-4">
+        <h3 className="font-display font-medium text-sm mb-3">{t("products.shop_by_price")}</h3>
         <ul className="space-y-1.5">
           {PRICE_RANGES.map((range, i) => (
             <li key={i}>
@@ -149,8 +149,8 @@ export default function ProductsPage() {
       </div>
 
       {/* Stock filter */}
-      <div className="border border-border rounded-sm p-4">
-        <h3 className="font-display font-bold text-sm uppercase mb-3">{t("products.availability")}</h3>
+      <div className="border border-border rounded-md p-4">
+        <h3 className="font-display font-medium text-sm mb-3">{t("products.availability")}</h3>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input
             type="checkbox"
@@ -173,15 +173,15 @@ export default function ProductsPage() {
   return (
     <div className="container mx-auto px-4 py-6 md:py-8">
       {/* Breadcrumb */}
-      <nav className="text-sm text-muted-foreground mb-4">
+      <nav className="text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
         <Link to="/" className="hover:text-foreground transition-colors">{t("nav.home")}</Link>
-        <span className="mx-2">/</span>
+        <span className="mx-2 text-muted-foreground/60">/</span>
         <span className="text-foreground">{pageTitle}</span>
       </nav>
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold uppercase">{pageTitle}</h1>
-        <button onClick={() => setMobileFilters(true)} className="md:hidden flex items-center gap-2 text-sm border border-border rounded-sm px-3 py-2">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-foreground">{pageTitle}</h1>
+        <button onClick={() => setMobileFilters(true)} className="md:hidden flex items-center gap-2 text-sm border border-border rounded-md px-3 py-2.5 hover:bg-muted/50 transition-colors">
           <SlidersHorizontal className="h-4 w-4" /> {t("products.filters")}
         </button>
       </div>
@@ -215,7 +215,7 @@ export default function ProductsPage() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
-                className="text-sm border border-border rounded-sm px-3 py-1.5 bg-background text-foreground outline-none"
+                className="text-sm border border-border rounded-md px-3 py-2 bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20"
               >
                 <option value="featured">{t("products.featured")}</option>
                 <option value="price_low">{t("products.price_low")}</option>
@@ -230,35 +230,35 @@ export default function ProductsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filtered.map((product) => {
               const sf = apiProductToStorefront(product as Record<string, unknown>);
               return (
-                <div key={product.id} className="product-card group">
-                  <div className="aspect-square overflow-hidden bg-secondary relative">
+                <div key={product.id} className="product-card rounded-lg group flex flex-col">
+                  <Link to={productDetailHref(sf.id, sf.slug)} className="block aspect-square overflow-hidden bg-muted/60 relative">
                     {sf.image && (
-                      <img src={sf.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      <img src={sf.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" loading="lazy" />
                     )}
                     {sf.stock === 0 && (
-                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                        <span className="text-sm font-medium text-destructive uppercase">{t("products.out_of_stock")}</span>
+                      <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                        <span className="text-sm font-medium text-muted-foreground">{t("products.out_of_stock")}</span>
                       </div>
                     )}
                     {sf.stock > 0 && sf.stock <= 20 && (
-                      <span className="absolute top-2 left-2 badge-warning text-xs">{t("products.low_stock")}</span>
+                      <span className="absolute top-3 left-3 badge-warning text-xs">{t("products.low_stock")}</span>
                     )}
-                  </div>
-                  <div className="p-3 md:p-4">
-                    <Link to={productDetailHref(sf.id, sf.slug)} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-2 uppercase">
+                  </Link>
+                  <div className="p-4 flex flex-col flex-1">
+                    <p className="text-[10px] text-muted-foreground font-mono tracking-wide">{product.sku}</p>
+                    <Link to={productDetailHref(sf.id, sf.slug)} className="text-sm font-medium text-foreground hover:text-foreground/90 transition-colors line-clamp-2 mt-1 mb-auto leading-snug">
                       {product.name}
                     </Link>
-                    <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
-                    <p className="text-sm font-bold text-foreground mt-1">{formatPrice(sf.price)}</p>
+                    <p className="text-base font-semibold text-foreground mt-3">{formatPrice(sf.price)}</p>
                     <button
                       type="button"
                       onClick={() => addItem(sf)}
                       disabled={sf.stock === 0}
-                      className="mt-2 w-full btn-accent text-xs py-2 rounded-sm font-medium uppercase tracking-wide disabled:opacity-50"
+                      className="mt-3 w-full bg-foreground text-background text-xs py-2.5 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {t("products.add_to_cart")}
                     </button>

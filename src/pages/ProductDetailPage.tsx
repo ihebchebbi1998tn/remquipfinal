@@ -208,8 +208,8 @@ export default function ProductDetailPage() {
                     onClick={() => setActiveImage(i)}
                     className={`w-16 h-16 md:w-[72px] md:h-[72px] rounded overflow-hidden border-2 transition-all flex-shrink-0 ${
                       i === activeImage
-                        ? "border-accent ring-1 ring-accent/30"
-                        : "border-border hover:border-muted-foreground opacity-70 hover:opacity-100"
+                        ? "border-foreground ring-1 ring-foreground/20"
+                        : "border-border hover:border-foreground/30 opacity-70 hover:opacity-100"
                     }`}
                   >
                     <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
@@ -220,8 +220,8 @@ export default function ProductDetailPage() {
           </div>
 
           <div>
-            <p className="text-xs text-accent font-semibold uppercase tracking-wider mb-1.5">{product.category}</p>
-            <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-foreground leading-tight mb-2">
+            <p className="text-xs text-muted-foreground font-medium mb-2">{product.category}</p>
+            <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-semibold text-foreground leading-tight mb-2 tracking-tight">
               {product.name}
             </h1>
             <p className="text-xs text-muted-foreground mb-4">
@@ -274,7 +274,7 @@ export default function ProductDetailPage() {
                 type="button"
                 onClick={() => addItem(product, qty)}
                 disabled={product.stock === 0}
-                className="flex-1 btn-accent py-3 rounded-sm font-semibold uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 bg-foreground text-background py-3 rounded-md font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingCart className="h-4 w-4" /> {t("products.add_to_cart")}
               </button>
@@ -282,28 +282,28 @@ export default function ProductDetailPage() {
 
             <Link
               to="/contact"
-              className="hidden md:flex w-full text-center justify-center items-center gap-2 border border-border rounded-sm py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors mb-6"
+              className="hidden md:flex w-full text-center justify-center items-center gap-2 border border-border rounded-md py-2.5 text-sm font-medium text-foreground hover:bg-muted/60 transition-colors mb-6"
             >
               <FileText className="h-4 w-4" />
               {t("products.request_quote")}
             </Link>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="flex items-center gap-2.5 p-3 bg-secondary/60 rounded-md">
-                <Truck className="h-4 w-4 text-accent flex-shrink-0" />
+              <div className="flex items-center gap-2.5 p-3 bg-muted/50 rounded-md">
+                <Truck className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="text-xs text-muted-foreground leading-tight">
                   {t("products.free_shipping_prefix")} {formatPrice(freeShippingThreshold)}
                 </span>
               </div>
-              <div className="flex items-center gap-2.5 p-3 bg-secondary/60 rounded-md">
-                <Shield className="h-4 w-4 text-accent flex-shrink-0" />
+              <div className="flex items-center gap-2.5 p-3 bg-muted/50 rounded-md">
+                <Shield className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="text-xs text-muted-foreground leading-tight">{t("products.warranty_note")}</span>
               </div>
             </div>
 
             {specEntries.length > 0 && (
               <div className="border border-border rounded-md overflow-hidden">
-                <h3 className="font-display font-bold text-xs uppercase tracking-wider px-4 py-3 bg-secondary">
+                <h3 className="font-display font-medium text-sm px-4 py-3 bg-muted/50">
                   {t("products.specifications")}
                 </h3>
                 <div className="divide-y divide-border">
@@ -321,7 +321,7 @@ export default function ProductDetailPage() {
 
             {product.compatibility && product.compatibility.length > 0 && (
               <div className="border border-border rounded-md overflow-hidden mt-4">
-                <h3 className="font-display font-bold text-xs uppercase tracking-wider px-4 py-3 bg-secondary">
+                <h3 className="font-display font-medium text-sm px-4 py-3 bg-muted/50">
                   {t("products.compatibility")}
                 </h3>
                 <div className="px-4 py-3 flex flex-wrap gap-2">
@@ -337,11 +337,11 @@ export default function ProductDetailPage() {
         </div>
 
         {relatedProducts.length > 0 && (
-          <section className="mt-14">
-            <h2 className="section-heading mb-6">{t("products.related")}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+          <section className="mt-16 pt-12 border-t border-border">
+            <h2 className="font-display text-lg font-semibold text-foreground mb-6">{t("products.related")}</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {relatedProducts.map((rp) => (
-                <div key={rp.id} className="product-card group flex flex-col">
+                <div key={rp.id} className="product-card rounded-lg group flex flex-col">
                   <Link to={productDetailHref(rp.id, rp.slug)} className="block aspect-square overflow-hidden bg-secondary">
                     {rp.image ? (
                       <img
@@ -368,7 +368,7 @@ export default function ProductDetailPage() {
                     <button
                       type="button"
                       onClick={() => addItem(rp)}
-                      className="mt-2 w-full btn-accent text-xs py-2 rounded-sm font-semibold uppercase tracking-wide"
+                      className="mt-2 w-full bg-foreground text-background text-xs py-2 rounded-md font-medium hover:opacity-90 transition-opacity"
                     >
                       {t("products.add_to_cart")}
                     </button>
@@ -411,7 +411,7 @@ export default function ProductDetailPage() {
             type="button"
             onClick={() => addItem(product, qty)}
             disabled={product.stock === 0}
-            className="flex-1 btn-accent py-2.5 rounded-sm font-semibold text-sm uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-1 bg-foreground text-background py-2.5 rounded-md font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart className="h-4 w-4" /> {t("products.add_to_cart")}
           </button>

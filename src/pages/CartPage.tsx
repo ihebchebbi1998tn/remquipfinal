@@ -13,10 +13,10 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="font-display text-3xl font-bold mb-4">{t("cart.title")}</h1>
-        <p className="text-muted-foreground mb-6">{t("cart.empty")}</p>
-        <Link to="/products" className="btn-accent px-8 py-3 rounded-sm font-semibold uppercase tracking-wide inline-block">
+      <div className="container mx-auto px-4 py-20 text-center">
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground mb-3 tracking-tight">{t("cart.title")}</h1>
+        <p className="text-muted-foreground text-sm mb-8">{t("cart.empty")}</p>
+        <Link to="/products" className="inline-block bg-foreground text-background px-6 py-2.5 rounded-md font-medium text-sm hover:opacity-90 transition-opacity">
           {t("cart.continue")}
         </Link>
       </div>
@@ -24,16 +24,16 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="font-display text-3xl font-bold mb-8">{t("cart.title")}</h1>
+    <div className="container mx-auto px-4 py-10 md:py-12">
+      <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground mb-8 tracking-tight">{t("cart.title")}</h1>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           {items.map(({ product, quantity }) => (
-            <div key={product.id} className="flex gap-4 border border-border rounded-sm p-4">
+            <div key={product.id} className="flex gap-4 border border-border rounded-lg p-4 bg-card">
               {product.image ? (
-                <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded-sm bg-secondary" />
+                <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded-md bg-muted/60 flex-shrink-0" />
               ) : (
-                <div className="w-20 h-20 rounded-sm bg-secondary border border-border flex-shrink-0" aria-hidden />
+                <div className="w-20 h-20 rounded-md bg-muted/60 flex-shrink-0" aria-hidden />
               )}
               <div className="flex-1 min-w-0">
                 <Link to={productDetailHref(product.id, product.slug)} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-1">{product.name}</Link>
@@ -54,8 +54,8 @@ export default function CartPage() {
           ))}
         </div>
 
-        <div className="border border-border rounded-sm p-6 h-fit">
-          <h3 className="font-display font-bold text-sm uppercase mb-4">{t("checkout.order_summary")}</h3>
+        <div className="border border-border rounded-lg p-6 h-fit bg-card">
+          <h3 className="font-display font-medium text-sm mb-5">{t("checkout.order_summary")}</h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">{t("cart.subtotal")}</span><span className="font-medium">{formatPrice(subtotal)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">{t("cart.tax")}</span><span className="font-medium">{formatPrice(tax)}</span></div>
@@ -63,7 +63,7 @@ export default function CartPage() {
             <hr className="border-border" />
             <div className="flex justify-between text-base font-bold"><span>{t("cart.total")}</span><span>{formatPrice(total)}</span></div>
           </div>
-          <Link to="/checkout" className="block mt-6 btn-accent text-center py-3 rounded-sm font-semibold uppercase tracking-wide">
+          <Link to="/checkout" className="block mt-6 bg-foreground text-background text-center py-3 rounded-md font-medium hover:opacity-90 transition-opacity">
             {t("cart.checkout")}
           </Link>
           <Link to="/products" className="block mt-3 text-center text-sm text-muted-foreground hover:text-foreground transition-colors">
