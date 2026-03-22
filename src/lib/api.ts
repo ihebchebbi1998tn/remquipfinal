@@ -1045,8 +1045,8 @@ class APIService {
     const norm = normalizePaginated<Record<string, unknown>>(
       await this.request('GET', `${API_ENDPOINTS.DISCOUNTS.LIST}?page=${page}&limit=${limit}`)
     );
-    norm.data = norm.data.map((r) => mapDiscountRow(r));
-    return norm as PaginatedResponse<Discount>;
+    const data = norm.data.map((r) => mapDiscountRow(r));
+    return { ...norm, data } as unknown as PaginatedResponse<Discount>;
   }
 
   async getDiscount(id: string): Promise<ApiResponse<Discount>> {
@@ -1054,7 +1054,7 @@ class APIService {
     if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
       res.data = mapDiscountRow(res.data as Record<string, unknown>) as unknown as Record<string, unknown>;
     }
-    return res as ApiResponse<Discount>;
+    return res as unknown as ApiResponse<Discount>;
   }
 
   async createDiscount(data: Partial<Discount>): Promise<ApiResponse<Discount>> {
@@ -1077,7 +1077,7 @@ class APIService {
     if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
       res.data = mapDiscountRow(res.data as Record<string, unknown>) as unknown as Record<string, unknown>;
     }
-    return res as ApiResponse<Discount>;
+    return res as unknown as ApiResponse<Discount>;
   }
 
   // ==================== INVENTORY METHODS ====================
