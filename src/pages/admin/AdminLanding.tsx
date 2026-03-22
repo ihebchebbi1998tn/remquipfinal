@@ -8,6 +8,8 @@ import {
   ChevronUp,
   AlertCircle,
   LayoutTemplate,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { useCMSPageContent, useUpdateCMSContent, useCreateCMSContent } from "@/hooks/useCMS";
 import { useStorefrontRates } from "@/hooks/useApi";
@@ -16,7 +18,8 @@ import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import AdminLandingTheme from "./AdminLandingTheme";
 
 const SECTION_LABELS: Record<string, string> = {
-  hero: "Hero (headline, background image & CTAs)",
+  site_header: "Site header (announcement bar, logo, trust chips)",
+  hero: "Hero (headline, gallery, layout & CTAs)",
   stats: "Stats bar (numbers under hero)",
   value_props: "Value propositions",
   categories_intro: "Categories section intro & “View all” label",
@@ -171,6 +174,17 @@ export default function AdminLanding() {
       <AdminLandingTheme />
 
       <div className="space-y-4">
+        {/* Site header (global) */}
+        {sectionMap.site_header && (
+          <SectionCard id="section-site_header" title={SECTION_LABELS.site_header} defaultOpen>
+            <HeaderSectionForm
+              section={sectionMap.site_header}
+              onSave={(d) => handleSave("site_header", d)}
+              loading={updateMutation.isPending}
+            />
+          </SectionCard>
+        )}
+
         {/* Hero */}
         {sectionMap.hero && (
           <SectionCard id="section-hero" title={SECTION_LABELS.hero} defaultOpen>
@@ -220,6 +234,43 @@ export default function AdminLanding() {
           </SectionCard>
         )}
 
+        {sections.length > 0 && !sectionMap.site_header && (
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>
+              <strong className="text-foreground">Site header</strong> (announcement bar &amp; logo) is not in your CMS yet. Add it without resetting other sections.
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await createMutation.mutateAsync({
+                    page_name: "home",
+                    section_key: "site_header",
+                    title: "",
+                    description: "",
+                    image_url: "",
+                    content: JSON.stringify({
+                      announcement:
+                        "Free shipping on qualifying orders · Same-day dispatch on in-stock parts",
+                      announcement_link_url: "/products",
+                      announcement_link_label: "Shop catalog",
+                      trust_chips: ["Secure checkout", "CAD & USD", "Fleet accounts", "15+ years"],
+                    }),
+                  });
+                  showSuccessToast("Site header section added");
+                  refetch();
+                } catch {
+                  showErrorToast("Failed to add section");
+                }
+              }}
+              disabled={createMutation.isPending}
+              className="shrink-0 px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm font-medium hover:bg-muted disabled:opacity-50"
+            >
+              {createMutation.isPending ? "Adding…" : "Add site header section"}
+            </button>
+          </div>
+        )}
+
         {sections.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">No landing sections found.</p>
@@ -227,7 +278,41 @@ export default function AdminLanding() {
               type="button"
               onClick={async () => {
                 const defaults = [
-                  { section_key: "hero", title: "Industrial-Grade Parts For North American Fleets", description: "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years.", image_url: "", content: JSON.stringify({ cta_primary_label: "Browse Catalog", cta_primary_link: "/products", cta_secondary_label: "Wholesale Program", cta_secondary_link: "/register", hero_image_alt: "Industrial truck parts" }) },
+                  {
+                    section_key: "site_header",
+                    title: "",
+                    description: "",
+                    image_url: "",
+                    content: JSON.stringify({
+                      announcement:
+                        "Free shipping on qualifying orders · Same-day dispatch on in-stock parts",
+                      announcement_link_url: "/products",
+                      announcement_link_label: "Shop catalog",
+                      trust_chips: ["Secure checkout", "CAD & USD", "Fleet accounts", "15+ years"],
+                    }),
+                  },
+                  {
+                    section_key: "hero",
+                    title: "Industrial-Grade Parts For North American Fleets",
+                    description:
+                      "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years.",
+                    image_url: "",
+                    content: JSON.stringify({
+                      eyebrow: "Fleet-grade industrial supply",
+                      hero_layout: "auto",
+                      carousel_interval_ms: 6000,
+                      cta_primary_label: "Browse Catalog",
+                      cta_primary_link: "/products",
+                      cta_secondary_label: "Wholesale Program",
+                      cta_secondary_link: "/register",
+                      hero_image_alt: "Industrial truck parts",
+                      slides: [
+                        { image_url: "", alt: "", caption: "" },
+                        { image_url: "", alt: "", caption: "" },
+                        { image_url: "", alt: "", caption: "" },
+                      ],
+                    }),
+                  },
                   { section_key: "stats", title: "", description: "", image_url: "", content: JSON.stringify([{ value: "500+", label: "SKUs in Stock" }, { value: "48h", label: "Avg. Delivery" }, { value: "15+", label: "Years Experience" }]) },
                   { section_key: "value_props", content: JSON.stringify([{ icon: "Shield", text: "Certified & Tested" }, { icon: "Truck", text: "Fast Delivery" }, { icon: "Wrench", text: "Expert Support" }, { icon: "CheckCircle", text: "In Stock" }]) },
                   { section_key: "categories_intro", title: "Browse Solutions", description: "Explore Product Categories", content: JSON.stringify({ view_all_label: "View all products" }) },
@@ -298,6 +383,119 @@ function Field({
   );
 }
 
+type HeroSlideRow = { image_url: string; alt: string; caption: string };
+
+function normalizeHeroSlides(raw: unknown): HeroSlideRow[] {
+  if (!Array.isArray(raw)) {
+    return [{ image_url: "", alt: "", caption: "" }];
+  }
+  const rows = raw
+    .map((x) => {
+      const o = x as Record<string, unknown>;
+      return {
+        image_url: String(o.image_url ?? ""),
+        alt: String(o.alt ?? ""),
+        caption: String(o.caption ?? ""),
+      };
+    })
+    .slice(0, 5);
+  if (rows.length === 0) {
+    return [{ image_url: "", alt: "", caption: "" }];
+  }
+  return rows;
+}
+
+function HeaderSectionForm({
+  section,
+  onSave,
+  loading,
+}: {
+  section: { title: string; description: string; content: string; image_url?: string };
+  onSave: (d: { title?: string; description?: string; content?: string; image_url?: string }) => void;
+  loading: boolean;
+}) {
+  const c = parseJson<{
+    announcement?: string;
+    announcement_link_url?: string;
+    announcement_link_label?: string;
+    trust_chips?: string[];
+  }>(section.content, {});
+  const [announcement, setAnnouncement] = useState(c.announcement ?? "");
+  const [linkUrl, setLinkUrl] = useState(c.announcement_link_url ?? "");
+  const [linkLabel, setLinkLabel] = useState(c.announcement_link_label ?? "");
+  const [chipsLines, setChipsLines] = useState(() => (c.trust_chips?.length ? c.trust_chips.join("\n") : ""));
+  const [logoUrl, setLogoUrl] = useState(section.image_url ?? "");
+
+  useEffect(() => {
+    const n = parseJson<{
+      announcement?: string;
+      announcement_link_url?: string;
+      announcement_link_label?: string;
+      trust_chips?: string[];
+    }>(section.content, {});
+    setAnnouncement(n.announcement ?? "");
+    setLinkUrl(n.announcement_link_url ?? "");
+    setLinkLabel(n.announcement_link_label ?? "");
+    setChipsLines(n.trust_chips?.length ? n.trust_chips.join("\n") : "");
+    setLogoUrl(section.image_url ?? "");
+  }, [section.content, section.image_url]);
+
+  const save = () => {
+    const trust_chips = chipsLines
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 4);
+    onSave({
+      image_url: logoUrl.trim(),
+      content: JSON.stringify({
+        announcement: announcement.trim() || undefined,
+        announcement_link_url: linkUrl.trim() || undefined,
+        announcement_link_label: linkLabel.trim() || undefined,
+        trust_chips: trust_chips.length ? trust_chips : undefined,
+      }),
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        Applies to the storefront header on every page. Leave the announcement empty to hide the top bar.
+      </p>
+      <Field
+        label="Logo image URL (optional)"
+        value={logoUrl}
+        onChange={setLogoUrl}
+        placeholder="/Backend/uploads/... — shown next to store name"
+      />
+      <Field label="Announcement line" value={announcement} onChange={setAnnouncement} placeholder="Free shipping on..." />
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field label="Announcement link (path)" value={linkUrl} onChange={setLinkUrl} placeholder="/products" />
+        <Field label="Link label" value={linkLabel} onChange={setLinkLabel} placeholder="Shop catalog" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Trust chips (desktop, max 4 — one per line)</label>
+        <textarea
+          value={chipsLines}
+          onChange={(e) => setChipsLines(e.target.value)}
+          rows={4}
+          placeholder={"Secure checkout\nCAD & USD"}
+          className={fieldClass}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={save}
+        disabled={loading}
+        className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+        <Save className="h-4 w-4" /> Save
+      </button>
+    </div>
+  );
+}
+
 function HeroSectionForm({
   section,
   onSave,
@@ -307,66 +505,158 @@ function HeroSectionForm({
   onSave: (d: { title?: string; description?: string; content?: string; image_url?: string }) => void;
   loading: boolean;
 }) {
-  const cta = parseJson<{
+  type HeroCta = {
     cta_primary_label?: string;
     cta_primary_link?: string;
     cta_secondary_label?: string;
     cta_secondary_link?: string;
     hero_image_alt?: string;
-  }>(section.content, {});
+    eyebrow?: string;
+    hero_layout?: string;
+    carousel_interval_ms?: number;
+    slides?: { image_url?: string; alt?: string; caption?: string }[];
+  };
+
+  const cta = parseJson<HeroCta>(section.content, {});
   const [title, setTitle] = useState(section.title);
   const [desc, setDesc] = useState(section.description);
   const [imageUrl, setImageUrl] = useState(section.image_url ?? "");
   const [heroImageAlt, setHeroImageAlt] = useState(cta.hero_image_alt ?? "");
+  const [eyebrow, setEyebrow] = useState(cta.eyebrow ?? "");
+  const [heroLayout, setHeroLayout] = useState(cta.hero_layout ?? "auto");
+  const [carouselMs, setCarouselMs] = useState(String(cta.carousel_interval_ms ?? 6000));
   const [primaryLabel, setPrimaryLabel] = useState(cta.cta_primary_label ?? "Browse Catalog");
   const [primaryLink, setPrimaryLink] = useState(cta.cta_primary_link ?? "/products");
   const [secondaryLabel, setSecondaryLabel] = useState(cta.cta_secondary_label ?? "Wholesale Program");
   const [secondaryLink, setSecondaryLink] = useState(cta.cta_secondary_link ?? "/register");
+  const [slides, setSlides] = useState<HeroSlideRow[]>(() => normalizeHeroSlides(cta.slides));
 
   useEffect(() => {
-    const c = parseJson<{
-      cta_primary_label?: string;
-      cta_primary_link?: string;
-      cta_secondary_label?: string;
-      cta_secondary_link?: string;
-      hero_image_alt?: string;
-    }>(section.content, {});
+    const c = parseJson<HeroCta>(section.content, {});
     setTitle(section.title);
     setDesc(section.description);
     setImageUrl(section.image_url ?? "");
     setHeroImageAlt(c.hero_image_alt ?? "");
+    setEyebrow(c.eyebrow ?? "");
+    setHeroLayout(c.hero_layout ?? "auto");
+    setCarouselMs(String(c.carousel_interval_ms ?? 6000));
     setPrimaryLabel(c.cta_primary_label ?? "Browse Catalog");
     setPrimaryLink(c.cta_primary_link ?? "/products");
     setSecondaryLabel(c.cta_secondary_label ?? "Wholesale Program");
     setSecondaryLink(c.cta_secondary_link ?? "/register");
+    setSlides(normalizeHeroSlides(c.slides));
   }, [section.title, section.description, section.content, section.image_url]);
 
+  const updateSlide = (i: number, patch: Partial<HeroSlideRow>) => {
+    setSlides((prev) => prev.map((row, j) => (j === i ? { ...row, ...patch } : row)));
+  };
+
+  const addSlide = () => {
+    setSlides((prev) => (prev.length >= 5 ? prev : [...prev, { image_url: "", alt: "", caption: "" }]));
+  };
+
+  const removeSlide = (i: number) => {
+    setSlides((prev) => (prev.length <= 1 ? prev : prev.filter((_, j) => j !== i)));
+  };
+
   const save = () => {
+    const ms = parseInt(carouselMs, 10);
     onSave({
       title,
       description: desc,
       image_url: imageUrl.trim(),
       content: JSON.stringify({
+        eyebrow: eyebrow.trim() || undefined,
+        hero_layout: heroLayout || "auto",
+        carousel_interval_ms: Number.isFinite(ms) ? ms : 6000,
         cta_primary_label: primaryLabel,
         cta_primary_link: primaryLink,
         cta_secondary_label: secondaryLabel,
         cta_secondary_link: secondaryLink,
         hero_image_alt: heroImageAlt.trim() || undefined,
+        slides,
       }),
     });
   };
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        Add image URLs in the gallery below. With two or more images, the hero uses a split layout with a carousel (
+        <strong>auto</strong>
+        ). Use &quot;Spotlight&quot; for a single full-bleed background (first image or fallback URL).
+      </p>
       <Field label="Headline" value={title} onChange={setTitle} placeholder="Industrial-Grade Parts..." />
       <Field label="Subtitle" value={desc} onChange={setDesc} placeholder="500+ SKUs in stock..." rows={2} />
+      <Field label="Eyebrow (small line above headline)" value={eyebrow} onChange={setEyebrow} placeholder="Fleet-grade industrial supply" />
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Layout</label>
+          <select
+            value={heroLayout}
+            onChange={(e) => setHeroLayout(e.target.value)}
+            className={fieldClass}
+          >
+            <option value="auto">Auto (split if 2+ gallery images)</option>
+            <option value="split">Split (text + gallery)</option>
+            <option value="spotlight">Spotlight (full background)</option>
+          </select>
+        </div>
+        <Field
+          label="Carousel interval (ms)"
+          value={carouselMs}
+          onChange={setCarouselMs}
+          placeholder="6000"
+        />
+      </div>
       <Field
-        label="Background image URL (optional)"
+        label="Fallback / single image URL (optional)"
         value={imageUrl}
         onChange={setImageUrl}
-        placeholder="Leave empty for default; or /Backend/uploads/images/..."
+        placeholder="Used when gallery slots are empty, or as first spotlight image"
       />
-      <Field label="Background image alt text (accessibility)" value={heroImageAlt} onChange={setHeroImageAlt} placeholder="Industrial truck parts" />
+      <Field label="Default alt text (accessibility)" value={heroImageAlt} onChange={setHeroImageAlt} placeholder="Industrial truck parts" />
+
+      <div className="border border-border rounded-md p-3 space-y-3 bg-muted/20">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">Image gallery (up to 5)</span>
+          <button
+            type="button"
+            onClick={addSlide}
+            disabled={slides.length >= 5}
+            className="text-xs font-medium flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-muted disabled:opacity-40"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add slide
+          </button>
+        </div>
+        {slides.map((row, i) => (
+          <div key={i} className="border border-border rounded-sm p-3 space-y-2 bg-background">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">Slide {i + 1}</span>
+              {slides.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeSlide(i)}
+                  className="text-xs text-destructive flex items-center gap-1 hover:underline"
+                >
+                  <Trash2 className="h-3 w-3" /> Remove
+                </button>
+              )}
+            </div>
+            <Field
+              label="Image URL"
+              value={row.image_url}
+              onChange={(v) => updateSlide(i, { image_url: v })}
+              placeholder="/Backend/uploads/..."
+            />
+            <div className="grid sm:grid-cols-2 gap-2">
+              <Field label="Alt text" value={row.alt} onChange={(v) => updateSlide(i, { alt: v })} placeholder="Alt" />
+              <Field label="Caption (optional)" value={row.caption} onChange={(v) => updateSlide(i, { caption: v })} placeholder="Short caption" />
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Primary CTA label" value={primaryLabel} onChange={setPrimaryLabel} />
         <Field label="Primary CTA link" value={primaryLink} onChange={setPrimaryLink} />

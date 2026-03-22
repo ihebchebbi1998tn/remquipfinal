@@ -229,7 +229,15 @@
     @apply bg-card border border-border rounded-md p-6;
   }
 
-  /* Public site header — sticky bar + category strip */
+  /* Public site header — optional promo strip + sticky bar + category strip */
+  .site-header-announcement {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--nav-bg) / 0.99) 0%,
+      hsl(var(--nav-bg) / 0.94) 50%,
+      hsl(var(--nav-bg) / 0.99) 100%
+    );
+  }
   .site-header-shell {
     @apply sticky top-0 z-50 border-b border-white/10;
     background-color: hsl(var(--nav-bg) / 0.97);

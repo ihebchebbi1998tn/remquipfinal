@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Shield, Truck, Wrench, CheckCircle, ArrowRight, Package, Phone, Users, BarChart3 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -9,10 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { categories } from "@/config/products";
 import { api, ProductCategory, unwrapApiList, resolveUploadImageUrl } from "@/lib/api";
 import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
-import { useCMSPage } from "@/hooks/useApi";
+import { useCMSPageContent } from "@/hooks/useCMS";
 import { EditableSection } from "@/components/EditableSection";
 import LandingThemeScope from "@/components/landing/LandingThemeScope";
-import heroImage from "@/assets/images/hero-truck.jpg";
+import LandingHero, { type HeroCtaContent } from "@/components/landing/LandingHero";
 import warehouseImage from "@/assets/images/warehouse-banner.jpg";
 
 function parseJson<T>(raw: string | null | undefined, fallback: T): T {
@@ -46,29 +45,15 @@ export default function HomePage() {
   const [categoriesList, setCategoriesList] = useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: cmsResponse } = useCMSPage("home", lang);
+  const { data: sectionRows = [] } = useCMSPageContent("home", lang);
   const sections = useMemo(() => {
-    const page = (cmsResponse as { data?: { content?: string } } | undefined)?.data;
-    const raw = page?.content;
-    if (!raw?.trim()) return {};
-    try {
-      const j = JSON.parse(raw);
-      return (j?.sections ?? {}) as Record<string, { title?: string; description?: string; image_url?: string; content?: string }>;
-    } catch {
-      return {};
-    }
-  }, [cmsResponse]);
+    return Object.fromEntries(
+      sectionRows.map((s: { section_key: string }) => [s.section_key, s])
+    ) as Record<string, { title?: string; description?: string; image_url?: string; content?: string }>;
+  }, [sectionRows]);
 
   const hero = sections.hero ?? {};
-  const heroCta = parseJson<{
-    cta_primary_label?: string;
-    cta_primary_link?: string;
-    cta_secondary_label?: string;
-    cta_secondary_link?: string;
-    hero_image_alt?: string;
-  }>(hero.content, {});
-  const heroBgSrc = hero.image_url?.trim() ? resolveUploadImageUrl(hero.image_url.trim()) : heroImage;
-  const heroBgAlt = heroCta.hero_image_alt?.trim() || "Industrial truck parts";
+  const heroCta = useMemo(() => parseJson<HeroCtaContent>(hero.content, {}), [hero.content]);
   const valueProps = parseJson<{ icon: string; text: string }[]>(sections.value_props?.content, [
     { icon: "Shield", text: "Certified & Tested" },
     { icon: "Truck", text: "Fast Delivery" },
@@ -143,55 +128,10 @@ export default function HomePage() {
   }, [lang]);
 
   return (
-    <>
+    <LandingThemeScope>
       {/* Hero */}
       <EditableSection sectionKey="hero" showEdit={isAdmin} variant="dark">
-      <section className="relative min-h-[500px] sm:min-h-[580px] md:min-h-[680px] flex items-center overflow-hidden bg-tertiary">
-        <img
-          src={heroBgSrc}
-          alt={heroBgAlt}
-          className="absolute inset-0 w-full h-full object-cover opacity-20"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-tertiary/96 via-tertiary/75 to-transparent" />
-
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
-          <div className="max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            >
-              <h1
-                className="font-display landing-hero-title font-bold text-primary-foreground mb-8 tracking-tight"
-                style={{ letterSpacing: "-0.02em" }}
-              >
-                {hero.title || "Industrial-Grade Parts For North American Fleets"}
-              </h1>
-
-              <p className="landing-hero-subtitle text-primary-foreground/80 mb-12 max-w-2xl font-light">
-                {hero.description || "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years."}
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                <Link
-                  to={heroCta.cta_primary_link || "/products"}
-                  className="inline-flex items-center justify-center gap-2 btn-gradient text-accent-foreground px-9 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
-                >
-                  {heroCta.cta_primary_label || "Browse Catalog"}
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
-                <Link
-                  to={heroCta.cta_secondary_link || "/register"}
-                  className="inline-flex items-center justify-center gap-2 border border-primary-foreground/25 text-primary-foreground px-9 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider hover:border-primary-foreground/50 hover:bg-primary-foreground/5 transition-all"
-                >
-                  {heroCta.cta_secondary_label || "Wholesale Program"}
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+        <LandingHero hero={hero} heroCta={heroCta} />
       </EditableSection>
 
       {/* Stats (CMS: stats) */}

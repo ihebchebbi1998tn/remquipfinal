@@ -1,20 +1,59 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, ChevronDown, CheckCircle, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, X, ChevronDown, CheckCircle, Loader2, Truck, Pencil } from "lucide-react";
 import { useLanguage, localeLabel, localeFlag } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { categories } from "@/config/products";
 import FlagIcon from "@/components/FlagIcon";
-import { api, unwrapApiList, type ApiResponse, type Product } from "@/lib/api";
+import { api, unwrapApiList, type ApiResponse, type Product, resolveUploadImageUrl } from "@/lib/api";
 import { usePublicSettings } from "@/hooks/useApi";
+import { useCMSPageContent } from "@/hooks/useCMS";
 import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
+
+function parseJson<T>(raw: string | null | undefined, fallback: T): T {
+  if (!raw?.trim()) return fallback;
+  try {
+    const v = JSON.parse(raw);
+    return (v ?? fallback) as T;
+  } catch {
+    return fallback;
+  }
+}
 
 export default function Header() {
   const { data: pubRes } = usePublicSettings();
   const pub = (pubRes?.data ?? {}) as Record<string, string>;
   const brandName = pub.store_name || pub.site_name || "REMQUIP";
+  const { user } = useAuth();
+  const canEditHeader =
+    user?.role === "admin" || user?.role === "super_admin" || user?.role === "manager";
   const { t, lang, setLang, supportedLocales } = useLanguage();
+  const { data: homeCmsSections = [] } = useCMSPageContent("home", lang);
+  const headerBlock = useMemo(
+    () =>
+      (homeCmsSections as { section_key: string; content?: string; image_url?: string }[]).find(
+        (s) => s.section_key === "site_header"
+      ),
+    [homeCmsSections]
+  );
+  const headerCms = useMemo(
+    () =>
+      parseJson<{
+        announcement?: string;
+        announcement_link_url?: string;
+        announcement_link_label?: string;
+        trust_chips?: string[];
+      }>(headerBlock?.content, {}),
+    [headerBlock?.content]
+  );
+  const announcement = headerCms.announcement?.trim() ?? "";
+  const announcementHref = headerCms.announcement_link_url?.trim() ?? "";
+  const announcementLinkLabel = headerCms.announcement_link_label?.trim() ?? "";
+  const trustChips = (headerCms.trust_chips ?? []).map((c) => c.trim()).filter(Boolean).slice(0, 4);
+  const logoUrl = headerBlock?.image_url?.trim() ? resolveUploadImageUrl(headerBlock.image_url.trim()) : "";
+  const showAnnouncement = announcement.length > 0;
   const { currency, setCurrency, formatPrice } = useCurrency();
   const { itemCount, lastAddedAt } = useCart();
   const location = useLocation();
@@ -204,28 +243,90 @@ export default function Header() {
   const navLinkClass = (to: string, exact?: boolean) => {
     const active = exact ? path === to : path === to || (to !== "/" && path.startsWith(to));
     return [
-      "relative px-3 py-2 rounded-md text-sm font-medium transition-colors",
+      "relative px-3 py-2 rounded-md text-[13px] font-semibold transition-colors",
       active
         ? "text-nav-accent after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-nav-accent"
-        : "text-nav-foreground/85 hover:text-nav-foreground hover:bg-white/[0.06]",
+        : "text-nav-foreground/88 hover:text-nav-foreground hover:bg-white/[0.07]",
     ].join(" ");
   };
 
+  const mobileOverlayTop = showAnnouncement ? "top-[92px]" : "top-14";
+
+  const headerEditLink = canEditHeader ? (
+    <Link
+      to="/admin/landing#section-site_header"
+      className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-nav-foreground/85 hover:bg-white/[0.11] hover:text-nav-foreground transition-colors shrink-0"
+      title="Edit site header in Admin → Landing"
+    >
+      <Pencil className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
+      Edit header
+    </Link>
+  ) : null;
+
   return (
     <header className="site-header-shell">
+      {showAnnouncement && (
+        <div className="site-header-announcement border-b border-white/10">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 py-2">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-[11px] sm:text-xs text-nav-foreground/90 text-center sm:text-left">
+                <Truck className="h-3.5 w-3.5 text-accent shrink-0 hidden sm:inline" aria-hidden />
+                <span className="font-medium tracking-wide">{announcement}</span>
+                {announcementHref && announcementLinkLabel && (
+                  <Link
+                    to={announcementHref}
+                    className="text-accent font-semibold hover:underline underline-offset-2 sm:ml-1"
+                  >
+                    {announcementLinkLabel}
+                  </Link>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 min-w-0">
+                {headerEditLink}
+                {trustChips.length > 0 && (
+                  <div className="hidden md:flex items-center flex-wrap justify-end gap-2">
+                    {trustChips.map((chip) => (
+                      <span
+                        key={chip}
+                        className="rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-nav-foreground/80"
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Primary row: brand + nav | search | utilities */}
       <div className="nav-bar">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-14 md:h-[60px] items-center gap-3 md:gap-4">
+          <div className="flex h-14 md:h-16 items-center gap-3 md:gap-5">
             {/* Brand + desktop nav */}
-            <div className="flex min-w-0 flex-shrink-0 items-center gap-6 lg:gap-8">
+            <div className="flex min-w-0 flex-shrink-0 items-center gap-5 lg:gap-8">
               <Link
                 to="/"
-                className="font-display text-[15px] md:text-base font-semibold tracking-[0.1em] text-nav-foreground transition-opacity hover:opacity-90 uppercase"
+                className="flex items-center gap-2.5 min-w-0 group transition-opacity hover:opacity-95"
               >
-                {brandName}
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    className="h-8 md:h-9 w-auto max-w-[120px] sm:max-w-[160px] object-contain object-left"
+                  />
+                ) : null}
+                <span
+                  className={`font-display font-semibold tracking-[0.08em] text-nav-foreground uppercase truncate max-w-[7rem] sm:max-w-none ${
+                    logoUrl ? "text-xs sm:text-[17px]" : "text-[15px] md:text-[17px]"
+                  }`}
+                >
+                  {brandName}
+                </span>
               </Link>
-              <nav className="hidden lg:flex items-center gap-0.5" aria-label="Principal">
+              <nav className="hidden lg:flex items-center gap-1" aria-label="Principal">
                 <Link to="/products" className={navLinkClass("/products")}>
                   {t("nav.products")}
                 </Link>
@@ -239,9 +340,9 @@ export default function Header() {
             </div>
 
             {/* Search (center, grows) */}
-            <div className="hidden min-w-0 flex-1 md:flex md:justify-center" ref={searchRef}>
-              <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md lg:max-w-lg xl:max-w-xl">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nav-foreground/45" aria-hidden />
+            <div className="hidden min-w-0 flex-1 md:flex md:justify-center px-2 lg:px-6" ref={searchRef}>
+              <form onSubmit={handleSearchSubmit} className="relative w-full max-w-lg xl:max-w-2xl">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
                 <input
                   type="search"
                   autoComplete="off"
@@ -249,7 +350,7 @@ export default function Header() {
                   onChange={(e) => handleSearch(e.target.value)}
                   onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
                   placeholder={t("nav.search.placeholder")}
-                  className="w-full rounded-lg border border-white/10 bg-white/[0.08] py-2.5 pl-10 pr-3 text-sm text-nav-foreground outline-none transition-[box-shadow,background-color] placeholder:text-nav-foreground/45 focus:border-white/20 focus:bg-white/[0.11] focus:ring-2 focus:ring-white/15"
+                  className="w-full rounded-md border border-border/70 bg-white py-2.5 pl-10 pr-3 text-sm text-foreground shadow-sm outline-none transition-[box-shadow,border-color] placeholder:text-muted-foreground focus:border-accent/50 focus:ring-2 focus:ring-accent/25"
                 />
                 {showResults && (
                   <div className="absolute left-0 right-0 top-full z-50 mt-1.5">
@@ -264,7 +365,10 @@ export default function Header() {
             </div>
 
             {/* Locale, currency, account, cart */}
-            <div className="ml-auto flex flex-shrink-0 items-center gap-0.5 sm:gap-1 md:border-l md:border-white/10 md:pl-3 lg:pl-4">
+            <div className="ml-auto flex flex-shrink-0 items-center gap-0.5 sm:gap-1 md:border-l md:border-white/12 md:pl-3 lg:pl-5">
+            {!showAnnouncement && headerEditLink ? (
+              <span className="hidden md:inline-flex mr-1 lg:mr-2">{headerEditLink}</span>
+            ) : null}
             {/* Language */}
             <div className="relative hidden md:block" ref={langRef}>
               <button
@@ -402,8 +506,18 @@ export default function Header() {
 
       {/* ── Mobile menu overlay ── */}
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 top-14 z-40 bg-background overflow-y-auto animate-fade-in">
+        <div className={`md:hidden fixed inset-0 z-40 bg-background overflow-y-auto animate-fade-in ${mobileOverlayTop}`}>
           <div className="px-4 py-4 space-y-4">
+            {canEditHeader && (
+              <Link
+                to="/admin/landing#section-site_header"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-md border border-border bg-secondary text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Pencil className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                Edit header
+              </Link>
+            )}
             {/* Mobile search */}
             <div ref={mobileSearchRef} className="relative">
               <form onSubmit={handleSearchSubmit}>
