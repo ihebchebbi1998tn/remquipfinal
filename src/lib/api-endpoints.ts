@@ -51,6 +51,8 @@ export const API_ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',
     VERIFY: '/auth/verify',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
   },
 
   // ==================== USERS ENDPOINTS ====================

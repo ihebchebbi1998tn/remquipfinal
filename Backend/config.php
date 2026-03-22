@@ -51,12 +51,16 @@ define('APP_LOCALE', 'en_CA');
 define('CURRENCY_CODE', 'CAD');
 define('CURRENCY_SYMBOL', 'C$');
 
-// Email Configuration
-define('SMTP_HOST', 'smtp.gmail.com');
-define('SMTP_PORT', 587);
-define('SMTP_USER', 'your-email@gmail.com');
-define('SMTP_PASS', 'your-app-password');
-define('SMTP_FROM', 'noreply@remquip.com');
+// Email — OVH (ssl0.ovh.net): 465 SSL (recommended) or 587 STARTTLS
+define('SMTP_HOST', 'ssl0.ovh.net');
+define('SMTP_PORT', 465);
+define('SMTP_ENCRYPTION', 'ssl'); // ssl | tls (use tls when SMTP_PORT is 587)
+define('SMTP_USER', 'remquip_emails_auto_users_admin@spadadibattaglia.com');
+define('SMTP_PASS', 'Dadouhibou2025');
+define('SMTP_FROM', 'remquip_emails_auto_users_admin@spadadibattaglia.com');
+
+/** Password reset token lifetime (seconds). */
+define('PASSWORD_RESET_TOKEN_TTL', 3600);
 
 // Logging
 define('LOG_DIR', __DIR__ . '/logs');

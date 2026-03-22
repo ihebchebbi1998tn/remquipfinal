@@ -50,6 +50,19 @@ CREATE TABLE IF NOT EXISTS remquip_users (
   KEY idx_users_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS remquip_password_reset_tokens (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_prt_user (user_id),
+  UNIQUE KEY uq_prt_hash (token_hash),
+  KEY idx_prt_expires (expires_at),
+  CONSTRAINT fk_prt_user FOREIGN KEY (user_id) REFERENCES remquip_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ----------------------------------------------------------------------------- 2. ACCESS CONTROL
 -- VARCHAR avoids CHAR(36) trailing-space padding when using short string IDs in seeds.
 CREATE TABLE IF NOT EXISTS remquip_pages (
@@ -618,7 +631,8 @@ INSERT IGNORE INTO remquip_settings (id, setting_key, setting_value, data_type, 
 ('s0000001-0000-4000-8000-000000000011', 'portal_email_notifications_default', '1', 'string', 'Default for user dashboard email toggle', 0),
 ('s0000001-0000-4000-8000-000000000012', 'notif_recipient_email', '', 'string', 'Admin notification inbox; empty uses contact_email', 0),
 ('s0000001-0000-4000-8000-000000000013', 'notif_from_email', '', 'string', 'From: for outbound mail; empty uses contact_email', 0),
-('s0000001-0000-4000-8000-000000000014', 'supported_locales', '["en","fr"]', 'json', 'Enabled languages for CMS, categories, banners. Add codes like es, de for future languages.', 1);
+('s0000001-0000-4000-8000-000000000014', 'supported_locales', '["en","fr"]', 'json', 'Enabled languages for CMS, categories, banners. Add codes like es, de for future languages.', 1),
+('s0000001-0000-4000-8000-000000000015', 'notif_order_status', '1', 'string', 'Email: order status update (non-shipped)', 0);
 
 -- Contact page map (GET /contact-map, PUT admin)
 INSERT IGNORE INTO remquip_contact_map (id, latitude, longitude, zoom, marker_title, address_line) VALUES

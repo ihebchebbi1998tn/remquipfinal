@@ -6,6 +6,27 @@
  * =====================================================================
  */
 
+/** nginx / PHP-FPM often omit getallheaders(); Auth::getToken() needs this. */
+if (!function_exists('getallheaders')) {
+    function getallheaders(): array
+    {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (strpos($name, 'HTTP_') === 0) {
+                $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
+                $headers[$key] = $value;
+            }
+        }
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headers['Authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+        } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+
+        return $headers;
+    }
+}
+
 class ResponseHelper {
     /**
      * Send success response
@@ -233,7 +254,16 @@ class Auth {
      */
     public static function getToken() {
         $headers = getallheaders();
-        
+        if (!is_array($headers)) {
+            $headers = [];
+        }
+        if (!isset($headers['Authorization']) && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headers['Authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+        }
+        if (!isset($headers['Authorization']) && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+
         if (!isset($headers['Authorization'])) {
             return null;
         }
@@ -264,8 +294,12 @@ class Auth {
             ResponseHelper::sendError('Unauthorized: Invalid or expired token', 401);
         }
         
-        if ($requiredRole && $payload['role'] !== 'admin' && $payload['role'] !== $requiredRole) {
-            ResponseHelper::sendError('Forbidden: Insufficient permissions', 403);
+        if ($requiredRole) {
+            $role = $payload['role'] ?? '';
+            $deny = $role !== 'admin' && $role !== 'super_admin' && $role !== $requiredRole;
+            if ($deny) {
+                ResponseHelper::sendError('Forbidden: Insufficient permissions', 403);
+            }
         }
         
         return $payload;
@@ -646,6 +680,8 @@ function compute_order_totals_from_subtotal($subtotal, $rates) {
     return ['tax' => $tax, 'shipping' => $shipping, 'total' => $total];
 }
 
+require_once __DIR__ . '/email_templates.php';
+
 function remquip_setting_is_on($conn, $key) {
     $v = settings_fetch_value($conn, $key, '0');
     return $v === '1' || strcasecmp((string)$v, 'true') === 0;
@@ -665,53 +701,91 @@ function remquip_mail_from_address($conn) {
         return $f;
     }
     $c = trim(settings_fetch_value($conn, 'contact_email', ''));
-    return filter_var($c, FILTER_VALIDATE_EMAIL) ? $c : null;
+    if ($c !== '' && filter_var($c, FILTER_VALIDATE_EMAIL)) {
+        return $c;
+    }
+    if (defined('SMTP_FROM')) {
+        $s = trim((string)SMTP_FROM);
+        if ($s !== '' && filter_var($s, FILTER_VALIDATE_EMAIL)) {
+            return $s;
+        }
+    }
+    if (defined('SMTP_USER')) {
+        $u = trim((string)SMTP_USER);
+        if ($u !== '' && filter_var($u, FILTER_VALIDATE_EMAIL)) {
+            return $u;
+        }
+    }
+    return null;
 }
 
 /**
- * Admin/system notifications (uses From = notif_from_email or contact_email).
+ * @param object $conn
+ * @return string|null "Name <email@domain>"
+ */
+function remquip_mail_from_header($conn) {
+    $addr = remquip_mail_from_address($conn);
+    if (!$addr) {
+        return null;
+    }
+    $name = settings_fetch_value($conn, 'store_name', 'REMQUIP');
+
+    return trim($name) . ' <' . $addr . '>';
+}
+
+/**
+ * Admin/system HTML mail via OVH SMTP.
  *
  * @param object $conn
- * @param string $to
- * @param string $subject
- * @param string $body
+ * @param string $html
+ * @param string|null $plain
  * @return bool
  */
-function remquip_send_admin_mail($conn, $to, $subject, $body) {
+function remquip_send_admin_mail($conn, $to, $subject, $html, $plain = null) {
     if (!$to) {
         return false;
     }
-    $from = remquip_mail_from_address($conn);
+    $from = remquip_mail_from_header($conn);
     if (!$from) {
         Logger::info('remquip_mail_skip', ['reason' => 'no_from']);
         return false;
     }
-    $headers = 'From: ' . $from . "\r\nContent-Type: text/plain; charset=UTF-8";
-    $ok = @mail($to, $subject, $body, $headers);
+    require_once __DIR__ . '/lib/RemquipSmtp.php';
+    if (!RemquipSmtp::isConfigured()) {
+        Logger::warning('remquip_mail_skip', ['reason' => 'smtp_not_configured']);
+        return false;
+    }
+    $reply = remquip_mail_from_address($conn);
+    $ok = RemquipSmtp::send($from, $to, $subject, $html, $plain, $reply);
     Logger::info('remquip_admin_mail', ['to' => $to, 'subject' => $subject, 'ok' => $ok]);
+
     return $ok;
 }
 
 /**
- * Customer-facing (order shipped); Reply-To = store address.
+ * Customer-facing HTML mail; Reply-To = store outbound address.
  *
  * @param object $conn
- * @param string $to
- * @param string $subject
- * @param string $body
+ * @param string $html
+ * @param string|null $plain
  * @return bool
  */
-function remquip_send_customer_mail($conn, $to, $subject, $body) {
+function remquip_send_customer_mail($conn, $to, $subject, $html, $plain = null) {
     if (!$to) {
         return false;
     }
-    $from = remquip_mail_from_address($conn);
+    $from = remquip_mail_from_header($conn);
     if (!$from) {
         return false;
     }
-    $headers = 'From: ' . $from . "\r\nReply-To: " . $from . "\r\nContent-Type: text/plain; charset=UTF-8";
-    $ok = @mail($to, $subject, $body, $headers);
+    require_once __DIR__ . '/lib/RemquipSmtp.php';
+    if (!RemquipSmtp::isConfigured()) {
+        return false;
+    }
+    $reply = remquip_mail_from_address($conn);
+    $ok = RemquipSmtp::send($from, $to, $subject, $html, $plain, $reply);
     Logger::info('remquip_customer_mail', ['to' => $to, 'subject' => $subject, 'ok' => $ok]);
+
     return $ok;
 }
 
@@ -723,8 +797,12 @@ function remquip_notify_new_order($conn, $orderId, $orderNumber, $total) {
     if (!$to) {
         return;
     }
-    $body = "A new order was placed.\r\n\r\nOrder number: {$orderNumber}\r\nTotal: {$total}\r\nOrder ID: {$orderId}\r\n";
-    remquip_send_admin_mail($conn, $to, 'REMQUIP: New order ' . $orderNumber, $body);
+    $tpl = remquip_tpl_order_new_admin([
+        'order_number' => $orderNumber,
+        'total' => $total,
+        'order_id' => $orderId,
+    ]);
+    remquip_send_admin_mail($conn, $to, 'REMQUIP: New order ' . $orderNumber, $tpl['html'], $tpl['text']);
 }
 
 function remquip_notify_new_customer($conn, $companyName, $email) {
@@ -735,8 +813,8 @@ function remquip_notify_new_customer($conn, $companyName, $email) {
     if (!$to) {
         return;
     }
-    $body = "New customer record created.\r\n\r\nCompany: {$companyName}\r\nEmail: {$email}\r\n";
-    remquip_send_admin_mail($conn, $to, 'REMQUIP: New customer ' . $email, $body);
+    $tpl = remquip_tpl_new_customer_admin(['company' => $companyName, 'email' => $email]);
+    remquip_send_admin_mail($conn, $to, 'REMQUIP: New customer ' . $email, $tpl['html'], $tpl['text']);
 }
 
 function remquip_notify_low_stock($conn, $sku, $name, $qtyAvailable, $reorderLevel) {
@@ -772,11 +850,62 @@ function remquip_notify_order_shipped_to_customer($conn, $orderId, $carrier = nu
         return;
     }
     $num = $row['order_number'];
-    $body = "Your order {$num} has shipped.\r\n\r\n";
-    if ($carrier && $trackingNumber) {
-        $body .= "Carrier: {$carrier}\r\nTracking: {$trackingNumber}\r\n";
+    $tpl = remquip_tpl_order_shipped_customer([
+        'order_number' => $num,
+        'carrier' => $carrier,
+        'tracking' => $trackingNumber,
+    ]);
+    remquip_send_customer_mail($conn, $cust, 'REMQUIP: Order ' . $num . ' shipped', $tpl['html'], $tpl['text']);
+}
+
+/**
+ * Generic customer email when order status changes (not the shipped flow).
+ */
+function remquip_notify_order_status_to_customer($conn, $orderId, $newStatus) {
+    $flag = settings_fetch_value($conn, 'notif_order_status', '1');
+    if ($flag !== '1' && strcasecmp((string)$flag, 'true') !== 0) {
+        return;
     }
-    remquip_send_customer_mail($conn, $cust, 'REMQUIP: Order ' . $num . ' shipped', $body);
+    $row = $conn->fetch(
+        'SELECT o.order_number, c.email FROM remquip_orders o
+         INNER JOIN remquip_customers c ON c.id = o.customer_id AND c.deleted_at IS NULL
+         WHERE o.id = :id AND o.deleted_at IS NULL',
+        ['id' => $orderId]
+    );
+    if (!$row || empty($row['email'])) {
+        return;
+    }
+    $cust = filter_var($row['email'], FILTER_VALIDATE_EMAIL);
+    if (!$cust) {
+        return;
+    }
+    $tpl = remquip_tpl_order_status_customer([
+        'order_number' => $row['order_number'],
+        'status' => $newStatus,
+    ]);
+    remquip_send_customer_mail(
+        $conn,
+        $cust,
+        'REMQUIP: Order ' . $row['order_number'] . ' — ' . $newStatus,
+        $tpl['html'],
+        $tpl['text']
+    );
+}
+
+/**
+ * @param string $prevStatus
+ * @param string $newStatus
+ */
+function remquip_notify_order_status_changed($conn, $orderId, $prevStatus, $newStatus) {
+    if ($prevStatus === $newStatus) {
+        return;
+    }
+    if ($newStatus === 'shipped' && $prevStatus !== 'shipped') {
+        remquip_notify_order_shipped_to_customer($conn, $orderId, null, null);
+
+        return;
+    }
+    remquip_notify_order_status_to_customer($conn, $orderId, $newStatus);
 }
 
 // Initialize on include

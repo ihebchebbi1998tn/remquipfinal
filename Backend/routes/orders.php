@@ -176,9 +176,22 @@ if (($method === 'PATCH' || $method === 'PUT') && $id && !$action) {
         if (!$updates) {
             ResponseHelper::sendError('No fields to update', 400);
         }
+
+        $prevStatus = null;
+        if (isset($data['status'])) {
+            $prevRow = $conn->fetch(
+                'SELECT status FROM remquip_orders WHERE id = :id AND deleted_at IS NULL',
+                ['id' => $id]
+            );
+            $prevStatus = $prevRow['status'] ?? null;
+        }
         
         $updates[] = 'updated_at = NOW()';
         $conn->execute('UPDATE remquip_orders SET ' . implode(', ', $updates) . ' WHERE id = :id AND deleted_at IS NULL', $params);
+
+        if (isset($data['status']) && $prevStatus !== null) {
+            remquip_notify_order_status_changed($conn, $id, (string)$prevStatus, (string)$data['status']);
+        }
         
         Logger::info('Order updated', ['order_id' => $id]);
         ResponseHelper::sendSuccess(['id' => $id], 'Order updated successfully');
@@ -336,9 +349,7 @@ if (($method === 'PATCH' || $method === 'PUT') && $id && $action === 'status') {
             ['status' => $data['status'], 'id' => $id]
         );
 
-        if ($data['status'] === 'shipped' && ($prev['status'] ?? '') !== 'shipped') {
-            remquip_notify_order_shipped_to_customer($conn, $id, null, null);
-        }
+        remquip_notify_order_status_changed($conn, $id, (string)($prev['status'] ?? ''), (string)$data['status']);
 
         Logger::info('Order status updated', ['order_id' => $id, 'status' => $data['status']]);
         ResponseHelper::sendSuccess(['id' => $id, 'status' => $data['status']], 'Order status updated');

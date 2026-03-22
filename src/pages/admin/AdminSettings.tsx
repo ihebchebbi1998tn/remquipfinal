@@ -302,7 +302,7 @@ export default function AdminSettings() {
         <div className="dashboard-card">
           <h3 className="font-display font-bold text-sm uppercase mb-4">Email notification toggles</h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Uses PHP <code className="text-xs">mail()</code> when enabled. Shipped notices go to the customer; other alerts go to the recipient below.
+            Outbound mail uses OVH SMTP (HTML templates). Shipped and status updates go to the customer; the toggles below apply. Admin alerts use the recipient below.
           </p>
           <div className="grid sm:grid-cols-2 gap-3 mb-4">
             <div>
@@ -330,6 +330,7 @@ export default function AdminSettings() {
             {[
               { key: "notif_new_order", label: "New order confirmation" },
               { key: "notif_order_shipped", label: "Order shipped" },
+              { key: "notif_order_status", label: "Order status updates (non-shipped)" },
               { key: "notif_low_stock", label: "Low stock alert" },
               { key: "notif_new_customer", label: "New customer registration" },
               { key: "notif_weekly_summary", label: "Weekly sales summary" },
@@ -353,6 +354,7 @@ export default function AdminSettings() {
                   "notif_from_email",
                   "notif_new_order",
                   "notif_order_shipped",
+                  "notif_order_status",
                   "notif_low_stock",
                   "notif_new_customer",
                   "notif_weekly_summary",

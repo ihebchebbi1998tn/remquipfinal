@@ -221,6 +221,110 @@ if ($method === 'POST' && $action === 'refresh') {
 }
 
 // =====================================================================
+// FORGOT PASSWORD (portal users only — role user)
+// =====================================================================
+if ($method === 'POST' && $action === 'forgot-password') {
+    $data = json_decode(file_get_contents('php://input'), true) ?? [];
+    $email = trim($data['email'] ?? '');
+    $generic = 'If an account exists for that email, you will receive password reset instructions shortly.';
+
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        ResponseHelper::sendSuccess(['message' => $generic], $generic, 200);
+    }
+
+    try {
+        $stmt = $conn->prepare(
+            'SELECT id, email, full_name, role, status FROM remquip_users WHERE email = :e AND deleted_at IS NULL'
+        );
+        $stmt->execute(['e' => $email]);
+        $user = $stmt->fetch();
+
+        if (!$user || $user['role'] !== 'user' || $user['status'] !== 'active') {
+            Logger::info('Forgot password: no eligible user', ['email' => $email]);
+            ResponseHelper::sendSuccess(['message' => $generic], $generic, 200);
+        }
+
+        $raw = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $raw);
+        $tokenId = bin2hex(random_bytes(18));
+        $ttl = defined('PASSWORD_RESET_TOKEN_TTL') ? (int)PASSWORD_RESET_TOKEN_TTL : 3600;
+        $expires = date('Y-m-d H:i:s', time() + $ttl);
+
+        $conn->execute(
+            'DELETE FROM remquip_password_reset_tokens WHERE user_id = :uid AND used_at IS NULL',
+            ['uid' => $user['id']]
+        );
+        $conn->execute(
+            'INSERT INTO remquip_password_reset_tokens (id, user_id, token_hash, expires_at) VALUES (:id, :uid, :h, :exp)',
+            ['id' => $tokenId, 'uid' => $user['id'], 'h' => $tokenHash, 'exp' => $expires]
+        );
+
+        $base = rtrim((string)FRONTEND_URL, '/');
+        $link = $base . '/reset-password?token=' . rawurlencode($raw);
+        $tpl = remquip_tpl_password_reset([
+            'name' => $user['full_name'],
+            'reset_link' => $link,
+            'expires_minutes' => max(1, (int)ceil($ttl / 60)),
+        ]);
+        $ok = remquip_send_customer_mail(
+            $conn,
+            $user['email'],
+            'REMQUIP: Password reset',
+            $tpl['html'],
+            $tpl['text']
+        );
+        Logger::info('Forgot password email', ['user_id' => $user['id'], 'sent' => $ok]);
+    } catch (Exception $e) {
+        Logger::error('Forgot password error', ['error' => $e->getMessage()]);
+    }
+
+    ResponseHelper::sendSuccess(['message' => $generic], $generic, 200);
+}
+
+// =====================================================================
+// RESET PASSWORD (token from email)
+// =====================================================================
+if ($method === 'POST' && $action === 'reset-password') {
+    $data = json_decode(file_get_contents('php://input'), true) ?? [];
+    $token = trim($data['token'] ?? '');
+    $password = $data['password'] ?? '';
+
+    if ($token === '' || strlen($password) < PASSWORD_MIN_LENGTH) {
+        ResponseHelper::sendError('Valid token and a new password of at least ' . PASSWORD_MIN_LENGTH . ' characters are required', 400);
+    }
+
+    try {
+        $hash = hash('sha256', $token);
+        $row = $conn->fetch(
+            'SELECT t.id AS tid, t.user_id, u.status, u.role FROM remquip_password_reset_tokens t
+             INNER JOIN remquip_users u ON u.id = t.user_id AND u.deleted_at IS NULL
+             WHERE t.token_hash = :h AND t.used_at IS NULL AND t.expires_at > NOW()',
+            ['h' => $hash]
+        );
+
+        if (!$row || $row['role'] !== 'user' || $row['status'] !== 'active') {
+            ResponseHelper::sendError('Invalid or expired reset link. Please request a new one.', 400);
+        }
+
+        $newHash = Auth::hashPassword($password);
+        $conn->execute(
+            'UPDATE remquip_users SET password_hash = :p, updated_at = NOW() WHERE id = :id',
+            ['p' => $newHash, 'id' => $row['user_id']]
+        );
+        $conn->execute(
+            'DELETE FROM remquip_password_reset_tokens WHERE user_id = :uid',
+            ['uid' => $row['user_id']]
+        );
+
+        Logger::info('Password reset completed', ['user_id' => $row['user_id']]);
+        ResponseHelper::sendSuccess([], 'Your password has been updated. You can sign in now.', 200);
+    } catch (Exception $e) {
+        Logger::error('Reset password error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Could not reset password. Please try again.', 500);
+    }
+}
+
+// =====================================================================
 // VERIFY TOKEN
 // =====================================================================
 if ($method === 'GET' && $action === 'verify') {

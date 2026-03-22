@@ -333,24 +333,41 @@ if ($method === 'GET' && ($rs[0] ?? '') === 'pages' && isset($rs[1], $rs[2]) && 
         if (!$page) {
             ResponseHelper::sendSuccess([], 'No content');
         }
-        if (!$page['is_published']) {
+        $published = !empty($page['is_published'] ?? $page['isPublished'] ?? null);
+        if (!$published) {
             Auth::requireAuth('admin');
         }
         $content = $page['content'];
         $reqLocale = isset($_GET['locale']) ? cms_normalize_locale($_GET['locale'], $conn) : null;
         $defaultLocale = (get_supported_locales($conn))[0] ?? 'en';
         if ($reqLocale && $reqLocale !== $defaultLocale) {
-            $tr = $conn->fetch(
-                'SELECT content FROM remquip_cms_page_translations WHERE page_id = :p AND locale = :l',
-                ['p' => $page['id'], 'l' => $reqLocale]
-            );
-            if ($tr && $tr['content'] !== null && $tr['content'] !== '') {
-                $content = $tr['content'];
+            try {
+                $tr = $conn->fetch(
+                    'SELECT content FROM remquip_cms_page_translations WHERE page_id = :p AND locale = :l',
+                    ['p' => $page['id'], 'l' => $reqLocale]
+                );
+                if ($tr && $tr['content'] !== null && $tr['content'] !== '') {
+                    $content = $tr['content'];
+                }
+            } catch (Throwable $trErr) {
+                Logger::warning('CMS translation row missing or query failed; using default page content', [
+                    'error' => $trErr->getMessage(),
+                    'page_id' => $page['id'],
+                    'locale' => $reqLocale,
+                ]);
             }
         }
         $sections = cms_decode_sections($content);
         $out = [];
         foreach ($sections as $key => $block) {
+            if (!is_array($block)) {
+                $block = [
+                    'title' => '',
+                    'description' => '',
+                    'image_url' => '',
+                    'content' => is_scalar($block) ? (string) $block : '',
+                ];
+            }
             $out[] = [
                 'id' => $page['id'] . ':' . $key,
                 'page_name' => $page['slug'],
@@ -365,8 +382,8 @@ if ($method === 'GET' && ($rs[0] ?? '') === 'pages' && isset($rs[1], $rs[2]) && 
             ];
         }
         ResponseHelper::sendSuccess($out, 'Page content');
-    } catch (Exception $e) {
-        Logger::error('CMS get page content error', ['error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        Logger::error('CMS get page content error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
         ResponseHelper::sendError('Failed to load content', 500);
     }
 }

@@ -673,6 +673,16 @@ class APIService {
     return response as AuthResponse;
   }
 
+  /** Request password reset email (portal users). */
+  async forgotPassword(email: string): Promise<ApiResponse<{ message?: string }>> {
+    return this.request('POST', API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+  }
+
+  /** Set new password using token from email. */
+  async resetPassword(token: string, password: string): Promise<ApiResponse> {
+    return this.request('POST', API_ENDPOINTS.AUTH.RESET_PASSWORD, { token, password });
+  }
+
   /** Public liveness probe — `GET /api/health` (Backend `index.php`). */
   getHealth(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
     return this.request('GET', API_ENDPOINTS.HEALTH);
