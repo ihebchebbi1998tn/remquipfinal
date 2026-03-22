@@ -1,7 +1,7 @@
 /**
  * API Service Layer
  * Handles all API requests to the remquip backend
- * Backend API URL: same as Backend/config.php API_URL (http://luccibyey.com.tn/remquip/api)
+ * Backend API URL: same as Backend/config.php API_URL (HTTPS; see `src/config/constants.ts` API_BASE_URL)
  * Includes comprehensive error handling and logging
  */
 

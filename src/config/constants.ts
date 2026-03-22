@@ -14,11 +14,13 @@ export const FREE_SHIPPING_THRESHOLD = 500;
 export const FLAT_SHIPPING_RATE = 25;
 
 /**
- * Backend API origin (no .env — change here only).
+ * Backend API origin. Must use **HTTPS** when the app is served over HTTPS (e.g. Vercel), or the browser blocks requests (mixed content).
  * Must match `API_URL` in `Backend/config.php` (same host + `/remquip/api` path).
- * Router: `Backend/index.php` (`$knownResources` must include every first path segment the client calls).
+ * Optional: set `VITE_API_BASE_URL` in Vercel / `.env` for a different API host (no trailing slash).
  */
-export const API_BASE_URL = "http://luccibyey.com.tn/remquip/api";
+const envApi =
+  typeof import.meta.env.VITE_API_BASE_URL === "string" ? import.meta.env.VITE_API_BASE_URL.trim().replace(/\/$/, "") : "";
+export const API_BASE_URL = envApi || "https://luccibyey.com.tn/remquip/api";
 
 export const RATE_LIMITS = {
   auth: { requests: 10, windowMs: 60_000 },

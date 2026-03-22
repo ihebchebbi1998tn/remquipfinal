@@ -1,6 +1,6 @@
 /**
  * API Endpoints Configuration
- * Paths are relative to API_BASE_URL (`http://luccibyey.com.tn/remquip/api`, see Backend/config.php API_URL).
+ * Paths are relative to API_BASE_URL (HTTPS; see `constants.ts` and Backend/config.php `API_URL`).
  */
 
 export const API_ENDPOINTS = {
