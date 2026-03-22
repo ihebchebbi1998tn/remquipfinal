@@ -248,6 +248,37 @@
   .site-header-main {
     @apply min-w-0;
   }
+
+  /* Storefront search — pill bar on dark header */
+  .site-header-search-bar {
+    @apply flex min-h-[44px] sm:min-h-[46px] items-stretch rounded-full border bg-white transition-[box-shadow,border-color,ring] duration-200;
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 4px 16px rgba(15, 23, 42, 0.07);
+  }
+  .site-header-search-bar:focus-within {
+    border-color: hsl(var(--accent) / 0.45);
+    box-shadow:
+      0 2px 8px rgba(15, 23, 42, 0.06),
+      0 8px 28px rgba(15, 23, 42, 0.1);
+    @apply ring-2 ring-accent/20;
+  }
+  .site-header-search-icon-wrap {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/95 text-muted-foreground transition-colors duration-200;
+  }
+  .site-header-search-bar:focus-within .site-header-search-icon-wrap {
+    @apply bg-accent/15 text-accent;
+  }
+  .site-header-search-input {
+    @apply min-w-0 flex-1 border-0 bg-transparent py-2 text-[15px] leading-snug text-foreground outline-none placeholder:text-muted-foreground/70 sm:text-[15px];
+  }
+  .site-header-search-submit {
+    @apply my-1 mr-1 shrink-0 rounded-full bg-accent px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-foreground shadow-sm transition-[filter,opacity] hover:brightness-[1.03] active:brightness-[0.98] disabled:pointer-events-none disabled:opacity-40 sm:px-5 sm:text-xs;
+  }
+  .site-header-search-panel {
+    @apply overflow-hidden rounded-xl border border-border/70 bg-card shadow-[0_12px_48px_rgba(15,23,42,0.14)] ring-1 ring-black/[0.04];
+  }
   .site-header-category-strip {
     @apply border-t border-white/5;
     background-color: hsl(var(--category-bar) / 0.98);
