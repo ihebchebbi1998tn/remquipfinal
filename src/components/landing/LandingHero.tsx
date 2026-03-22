@@ -14,7 +14,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { resolveUploadImageUrl } from "@/lib/api";
-import heroImage from "@/assets/images/hero-truck.jpg";
+import heroImage from "@/assets/images/hero-truck.png";
 
 export type HeroSlideInput = { image_url?: string; alt?: string; caption?: string };
 
@@ -107,7 +107,7 @@ export default function LandingHero({
   /** Optional row under hero CTAs (e.g. shipping / bulk); icon keys match lucide or aliases */
   heroSecondary?: { icon: string; text: string }[];
 }) {
-  const fallbackAlt = heroCta.hero_image_alt?.trim() || "Industrial truck parts";
+  const fallbackAlt = heroCta.hero_image_alt?.trim() || "Commercial semi-truck on the highway — fleet and parts";
   const slides = useMemo(
     () => buildSlides(hero.image_url, fallbackAlt, heroCta, heroImage),
     [hero.image_url, fallbackAlt, heroCta]

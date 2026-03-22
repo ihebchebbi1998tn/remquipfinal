@@ -590,9 +590,9 @@ export default function HomePage() {
           <div className="absolute inset-0 z-0 pointer-events-none">
             <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_40%,hsl(var(--accent)/0.12),transparent_55%)]" />
           </div>
-          <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-0 rounded-sm overflow-hidden border border-border bg-card shadow-xl">
-              <div className="p-8 md:p-12 lg:p-16 border-l-4 border-accent flex flex-col justify-center order-2 md:order-1">
+          <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid md:grid-cols-12 gap-0 rounded-sm overflow-hidden border border-border bg-card shadow-xl">
+              <div className="p-8 md:p-12 lg:p-20 md:col-span-7 border-l-4 border-accent flex flex-col justify-center order-2 md:order-1">
                 <span className="font-display text-accent font-black uppercase tracking-[0.2em] text-xs mb-4 block">
                   {wholesaleCta.title || "Partnership"}
                 </span>
@@ -629,7 +629,7 @@ export default function HomePage() {
                   </Link>
                 </div>
               </div>
-              <div className="relative min-h-[240px] md:min-h-full order-1 md:order-2">
+              <div className="relative min-h-[240px] md:min-h-full md:col-span-5 order-1 md:order-2">
                 <img
                   src={wholesaleBannerSrc}
                   alt={wholesaleBannerAlt}
