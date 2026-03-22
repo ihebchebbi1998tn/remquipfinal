@@ -347,12 +347,10 @@ export function resolveUploadImageUrl(imageUrl: string): string {
   if (!imageUrl) return '';
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
   const trimmed = API_BASE_URL.replace(/\/+$/, '');
-  const base = trimmed
-    .replace(/\/backend\/api$/i, '')
-    .replace(/\/api$/i, '')
-    .replace(/\/backend$/i, '');
-  const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-  return `${base}${path}`;
+  let path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  // PHP stores `/Backend/uploads/...`; site URL is `/remquip/backend/uploads/...` (same folder as index.php)
+  path = path.replace(/^\/Backend(?=\/|$)/i, '');
+  return `${trimmed}${path}`;
 }
 
 /** Alias — documents and product images use the same `/Backend/uploads/...` base. */

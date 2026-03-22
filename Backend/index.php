@@ -3,7 +3,7 @@
  * =====================================================================
  * REMQUIP NEXUS - API ROUTER
  * Main entry point for all API requests
- * Supports paths like /auth/login, /api/auth/login, /remquip/backend/api/...
+ * Supports paths like /auth/login, /remquip/api/auth/login, /remquip/backend/auth/login (prefix segments stripped).
  * =====================================================================
  */
 
@@ -14,8 +14,10 @@ ini_set('log_errors_max_len', 1024);
 
 require_once __DIR__ . '/cors.php';
 
+// CORS preflight — must return 2xx with CORS headers (some proxies strip headers on 204)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
+    http_response_code(200);
+    header('Content-Length: 0', true);
     exit;
 }
 

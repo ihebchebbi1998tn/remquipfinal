@@ -15,8 +15,8 @@ define('DB_PORT', 3306);
 define('DB_CHARSET', 'utf8mb4');
 define('DB_COLLATION', 'utf8mb4_unicode_ci');
 
-// API / app URLs — backend deployed under /remquip/ (Frontend: src/config/constants.ts API_BASE_URL)
-define('API_URL', 'https://luccibyey.com.tn/remquip/api');
+// API / app URLs — PHP API folder is /remquip/backend/ (Frontend: src/config/constants.ts API_BASE_URL)
+define('API_URL', 'https://luccibyey.com.tn/remquip/backend');
 define('FRONTEND_URL', 'https://luccibyey.com.tn/remquip');
 define('API_VERSION', '1.0.0');
 
