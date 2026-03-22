@@ -1,3 +1,4 @@
+# Optional: SPA uses api.php?path=... (no rewrite required). Rewrite below is for pretty URLs → index.php.
 # Apache + mod_rewrite — API front controller (deploy this folder as /remquip/backend/)
 <IfModule mod_rewrite.c>
   RewriteEngine On

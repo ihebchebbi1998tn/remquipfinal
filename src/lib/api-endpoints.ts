@@ -1,6 +1,5 @@
 /**
- * API Endpoints Configuration
- * Paths are relative to API_BASE_URL (HTTPS; see `constants.ts` and Backend/config.php `API_URL`).
+ * Logical API paths (no .php). The client sends them as `api.php?path=<this without leading slash>`.
  */
 
 export const API_ENDPOINTS = {

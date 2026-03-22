@@ -1,7 +1,7 @@
 /**
  * API Service Layer
  * Handles all API requests to the remquip backend
- * Backend API URL: same as Backend/config.php API_URL (HTTPS; see `src/config/constants.ts` API_BASE_URL)
+ * Backend: `API_BASE_URL` + `/api.php?path=...` (see `Backend/api.php`).
  * Includes comprehensive error handling and logging
  */
 
@@ -460,6 +460,24 @@ class APIService {
   }
 
   /**
+   * All JSON API calls go through `Backend/api.php?path=...` so hosting works without mod_rewrite.
+   * `endpoint` is still the logical path (e.g. /auth/login, /cms/pages/home?locale=en).
+   */
+  private buildApiUrl(endpoint: string): string {
+    const base = this.baseUrl.replace(/\/+$/, "");
+    const raw = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
+    const qIdx = raw.indexOf("?");
+    const pathOnly = qIdx >= 0 ? raw.slice(0, qIdx) : raw;
+    const params = new URLSearchParams();
+    params.set("path", pathOnly);
+    if (qIdx >= 0) {
+      const extra = new URLSearchParams(raw.slice(qIdx + 1));
+      extra.forEach((v, k) => params.append(k, v));
+    }
+    return `${base}/api.php?${params.toString()}`;
+  }
+
+  /**
    * Make HTTP request with comprehensive error handling.
    * For FormData uploads, pass body as FormData — Content-Type is omitted so the browser sets the boundary.
    */
@@ -473,7 +491,7 @@ class APIService {
     const fetchExtras = { ...(options ?? {}) } as Record<string, unknown>;
     delete fetchExtras.skipAuthRedirect;
 
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = this.buildApiUrl(endpoint);
     const requestId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
