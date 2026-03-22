@@ -358,7 +358,7 @@ export default function Header() {
             >
               <form onSubmit={handleSearchSubmit} className="relative mx-auto w-full md:max-w-xl lg:max-w-2xl" role="search">
                 <div className="site-header-search-bar">
-                  <div className="flex min-w-0 flex-1 items-center gap-2.5 py-1 pl-3 pr-1 sm:gap-3 sm:pl-4">
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5 py-1 pl-3 pr-3 sm:gap-3 sm:pl-4 sm:pr-4">
                     <span className="site-header-search-icon-wrap" aria-hidden>
                       <Search className="h-4 w-4" strokeWidth={2} />
                     </span>
@@ -370,15 +370,9 @@ export default function Header() {
                       onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
                       placeholder={t("nav.search.placeholder")}
                       className="site-header-search-input"
+                      title={t("nav.search.enter_hint")}
                     />
                   </div>
-                  <button
-                    type="submit"
-                    className="site-header-search-submit self-center"
-                    disabled={searchQuery.trim().length < 2}
-                  >
-                    {t("nav.search.button")}
-                  </button>
                 </div>
                 {showResults && (
                   <div className="absolute left-0 right-0 top-full z-50 mt-2 sm:mt-2.5">
@@ -548,8 +542,12 @@ export default function Header() {
             )}
             {/* Mobile search */}
             <div ref={mobileSearchRef} className="relative">
-              <form onSubmit={handleSearchSubmit} className="flex min-h-[48px] items-stretch overflow-hidden rounded-full border border-border bg-background shadow-sm transition-[box-shadow,ring] focus-within:ring-2 focus-within:ring-accent/25" role="search">
-                <div className="flex min-w-0 flex-1 items-center gap-2.5 py-1 pl-3 pr-1">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="flex min-h-[48px] items-center overflow-hidden rounded-full border border-border bg-background px-1 py-1 shadow-sm transition-[box-shadow,ring] focus-within:ring-2 focus-within:ring-accent/25"
+                role="search"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 pl-2 pr-2">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
                     <Search className="h-4 w-4" strokeWidth={2} aria-hidden />
                   </span>
@@ -559,15 +557,9 @@ export default function Header() {
                     onChange={(e) => handleSearch(e.target.value)}
                     placeholder={t("nav.search.placeholder")}
                     className="min-w-0 flex-1 border-0 bg-transparent py-2 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/75"
+                    title={t("nav.search.enter_hint")}
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="my-1 mr-1 shrink-0 self-center rounded-full bg-accent px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-foreground shadow-sm transition-[filter,opacity] hover:brightness-105 disabled:opacity-40"
-                  disabled={searchQuery.trim().length < 2}
-                >
-                  {t("nav.search.button")}
-                </button>
               </form>
               {mobileSearchFocused && searchQuery.trim().length >= 2 && (
                 <div className="mt-1.5">

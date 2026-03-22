@@ -79,105 +79,112 @@ export default function ContactPage() {
         <p className="text-muted-foreground text-sm mt-3 max-w-xl">{copy.intro.body}</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-12 md:gap-16 lg:gap-20">
-        <form className="space-y-5">
-          <div>
-            <label htmlFor="contact-name" className="block text-sm font-medium text-foreground mb-2">
-              {copy.formLabels.name}
-            </label>
-            <input
-              id="contact-name"
-              type="text"
-              className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="contact-email" className="block text-sm font-medium text-foreground mb-2">
-              {copy.formLabels.email}
-            </label>
-            <input
-              id="contact-email"
-              type="email"
-              className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="contact-subject" className="block text-sm font-medium text-foreground mb-2">
-              {copy.formLabels.subject}
-            </label>
-            <input
-              id="contact-subject"
-              type="text"
-              className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="contact-message" className="block text-sm font-medium text-foreground mb-2">
-              {copy.formLabels.message}
-            </label>
-            <textarea
-              id="contact-message"
-              rows={5}
-              className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 resize-none transition-colors"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-foreground text-background px-6 py-2.5 rounded-md font-medium text-sm hover:opacity-90 transition-opacity"
-          >
-            {copy.formLabels.send}
-          </button>
-        </form>
+      <div className="grid gap-12 lg:gap-14 xl:gap-16 lg:grid-cols-12 lg:items-start">
+        {/* Left: form + contact details */}
+        <div className="space-y-10 lg:col-span-5">
+          <form className="space-y-5">
+            <div>
+              <label htmlFor="contact-name" className="block text-sm font-medium text-foreground mb-2">
+                {copy.formLabels.name}
+              </label>
+              <input
+                id="contact-name"
+                type="text"
+                className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="contact-email" className="block text-sm font-medium text-foreground mb-2">
+                {copy.formLabels.email}
+              </label>
+              <input
+                id="contact-email"
+                type="email"
+                className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="contact-subject" className="block text-sm font-medium text-foreground mb-2">
+                {copy.formLabels.subject}
+              </label>
+              <input
+                id="contact-subject"
+                type="text"
+                className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="contact-message" className="block text-sm font-medium text-foreground mb-2">
+                {copy.formLabels.message}
+              </label>
+              <textarea
+                id="contact-message"
+                rows={5}
+                className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 resize-none transition-colors"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-foreground text-background px-6 py-2.5 rounded-md font-medium text-sm hover:opacity-90 transition-opacity"
+            >
+              {copy.formLabels.send}
+            </button>
+          </form>
 
-        <div className="space-y-6">
-          <div className="flex gap-4">
-            <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-sm text-foreground">{copy.sidebar.address_label}</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">{mapLoading ? "…" : addressLine}</p>
+          <div className="space-y-6 border-t border-border/70 pt-10">
+            <div className="flex gap-4">
+              <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-sm text-foreground">{copy.sidebar.address_label}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{mapLoading ? "…" : addressLine}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-4">
-            <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-sm text-foreground">{copy.sidebar.phone_label}</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">{copy.sidebar.phone}</p>
+            <div className="flex gap-4">
+              <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-sm text-foreground">{copy.sidebar.phone_label}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{copy.sidebar.phone}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-4">
-            <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-sm text-foreground">{copy.sidebar.email_label}</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">{copy.sidebar.email}</p>
+            <div className="flex gap-4">
+              <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-sm text-foreground">{copy.sidebar.email_label}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{copy.sidebar.email}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-4">
-            <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-sm text-foreground">{copy.sidebar.hours_label}</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">{copy.sidebar.hours}</p>
+            <div className="flex gap-4">
+              <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-sm text-foreground">{copy.sidebar.hours_label}</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{copy.sidebar.hours}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <section className="mt-14 md:mt-20" aria-labelledby="contact-map-heading">
-        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        {/* Right: map */}
+        <section
+          className="lg:col-span-7 lg:sticky lg:top-24 xl:top-28 space-y-4"
+          aria-labelledby="contact-map-heading"
+        >
           <div>
             <h2 id="contact-map-heading" className="font-display text-lg font-semibold text-foreground">
               {copy.map.heading}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">{copy.map.subtitle}</p>
           </div>
-        </div>
-        <ContactMap
-          latitude={lat}
-          longitude={lng}
-          zoom={zm}
-          markerTitle={markerTitle}
-          addressLine={addressLine}
-        />
-      </section>
+          <ContactMap
+            layout="sidebar"
+            latitude={lat}
+            longitude={lng}
+            zoom={zm}
+            markerTitle={markerTitle}
+            addressLine={addressLine}
+            className="shadow-md"
+          />
+        </section>
+      </div>
     </div>
   );
 }

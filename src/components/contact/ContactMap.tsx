@@ -30,6 +30,19 @@ function buildPinIcon(): L.DivIcon {
   });
 }
 
+const MAP_LAYOUT = {
+  default: {
+    map: "contact-map-leaflet z-0 h-[min(22rem,55vh)] w-full min-h-[280px] md:h-[24rem]",
+    skeleton: "h-[min(22rem,55vh)] w-full min-h-[280px] md:h-[24rem] animate-pulse bg-muted",
+  },
+  /** Taller map for contact page sidebar column */
+  sidebar: {
+    map: "contact-map-leaflet z-0 w-full min-h-[280px] h-[min(20rem,48vh)] lg:min-h-[360px] lg:h-[min(34rem,calc(100vh-12rem))]",
+    skeleton:
+      "min-h-[280px] h-[min(20rem,48vh)] w-full lg:min-h-[360px] lg:h-[min(34rem,calc(100vh-12rem))] animate-pulse bg-muted",
+  },
+} as const;
+
 export interface ContactMapProps {
   latitude: number;
   longitude: number;
@@ -37,6 +50,7 @@ export interface ContactMapProps {
   markerTitle?: string | null;
   addressLine?: string | null;
   className?: string;
+  layout?: keyof typeof MAP_LAYOUT;
 }
 
 /**
@@ -49,12 +63,14 @@ export default function ContactMap({
   markerTitle,
   addressLine,
   className = "",
+  layout = "default",
 }: ContactMapProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const icon = useMemo(() => buildPinIcon(), []);
   const center = useMemo<[number, number]>(() => [latitude, longitude], [latitude, longitude]);
+  const L = MAP_LAYOUT[layout] ?? MAP_LAYOUT.default;
 
   const title = markerTitle?.trim() || "REMQUIP";
   const subtitle = addressLine?.trim() || null;
@@ -64,13 +80,13 @@ export default function ContactMap({
       className={`contact-map-shell relative overflow-hidden rounded-xl border border-border bg-muted/40 shadow-sm ${className}`}
     >
       {!mounted ? (
-        <div className="h-[min(22rem,55vh)] w-full animate-pulse bg-muted md:h-[24rem]" aria-hidden />
+        <div className={L.skeleton} aria-hidden />
       ) : (
         <MapContainer
           key={`${latitude}-${longitude}-${zoom}`}
           center={center}
           zoom={zoom}
-          className="contact-map-leaflet z-0 h-[min(22rem,55vh)] w-full min-h-[280px] md:h-[24rem]"
+          className={L.map}
           scrollWheelZoom
           zoomControl
         >

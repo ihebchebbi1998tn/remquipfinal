@@ -4,6 +4,7 @@
   "nav.search.placeholder": "Search products, SKUs...",
   "nav.search.button": "Search",
   "nav.search.quick_results": "Quick results",
+  "nav.search.enter_hint": "Press Enter to search",
   "nav.signin": "Sign in",
   "nav.register": "Register",
   "nav.or": "or",

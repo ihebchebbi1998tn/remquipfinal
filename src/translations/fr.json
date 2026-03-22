@@ -4,6 +4,7 @@
   "nav.search.placeholder": "Rechercher produits, références...",
   "nav.search.button": "Rechercher",
   "nav.search.quick_results": "Résultats rapides",
+  "nav.search.enter_hint": "Appuyez sur Entrée pour rechercher",
   "nav.signin": "Connexion",
   "nav.register": "S'inscrire",
   "nav.or": "ou",
