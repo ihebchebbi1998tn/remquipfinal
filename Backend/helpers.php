@@ -848,8 +848,13 @@ function remquip_notify_low_stock($conn, $sku, $name, $qtyAvailable, $reorderLev
     if (!$to) {
         return;
     }
-    $body = "Low stock alert.\r\n\r\nSKU: {$sku}\r\nProduct: {$name}\r\nAvailable: {$qtyAvailable}\r\nReorder level: {$reorderLevel}\r\n";
-    remquip_send_admin_mail($conn, $to, 'REMQUIP: Low stock ' . $sku, $body);
+    $tpl = remquip_tpl_low_stock_admin([
+        'sku' => $sku,
+        'name' => $name,
+        'available' => $qtyAvailable,
+        'reorder' => $reorderLevel,
+    ]);
+    remquip_send_admin_mail($conn, $to, 'REMQUIP: Low stock ' . $sku, $tpl['html'], $tpl['text']);
 }
 
 /**

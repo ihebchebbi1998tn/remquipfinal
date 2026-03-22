@@ -2,6 +2,11 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+function loginPathForCurrentRoute(): string {
+  if (typeof window === 'undefined') return '/login';
+  return window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+}
+
 interface SessionConfig {
   timeoutMinutes?: number;
   refreshThresholdMinutes?: number;
@@ -63,7 +68,7 @@ export function useSessionManagement(config: SessionConfig = {}) {
 
       if (timeSinceLastActivity > timeoutMs) {
         logout();
-        navigate('/login', { state: { message: 'Session expired due to inactivity' } });
+        navigate(loginPathForCurrentRoute(), { state: { message: 'Session expired due to inactivity' } });
       }
     };
 
@@ -77,7 +82,7 @@ export function useSessionManagement(config: SessionConfig = {}) {
     timeoutRef.current = setTimeout(() => {
       console.log('[v0] Absolute session timeout - logging out');
       logout();
-      navigate('/login', { state: { message: 'Session expired' } });
+      navigate(loginPathForCurrentRoute(), { state: { message: 'Session expired' } });
     }, timeoutMinutes * 60 * 1000);
 
     return () => {
@@ -106,7 +111,7 @@ export function useSessionManagement(config: SessionConfig = {}) {
             console.error('[v0] Token refresh failed:', err);
             // If refresh fails, log out the user
             logout();
-            navigate('/login');
+            navigate(loginPathForCurrentRoute());
           }
         }, refreshIntervalMs);
 
@@ -133,7 +138,7 @@ export function useSessionManagement(config: SessionConfig = {}) {
         if (!e.newValue) {
           console.log('[v0] Token removed in another tab - logging out');
           logout();
-          navigate('/login');
+          navigate(loginPathForCurrentRoute());
         }
       }
     };

@@ -1,10 +1,24 @@
 -- =============================================================================
 -- REMQUIP NEXUS — SINGLE FILE: ALL TABLES + SEED DATA (MySQL 8.0+)
 -- =============================================================================
--- One file contains the entire schema. No migrations needed.
+-- One file contains the entire schema for a fresh database. Legacy one-off patches
+-- live under database/migrate_*.sql (e.g. migrate_password_reset_ovh_mail.sql) only if
+-- your DB predates this file — new installs should import this file only.
+--
 -- Physical table names use prefix remquip_ (e.g. remquip_users, remquip_orders).
 -- HTTP API paths are unchanged (/auth/login, /products, /orders, …); the React app
 -- (src/lib/api-endpoints.ts) talks to those resources — only PHP/SQL uses remquip_*.
+--
+-- TABLES (29) — every remquip_* table below (alphabetical; Backend/routes + helpers):
+--   remquip_admin_contacts, remquip_analytics, remquip_audit_logs,
+--   remquip_banner_translations, remquip_banners, remquip_categories,
+--   remquip_category_translations, remquip_cms_page_translations, remquip_cms_pages,
+--   remquip_contact_map, remquip_customer_documents, remquip_customer_notes,
+--   remquip_customers, remquip_discounts, remquip_file_uploads, remquip_inventory,
+--   remquip_inventory_logs, remquip_landing_theme, remquip_order_items,
+--   remquip_order_notes, remquip_orders, remquip_pages, remquip_password_reset_tokens,
+--   remquip_product_images, remquip_product_variants, remquip_products,
+--   remquip_settings, remquip_user_page_access, remquip_users
 --
 -- Import:
 --   mysql -u USER -p DB_NAME < database/remquip_full_schema.sql
@@ -313,9 +327,9 @@ CREATE TABLE IF NOT EXISTS remquip_order_items (
 CREATE TABLE IF NOT EXISTS remquip_order_notes (
   id CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()),
   order_id CHAR(36) NOT NULL,
-  user CHAR(36) NULL,
-  text TEXT NOT NULL,
-  date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `user` VARCHAR(128) NULL,
+  `text` TEXT NOT NULL,
+  `date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_on_order (order_id),
   CONSTRAINT fk_on_order FOREIGN KEY (order_id) REFERENCES remquip_orders(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -666,5 +680,5 @@ INSERT IGNORE INTO remquip_cms_page_translations (id, page_id, locale, title, ex
 );
 
 -- =============================================================================
--- END
+-- END — 29 tables; optional legacy patches: database/migrate_*.sql
 -- =============================================================================

@@ -62,7 +62,8 @@ export function useLogout() {
     {
       onSuccess: () => {
         localStorage.removeItem('remquip_auth_token');
-        window.location.href = '/login';
+        const path = typeof window !== 'undefined' ? window.location.pathname || '' : '';
+        window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
       },
     }
   );

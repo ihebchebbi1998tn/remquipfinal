@@ -90,6 +90,9 @@ const App = () => (
                       <Route path="/about" element={<AboutPage />} />
                     </Route>
 
+                    {/* Admin sign-in (no storefront chrome) — must be before /admin layout */}
+                    <Route path="/admin/login" element={<LoginPage />} />
+
                     {/* Admin */}
                     <Route path="/admin" element={<AdminLayout />}>
                       <Route index element={<AdminOverview />} />

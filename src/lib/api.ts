@@ -547,7 +547,8 @@ class APIService {
         // Special handling for 401 (skip for optional public calls e.g. analytics beacon)
         if (response.status === HTTP_STATUS.UNAUTHORIZED && !skipAuthRedirect) {
           TokenManager.removeToken();
-          window.location.href = '/login';
+          const path = typeof window !== 'undefined' ? window.location.pathname || '' : '';
+          window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
         }
 
         throw apiError;

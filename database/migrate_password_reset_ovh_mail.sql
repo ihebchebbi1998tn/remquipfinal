@@ -1,4 +1,5 @@
--- Run once on existing databases (new installs: merged into remquip_full_schema.sql).
+-- Run once on existing databases created before password-reset + notif_order_status were added.
+-- New installs: use database/remquip_full_schema.sql only — this file is not needed.
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 

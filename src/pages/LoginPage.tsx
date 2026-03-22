@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams, Navigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { User } from "@/lib/api";
 import { LogIn, AlertCircle, Loader2 } from "lucide-react";
+import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 /** Same rules as AdminLayout — only these roles may open /admin. */
 function isStaffRole(role: User["role"]): boolean {
@@ -23,10 +24,24 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { login } = useAuth();
+  const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const isAdminLogin = location.pathname === "/admin/login";
+
+  const redirectParam =
+    safeInternalPath(searchParams.get("redirect")) ?? safeInternalPath(searchParams.get("returnUrl"));
+
+  if (isAdminLogin && authLoading) {
+    return <RemquipLoadingScreen variant="fullscreen" message="Loading" />;
+  }
+
+  if (isAdminLogin && isAuthenticated && user && isStaffRole(user.role)) {
+    const dest = redirectParam?.startsWith("/admin") ? redirectParam : "/admin";
+    return <Navigate to={dest} replace />;
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,8 +64,21 @@ export default function LoginPage() {
 
       const fromState = (location.state as { from?: { pathname: string; search?: string } } | null)?.from;
       const fromPath = fromState ? `${fromState.pathname}${fromState.search ?? ""}` : null;
-      const redirectParam =
-        safeInternalPath(searchParams.get("redirect")) ?? safeInternalPath(searchParams.get("returnUrl"));
+
+      if (isAdminLogin) {
+        if (!isStaffRole(user.role)) {
+          setError(t("auth.admin_access_denied"));
+          return;
+        }
+        const dest =
+          redirectParam?.startsWith("/admin")
+            ? redirectParam
+            : fromPath?.startsWith("/admin")
+              ? fromPath
+              : "/admin";
+        navigate(dest, { replace: true });
+        return;
+      }
 
       // After visiting /admin while logged out, AdminLayout sends state.from — return staff to admin
       if (fromPath?.startsWith("/admin") || redirectParam?.startsWith("/admin")) {
@@ -59,7 +87,7 @@ export default function LoginPage() {
           navigate(dest, { replace: true });
           return;
         }
-        navigate("/account", { replace: true });
+        setError(t("auth.admin_access_denied"));
         return;
       }
 
@@ -83,14 +111,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4 py-8">
+    <div
+      className={`flex items-center justify-center px-4 py-8 ${
+        isAdminLogin ? "min-h-screen bg-background" : "min-h-[70vh]"
+      }`}
+    >
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-block p-3 rounded-lg bg-accent/10 mb-4">
             <LogIn className="w-6 h-6 text-accent" />
           </div>
-          <h1 className="font-display text-3xl font-bold mb-2">{t("auth.login")}</h1>
-          <p className="text-muted-foreground text-sm">{t("auth.login_description") || "Sign in to your account"}</p>
+          <h1 className="font-display text-3xl font-bold mb-2">
+            {isAdminLogin ? t("auth.admin_login") : t("auth.login")}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {isAdminLogin
+              ? t("auth.admin_login_description")
+              : t("auth.login_description") || "Sign in to your account"}
+          </p>
         </div>
 
         {error && (
@@ -117,7 +155,9 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium">{t("auth.password")}</label>
-              <Link to="/forgot-password" className="text-xs text-accent hover:underline">{t("auth.forgot")}</Link>
+              <Link to="/forgot-password" className="text-xs text-accent hover:underline">
+                {t("auth.forgot")}
+              </Link>
             </div>
             <input
               type="password"
@@ -141,16 +181,24 @@ export default function LoginPage() {
                 {t("auth.signing_in") || "Signing in..."}
               </>
             ) : (
-              <>{t("auth.login")}</>
+              <>{isAdminLogin ? t("auth.admin_login") : t("auth.login")}</>
             )}
           </button>
         </form>
 
         <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            {t("auth.no_account") || "Don't have an account?"}{" "}
-            <Link to="/register" className="text-accent font-medium hover:underline">{t("auth.register")}</Link>
-          </p>
+          {isAdminLogin ? (
+            <p className="text-sm text-muted-foreground">
+              <Link to="/login" className="text-accent font-medium hover:underline">
+                {t("auth.store_sign_in")}
+              </Link>
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {t("auth.no_account") || "Don't have an account?"}{" "}
+              <Link to="/register" className="text-accent font-medium hover:underline">{t("auth.register")}</Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

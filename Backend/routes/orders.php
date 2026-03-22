@@ -91,7 +91,7 @@ if ($method === 'GET' && $id && !$action) {
         );
         
         $notes = $conn->fetchAll(
-            "SELECT n.date, n.user, n.text FROM remquip_order_notes n
+            "SELECT n.`date`, n.`user`, n.`text` FROM remquip_order_notes n
              WHERE n.order_id = :id ORDER BY n.date DESC",
             ['id' => $id]
         );
@@ -121,7 +121,7 @@ if ($method === 'GET' && $id && $action === 'notes') {
         }
 
         $notes = $conn->fetchAll(
-            "SELECT n.date, n.user, n.text FROM remquip_order_notes n
+            "SELECT n.`date`, n.`user`, n.`text` FROM remquip_order_notes n
              WHERE n.order_id = :id ORDER BY n.date DESC",
             ['id' => $id]
         );
@@ -405,7 +405,7 @@ if ($method === 'POST' && $id && $action === 'notes') {
         
         $noteId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(
-            "INSERT INTO remquip_order_notes (id, order_id, user, text, date) VALUES (:nid, :orderId, :user, :text, NOW())",
+            "INSERT INTO remquip_order_notes (id, order_id, `user`, `text`, `date`) VALUES (:nid, :orderId, :user, :text, NOW())",
             [
                 'nid' => $noteId,
                 'orderId' => $id,

@@ -42,7 +42,7 @@ export default function AdminLayout() {
     const returnTo = `${location.pathname}${location.search}`;
     return (
       <Navigate
-        to={`/login?redirect=${encodeURIComponent(returnTo)}`}
+        to={`/admin/login?redirect=${encodeURIComponent(returnTo)}`}
         state={{ from: location }}
         replace
       />
