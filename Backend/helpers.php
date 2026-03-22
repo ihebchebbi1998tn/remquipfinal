@@ -29,6 +29,29 @@ if (!function_exists('getallheaders')) {
 
 class ResponseHelper {
     /**
+     * JSON encode for API bodies — avoids HTTP 500 when DB text contains invalid UTF-8 (PHP 7.2+).
+     *
+     * @param mixed $data
+     */
+    private static function jsonEncodeSafe($data): string {
+        $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+        if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+            $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+        }
+        $json = json_encode($data, $flags);
+        if ($json === false) {
+            return json_encode([
+                'success' => false,
+                'message' => 'Response could not be encoded',
+                'data' => null,
+                'timestamp' => date('Y-m-d H:i:s'),
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        return $json;
+    }
+
+    /**
      * Send success response
      * @param mixed $data
      * @param string $message
@@ -43,7 +66,7 @@ class ResponseHelper {
             'timestamp' => date('Y-m-d H:i:s')
         ];
         
-        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo self::jsonEncodeSafe($response);
         Logger::info('Response sent', ['code' => $code, 'message' => $message]);
         exit;
     }
@@ -79,7 +102,7 @@ class ResponseHelper {
             'request_id' => self::getRequestId()
         ];
         
-        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo self::jsonEncodeSafe($response);
         Logger::error('Response sent', ['code' => $code, 'message' => $message, 'details' => $error_details]);
         exit;
     }

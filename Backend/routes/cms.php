@@ -7,10 +7,13 @@
 $method = $_SERVER['REQUEST_METHOD'];
 $rs = $routeSegments ?? [];
 
-function cms_decode_sections(?string $content): array
+function cms_decode_sections($content): array
 {
     if ($content === null || $content === '') {
         return [];
+    }
+    if (!is_string($content)) {
+        $content = (string) $content;
     }
     $j = json_decode($content, true);
     if (is_array($j) && isset($j['sections']) && is_array($j['sections'])) {
