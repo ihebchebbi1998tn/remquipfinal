@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { LogIn, AlertCircle, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,23 +29,14 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // API call will be connected here: POST /api/auth/login
       console.log("[v0] Login attempt:", { email: formData.email });
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
-      // const data = await response.json();
-      // if (!response.ok) throw new Error(data.message);
-      // localStorage.setItem('authToken', data.token);
-      
-      // Simulate successful login for demo
-      setTimeout(() => {
-        navigate("/account");
-      }, 500);
+      await login(formData.email, formData.password);
+      console.log("[v0] Login successful, redirecting to account");
+      navigate("/account");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const errorMessage = err instanceof Error ? err.message : "Login failed";
+      setError(errorMessage);
+      console.error("[v0] Login error:", errorMessage);
     } finally {
       setIsLoading(false);
     }

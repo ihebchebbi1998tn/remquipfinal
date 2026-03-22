@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -38,6 +39,7 @@ const AdminProductLogs = lazy(() => import("@/pages/admin/AdminProductLogs"));
 const AdminDiscounts = lazy(() => import("@/pages/admin/AdminDiscounts"));
 const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess"));
+const UserDashboard = lazy(() => import("@/pages/UserDashboard"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -52,9 +54,10 @@ function PageLoader() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <CurrencyProvider>
-        <CartProvider>
+    <AuthProvider>
+      <LanguageProvider>
+        <CurrencyProvider>
+          <CartProvider>
           <TooltipProvider>
             <ErrorBoundary>
               <Toaster />
@@ -75,6 +78,7 @@ const App = () => (
                       <Route path="/register" element={<RegisterPage />} />
                       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                       <Route path="/account" element={<CustomerDashboardPage />} />
+                      <Route path="/dashboard" element={<UserDashboard />} />
                       <Route path="/contact" element={<ContactPage />} />
                       <Route path="/terms" element={<LegalPage titleKey="legal.terms.title" contentKey="legal.terms.content" />} />
                       <Route path="/privacy" element={<LegalPage titleKey="legal.privacy.title" contentKey="legal.privacy.content" />} />
@@ -111,6 +115,7 @@ const App = () => (
         </CartProvider>
       </CurrencyProvider>
     </LanguageProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

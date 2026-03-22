@@ -1,32 +1,22 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Package, ShoppingBag, Users, DollarSign, TrendingUp, AlertTriangle, ArrowRight, Tag, Truck, FileText } from "lucide-react";
+import { api, Order } from "@/lib/api";
 import { products } from "@/config/products";
 
-const stats = [
-  { label: "Total Products", value: products.length.toString(), icon: Package, change: "+3 this month", color: "text-accent" },
-  { label: "Total Orders", value: "156", icon: ShoppingBag, change: "+12 this week", color: "text-blue-500" },
-  { label: "Customers", value: "89", icon: Users, change: "+5 this month", color: "text-green-500" },
-  { label: "Revenue", value: "C$48,290", icon: DollarSign, change: "+18% vs last month", color: "text-accent" },
-];
+interface DashboardStats {
+  totalProducts: number;
+  totalOrders: number;
+  totalCustomers: number;
+  totalRevenue: number;
+}
 
-const recentOrders = [
-  { id: "RMQ-001234", customer: "Groupe Transport Lévis", total: "C$2,450.00", status: "processing", date: "2026-03-10" },
-  { id: "RMQ-001233", customer: "Fleet Services Ontario", total: "C$1,890.50", status: "shipped", date: "2026-03-09" },
-  { id: "RMQ-001232", customer: "Québec Truck Parts Inc.", total: "C$3,200.00", status: "completed", date: "2026-03-08" },
-  { id: "RMQ-001231", customer: "Maritime Heavy Hauling", total: "C$675.00", status: "pending", date: "2026-03-08" },
-  { id: "RMQ-001230", customer: "Prairie Fleet Maintenance", total: "C$1,120.00", status: "completed", date: "2026-03-07" },
-];
-
-const activityLog = [
-  { time: "10:32 AM", user: "Marc Dupont", action: "Updated stock for Air Spring W01-358", type: "inventory" },
-  { time: "09:45 AM", user: "System", action: "Order RMQ-001234 payment confirmed", type: "order" },
-  { time: "09:15 AM", user: "Julie Martin", action: "Shipped order RMQ-001233 via Purolator", type: "shipping" },
-  { time: "08:30 AM", user: "System", action: "New customer registration: BC Trucking", type: "customer" },
-  { time: "Yesterday", user: "Marc Dupont", action: "Created discount code FLEET10", type: "discount" },
-  { time: "Yesterday", user: "System", action: "Low stock alert: 4707Q Brake Shoe Kit (12 remaining)", type: "alert" },
-  { time: "Yesterday", user: "Julie Martin", action: "Published updated Shipping Policy page", type: "cms" },
-];
+interface ActivityLogEntry {
+  time: string;
+  user: string;
+  action: string;
+  type: string;
+}
 
 const activityIcons: Record<string, React.ElementType> = {
   inventory: Package,
@@ -47,18 +37,96 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function AdminOverview() {
-  const lowStockProducts = products.filter((p) => p.stock < 50);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalProducts: products.length,
+    totalOrders: 0,
+    totalCustomers: 0,
+    totalRevenue: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        console.log('[v0] Fetching dashboard data from API');
+
+        // Fetch stats
+        try {
+          const statsResponse = await api.request('GET', '/api/dashboard/stats') as any;
+          if (statsResponse.data) {
+            setStats(statsResponse.data);
+            console.log('[v0] Dashboard stats loaded');
+          }
+        } catch (err) {
+          console.warn('[v0] Dashboard stats API failed, using defaults');
+        }
+
+        // Fetch recent orders
+        try {
+          const ordersResponse = await api.getOrders(1, 5);
+          if (ordersResponse.data) {
+            setRecentOrders(ordersResponse.data);
+            console.log('[v0] Recent orders loaded');
+          }
+        } catch (err) {
+          console.warn('[v0] Orders API failed');
+        }
+
+        // Fetch activity log
+        try {
+          const activityResponse = await api.request('GET', '/api/dashboard/activity-log') as any;
+          if (activityResponse.data) {
+            setActivityLog(activityResponse.data);
+            console.log('[v0] Activity log loaded');
+          }
+        } catch (err) {
+          console.warn('[v0] Activity log API failed, using fallback');
+          setActivityLog([
+            { time: "10:32 AM", user: "System", action: "Dashboard initialized", type: "system" },
+          ]);
+        }
+
+        // Fetch low stock products
+        try {
+          const lowStockResponse = await api.getLowStockProducts();
+          if (lowStockResponse.data) {
+            setLowStockProducts(lowStockResponse.data);
+          }
+        } catch (err) {
+          console.warn('[v0] Low stock API failed, using fallback');
+          setLowStockProducts(products.filter((p) => p.stock < 50).slice(0, 5));
+        }
+      } catch (err) {
+        console.error('[v0] Error fetching dashboard data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const statsArray = [
+    { label: "Total Products", value: stats.totalProducts.toString(), icon: Package, change: "+3 this month", color: "text-accent" },
+    { label: "Total Orders", value: stats.totalOrders.toString(), icon: ShoppingBag, change: "+12 this week", color: "text-blue-500" },
+    { label: "Customers", value: stats.totalCustomers.toString(), icon: Users, change: "+5 this month", color: "text-green-500" },
+    { label: "Revenue", value: `C$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, change: "+18% vs last month", color: "text-accent" },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {stats.map((stat) => (
+        {statsArray.map((stat) => (
           <div key={stat.label} className="dashboard-card">
             <div className="flex items-start justify-between">
               <div className="min-w-0">
                 <p className="text-xs md:text-sm text-muted-foreground truncate">{stat.label}</p>
-                <p className="text-xl md:text-2xl font-bold font-display mt-1">{stat.value}</p>
+                <p className="text-xl md:text-2xl font-bold font-display mt-1">{isLoading ? "..." : stat.value}</p>
                 <p className="text-xs text-success flex items-center gap-1 mt-1"><TrendingUp className="h-3 w-3 flex-shrink-0" /><span className="truncate">{stat.change}</span></p>
               </div>
               <stat.icon className={`h-7 w-7 md:h-8 md:w-8 flex-shrink-0 ${stat.color}`} strokeWidth={1.5} />
