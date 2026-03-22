@@ -8,7 +8,7 @@ import FlagIcon from "@/components/FlagIcon";
 import { usePublicSettings } from "@/hooks/useApi";
 
 export default function Footer() {
-  const { t, lang, setLang } = useLanguage();
+  const { t, lang, setLang, supportedLocales } = useLanguage();
   const { currency, setCurrency } = useCurrency();
   const { data: pubRes } = usePublicSettings();
   const pub = (pubRes?.data ?? {}) as Record<string, string>;
