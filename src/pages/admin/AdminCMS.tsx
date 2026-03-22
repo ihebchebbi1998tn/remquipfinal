@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Edit, Eye, Plus, Search, FileText, Globe, Loader2, AlertCircle, Trash2, X } from "lucide-react";
-import { useCMSPages, useApiMutation } from "@/hooks/useApi";
-import { api } from "@/lib/api";
+import { useCMSPages, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
+import { localeLabel } from "@/contexts/LanguageContext";
+import { api, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface CMSPage {
@@ -29,6 +30,14 @@ export default function AdminCMS() {
     meta_title: "",
     meta_description: "",
   });
+  type LocForm = { title: string; excerpt: string; content: string };
+  const emptyLocForm: LocForm = { title: "", excerpt: "", content: "" };
+  const [translationsForm, setTranslationsForm] = useState<Record<string, LocForm>>({});
+
+  const { data: storefront } = useStorefrontRates();
+  const supportedLocales = (storefront as { data?: { supported_locales?: string[] } } | undefined)?.data?.supported_locales ?? ["en", "fr"];
+  const defaultLocale = supportedLocales[0] ?? "en";
+  const otherLocales = supportedLocales.filter((l) => l !== defaultLocale);
 
   const queryClient = useQueryClient();
 
@@ -77,11 +86,22 @@ export default function AdminCMS() {
       meta_title: "",
       meta_description: "",
     });
+    setTranslationsForm({});
   }
 
-  // Get data from responses
-  const cmsPages: CMSPage[] = pagesResponse?.data || [];
-  const pagination = pagesResponse?.pagination;
+  const rawPages = unwrapApiList<Record<string, unknown>>(pagesResponse, []);
+  const cmsPages: CMSPage[] = rawPages.map((p) => ({
+    id: String(p.id ?? ""),
+    title: String(p.title ?? ""),
+    slug: String(p.slug ?? ""),
+    status: (p.is_published === 1 || p.is_published === true ? "published" : "draft") as CMSPage["status"],
+    content: p.content != null ? String(p.content) : undefined,
+    meta_title: p.meta_title != null ? String(p.meta_title) : undefined,
+    meta_description: p.meta_description != null ? String(p.meta_description) : undefined,
+    created_at: String(p.created_at ?? ""),
+    updated_at: String(p.updated_at ?? ""),
+  }));
+  const pagination = unwrapPagination(pagesResponse);
 
   // Filter pages locally
   const filtered = cmsPages.filter((p) =>
@@ -91,7 +111,7 @@ export default function AdminCMS() {
   const publishedCount = cmsPages.filter(p => p.status === "published").length;
   const draftCount = cmsPages.filter(p => p.status === "draft").length;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.title || !form.slug) return;
 
     const data = {
@@ -103,14 +123,31 @@ export default function AdminCMS() {
       meta_description: form.meta_description,
     };
 
+    const translationsPayload: Record<string, { title: string; excerpt: string; content: string }> = {};
+    otherLocales.forEach((loc) => {
+      const f = translationsForm[loc];
+      if (f?.title?.trim()) {
+        translationsPayload[loc] = { title: f.title.trim(), excerpt: f.excerpt ?? "", content: f.content ?? "" };
+      }
+    });
+
     if (editingId) {
-      updatePageMutation.mutate({ id: editingId, data });
+      await updatePageMutation.mutateAsync({ id: editingId, data });
+      if (Object.keys(translationsPayload).length > 0) {
+        await api.putCMSPageTranslations(editingId, translationsPayload);
+      }
+      queryClient.invalidateQueries({ queryKey: ["cms"] });
     } else {
-      createPageMutation.mutate(data);
+      const res = await createPageMutation.mutateAsync(data);
+      const newId = (res?.data as { id?: string } | undefined)?.id;
+      if (newId && Object.keys(translationsPayload).length > 0) {
+        await api.putCMSPageTranslations(newId, translationsPayload);
+      }
+      queryClient.invalidateQueries({ queryKey: ["cms"] });
     }
   };
 
-  const handleEdit = (page: CMSPage) => {
+  const handleEdit = async (page: CMSPage) => {
     setForm({
       title: page.title,
       slug: page.slug,
@@ -119,8 +156,27 @@ export default function AdminCMS() {
       meta_title: page.meta_title || "",
       meta_description: page.meta_description || "",
     });
+    setTranslationsForm({});
     setEditingId(page.id);
     setShowForm(true);
+    try {
+      const tr = await api.getCMSPageTranslations(page.id);
+      const inner = (tr as { data?: { translations?: Record<string, { title?: string; excerpt?: string; content?: string } | null> } })
+        .data;
+      const trans = inner?.translations ?? {};
+      const next: Record<string, LocForm> = {};
+      otherLocales.forEach((loc) => {
+        const t = trans[loc];
+        if (t?.title) {
+          next[loc] = { title: t.title, excerpt: t.excerpt ?? "", content: t.content ?? "" };
+        } else {
+          next[loc] = { ...emptyLocForm };
+        }
+      });
+      setTranslationsForm(next);
+    } catch {
+      /* optional */
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -270,9 +326,68 @@ export default function AdminCMS() {
                 />
               </div>
             </div>
+            {otherLocales.length > 0 && (
+              <div className="rounded-sm border border-border bg-muted/30 p-4 space-y-4 mt-4">
+                <p className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1">
+                  <Globe className="h-3.5 w-3.5" /> Translations
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Shown when visitors use another language. Fields above are the default ({localeLabel(defaultLocale)}) page.
+                </p>
+                {otherLocales.map((loc) => (
+                  <div key={loc} className="border-t border-border pt-3 first:border-0 first:pt-0">
+                    <p className="text-xs font-medium text-foreground mb-2">{localeLabel(loc)}</p>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Title ({loc})</label>
+                        <input
+                          value={translationsForm[loc]?.title ?? ""}
+                          onChange={(e) =>
+                            setTranslationsForm((prev) => ({
+                              ...prev,
+                              [loc]: { ...(prev[loc] ?? emptyLocForm), title: e.target.value },
+                            }))
+                          }
+                          className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Excerpt ({loc})</label>
+                        <input
+                          value={translationsForm[loc]?.excerpt ?? ""}
+                          onChange={(e) =>
+                            setTranslationsForm((prev) => ({
+                              ...prev,
+                              [loc]: { ...(prev[loc] ?? emptyLocForm), excerpt: e.target.value },
+                            }))
+                          }
+                          className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Content ({loc})</label>
+                        <textarea
+                          value={translationsForm[loc]?.content ?? ""}
+                          onChange={(e) =>
+                            setTranslationsForm((prev) => ({
+                              ...prev,
+                              [loc]: { ...(prev[loc] ?? emptyLocForm), content: e.target.value },
+                            }))
+                          }
+                          placeholder="Same JSON structure as default, or translated body"
+                          rows={4}
+                          className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2 pt-2">
               <button
-                onClick={handleSubmit}
+                type="button"
+                onClick={() => void handleSubmit()}
                 disabled={createPageMutation.isLoading || updatePageMutation.isLoading}
                 className="btn-accent px-6 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50"
               >

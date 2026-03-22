@@ -6,7 +6,8 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
 import { categories, products } from "@/config/products";
 import { useProducts, useCategories } from "@/hooks/useApi";
-import type { Product, ProductCategory } from "@/lib/api";
+import { unwrapApiList, type Product, type ProductCategory } from "@/lib/api";
+import { apiProductToStorefront, productDetailHref } from "@/lib/storefront-product";
 
 type SortOption = "featured" | "price_low" | "price_high" | "newest";
 
@@ -22,7 +23,7 @@ export default function ProductsPage() {
   const { categorySlug } = useParams<{ categorySlug?: string }>();
   const [searchParams] = useSearchParams();
   const searchFromUrl = searchParams.get("q") || "";
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { formatPrice } = useCurrency();
   const { addItem } = useCart();
 
@@ -34,11 +35,11 @@ export default function ProductsPage() {
 
   // Fetch products and categories using React Query hooks
   const { data: productsResponse, isLoading: isLoadingProducts } = useProducts(1, 100);
-  const { data: categoriesResponse, isLoading: isLoadingCategories } = useCategories();
+  const { data: categoriesResponse, isLoading: isLoadingCategories } = useCategories(lang);
   
-  // Extract data with fallbacks to static data
-  const apiProducts: Product[] = productsResponse?.data || products;
-  const categoriesList: ProductCategory[] = categoriesResponse?.data || categories;
+  // Extract data with fallbacks to static data (backend returns { items, pagination })
+  const apiProducts: Product[] = unwrapApiList<Product>(productsResponse, products);
+  const categoriesList: ProductCategory[] = unwrapApiList<ProductCategory>(categoriesResponse, categories);
   const isLoading = isLoadingProducts || isLoadingCategories;
 
   const category = categorySlug ? categoriesList.find((c) => c.slug === categorySlug) || categories.find((c) => c.slug === categorySlug) : null;
@@ -65,13 +66,20 @@ export default function ProductsPage() {
     }
 
     if (stockOnly) {
-      list = list.filter((p) => p.stock_quantity > 0);
+      list = list.filter((p) => {
+        const sq = (p as any).stock_quantity ?? (p as any).stock ?? 0;
+        return Number(sq) > 0;
+      });
     }
 
     switch (sort) {
       case "price_low": list.sort((a, b) => a.price - b.price); break;
       case "price_high": list.sort((a, b) => b.price - a.price); break;
-      case "newest": list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
+      case "newest": list.sort((a, b) => {
+        const tb = (b as any).created_at ? new Date((b as any).created_at).getTime() : 0;
+        const ta = (a as any).created_at ? new Date((a as any).created_at).getTime() : 0;
+        return tb - ta;
+      }); break;
     }
 
     return list;
@@ -224,32 +232,32 @@ export default function ProductsPage() {
           ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
             {filtered.map((product) => {
-              const primaryImage = product.images?.find(img => img.is_primary)?.image_url || product.images?.[0]?.image_url || (product as any).image;
-              const slug = (product as any).slug || product.id;
+              const sf = apiProductToStorefront(product as Record<string, unknown>);
               return (
                 <div key={product.id} className="product-card group">
                   <div className="aspect-square overflow-hidden bg-secondary relative">
-                    {primaryImage && (
-                      <img src={primaryImage} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                    {sf.image && (
+                      <img src={sf.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                     )}
-                    {product.stock_quantity === 0 && (
+                    {sf.stock === 0 && (
                       <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
                         <span className="text-sm font-medium text-destructive uppercase">{t("products.out_of_stock")}</span>
                       </div>
                     )}
-                    {product.stock_quantity > 0 && product.stock_quantity <= 20 && (
+                    {sf.stock > 0 && sf.stock <= 20 && (
                       <span className="absolute top-2 left-2 badge-warning text-xs">{t("products.low_stock")}</span>
                     )}
                   </div>
                   <div className="p-3 md:p-4">
-                    <Link to={`/product/${slug}`} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-2 uppercase">
+                    <Link to={productDetailHref(sf.id, sf.slug)} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-2 uppercase">
                       {product.name}
                     </Link>
                     <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
-                    <p className="text-sm font-bold text-foreground mt-1">{formatPrice(product.price)}</p>
+                    <p className="text-sm font-bold text-foreground mt-1">{formatPrice(sf.price)}</p>
                     <button
-                      onClick={() => addItem(product as any)}
-                      disabled={product.stock_quantity === 0}
+                      type="button"
+                      onClick={() => addItem(sf)}
+                      disabled={sf.stock === 0}
                       className="mt-2 w-full btn-accent text-xs py-2 rounded-sm font-medium uppercase tracking-wide disabled:opacity-50"
                     >
                       {t("products.add_to_cart")}

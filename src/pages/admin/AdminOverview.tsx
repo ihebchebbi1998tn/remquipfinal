@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Package, ShoppingBag, Users, DollarSign, TrendingUp, AlertTriangle, ArrowRight, Tag, Truck, FileText } from "lucide-react";
-import { api, Order } from "@/lib/api";
+import { api, Order, unwrapApiList } from "@/lib/api";
 import { products } from "@/config/products";
 
 interface DashboardStats {
@@ -55,9 +55,9 @@ export default function AdminOverview() {
 
         // Fetch stats
         try {
-          const statsResponse = await api.request('GET', '/api/dashboard/stats') as any;
+          const statsResponse = await api.getDashboardStats();
           if (statsResponse.data) {
-            setStats(statsResponse.data);
+            setStats(statsResponse.data as DashboardStats);
           }
         } catch {
           // Use defaults
@@ -66,18 +66,27 @@ export default function AdminOverview() {
         // Fetch recent orders
         try {
           const ordersResponse = await api.getOrders(1, 5);
-          if (ordersResponse.data) {
-            setRecentOrders(ordersResponse.data);
-          }
+          setRecentOrders(unwrapApiList<Order>(ordersResponse as any, []));
         } catch {
           // Orders API failed
         }
 
         // Fetch activity log
         try {
-          const activityResponse = await api.request('GET', '/api/dashboard/activity-log') as any;
-          if (activityResponse.data) {
-            setActivityLog(activityResponse.data);
+          const activityResponse = await api.getDashboardActivityLog();
+          const rows = activityResponse.data;
+          if (Array.isArray(rows)) {
+            setActivityLog(
+              rows.map((r: Record<string, unknown>) => ({
+                time:
+                  r.created_at != null
+                    ? new Date(String(r.created_at)).toLocaleString()
+                    : "",
+                user: r.user_id != null ? String(r.user_id).slice(0, 8) + "…" : "System",
+                action: String(r.action ?? r.entity_type ?? "event"),
+                type: String(r.entity_type ?? "system"),
+              }))
+            );
           }
         } catch {
           setActivityLog([
@@ -88,9 +97,7 @@ export default function AdminOverview() {
         // Fetch low stock products
         try {
           const lowStockResponse = await api.getLowStockProducts();
-          if (lowStockResponse.data) {
-            setLowStockProducts(lowStockResponse.data);
-          }
+          setLowStockProducts(unwrapApiList(lowStockResponse as any, []));
         } catch {
           setLowStockProducts(products.filter((p) => p.stock < 50).slice(0, 5));
         }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Eye, Search, X, ChevronDown, ChevronUp, Package, Truck, CheckCircle, Clock, Printer, Download, Mail, ArrowLeft, MapPin, CreditCard, FileText, Loader2, AlertCircle } from "lucide-react";
 import { useOrders, useOrder, useApiMutation } from "@/hooks/useApi";
-import { api, Order } from "@/lib/api";
+import { api, Order, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 
 const statusStyles: Record<string, string> = {
@@ -64,9 +64,8 @@ export default function AdminOrders() {
     }
   );
 
-  // Get data from responses
-  const orders = ordersResponse?.data || [];
-  const pagination = ordersResponse?.pagination;
+  const orders = unwrapApiList<Order>(ordersResponse as any, []);
+  const pagination = unwrapPagination(ordersResponse as any);
   const selectedOrder = orderDetailResponse?.data;
 
   // Filter orders locally

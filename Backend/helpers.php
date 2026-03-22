@@ -165,43 +165,66 @@ class Auth {
     }
 
     /**
-     * Generate JWT token
-     * @param string $userId
-     * @param string $role
-     * @return string
+     * HMAC-signed bearer token (payload cannot be forged without JWT_SECRET)
      */
     public static function generateToken($userId, $role) {
+        if (JWT_SECRET === '' || strlen(JWT_SECRET) < 16) {
+            Logger::error('JWT_SECRET must be set in the environment (min 16 characters)');
+            ResponseHelper::sendError('Authentication is not configured on the server', 503);
+        }
         $payload = [
             'user_id' => $userId,
             'role' => $role,
             'iat' => time(),
             'exp' => time() + TOKEN_EXPIRY
         ];
-        return base64_encode(json_encode($payload));
+        $payloadJson = json_encode($payload);
+        $payloadB64 = rtrim(strtr(base64_encode($payloadJson), '+/', '-_'), '=');
+        $sig = hash_hmac('sha256', $payloadB64, JWT_SECRET);
+        return $payloadB64 . '.' . $sig;
     }
 
     /**
-     * Verify JWT token
+     * Verify signed token; rejects legacy unsigned tokens
      * @param string $token
      * @return array|null
      */
     public static function verifyToken($token) {
         try {
-            $payload = json_decode(base64_decode($token), true);
-            
-            if (!$payload) {
+            if (strpos($token, '.') === false) {
                 return null;
             }
-            
-            if (!isset($payload['exp']) || $payload['exp'] < time()) {
+            $parts = explode('.', $token, 2);
+            if (count($parts) !== 2) {
                 return null;
             }
-            
+            list($payloadB64, $sig) = $parts;
+            $expected = hash_hmac('sha256', $payloadB64, JWT_SECRET);
+            if (!hash_equals($expected, $sig)) {
+                return null;
+            }
+            $payloadJson = self::base64UrlDecode($payloadB64);
+            if ($payloadJson === false || $payloadJson === '') {
+                return null;
+            }
+            $payload = json_decode($payloadJson, true);
+            if (!$payload || !isset($payload['exp']) || $payload['exp'] < time()) {
+                return null;
+            }
             return $payload;
         } catch (Exception $e) {
             Logger::error('Token verification failed', ['error' => $e->getMessage()]);
             return null;
         }
+    }
+
+    private static function base64UrlDecode($data) {
+        $b64 = strtr($data, '-_', '+/');
+        $pad = strlen($b64) % 4;
+        if ($pad) {
+            $b64 .= str_repeat('=', 4 - $pad);
+        }
+        return base64_decode($b64, true);
     }
 
     /**
@@ -542,24 +565,218 @@ class CurrencyHelper {
     }
 }
 
-class ResponseHelper {
-    public static function success($data, $message = 'Success', $code = 200) {
-        return self::response(true, $message, $data, $code);
+/**
+ * @param object $conn Database (fetch/execute)
+ * @param string $key
+ * @param string $default
+ * @return string
+ */
+function settings_fetch_value($conn, $key, $default = '') {
+    $r = $conn->fetch('SELECT setting_value FROM remquip_settings WHERE setting_key = :k', ['k' => $key]);
+    if (!$r || !array_key_exists('setting_value', $r)) {
+        return $default;
     }
-    
-    public static function error($message, $code = 400, $errors = null) {
-        return self::response(false, $message, $errors, $code);
+    $v = $r['setting_value'];
+    if ($v === null || $v === '') {
+        return $default;
     }
-    
-    private static function response($success, $message, $data, $code) {
-        http_response_code($code);
-        return json_encode([
-            'success' => $success,
-            'message' => $message,
-            'data' => $data,
-            'timestamp' => date('Y-m-d H:i:s')
-        ]);
+    return (string)$v;
+}
+
+/**
+ * Tax/shipping/currency for storefront + order totals (see GET /settings/storefront).
+ *
+ * @param object $conn
+ * @return array{tax_gst_rate: float, tax_qst_rate: float, tax_combined_rate: float, free_shipping_threshold: float, flat_shipping_rate: float, default_currency: string}
+ */
+function settings_storefront_rates($conn) {
+    $gst = (float)settings_fetch_value($conn, 'tax_gst_rate', '5.0');
+    $qst = (float)settings_fetch_value($conn, 'tax_qst_rate', '9.975');
+    $free = (float)settings_fetch_value($conn, 'free_shipping_threshold', '500');
+    $flat = (float)settings_fetch_value($conn, 'flat_shipping_rate', '25');
+    $cur = settings_fetch_value($conn, 'default_currency', 'CAD');
+    $combined = ($gst + $qst) / 100.0;
+    return [
+        'tax_gst_rate' => $gst,
+        'tax_qst_rate' => $qst,
+        'tax_combined_rate' => $combined,
+        'free_shipping_threshold' => $free,
+        'flat_shipping_rate' => $flat,
+        'default_currency' => $cur,
+        'supported_locales' => get_supported_locales($conn),
+    ];
+}
+
+/**
+ * Returns array of enabled locale codes from settings (e.g. ["en","fr"]).
+ * Supports future languages; admins add codes via supported_locales setting.
+ *
+ * @param object $conn
+ * @return array<string>
+ */
+function get_supported_locales($conn) {
+    $raw = settings_fetch_value($conn, 'supported_locales', '["en","fr"]');
+    $decoded = json_decode($raw, true);
+    if (is_array($decoded)) {
+        $out = [];
+        foreach ($decoded as $v) {
+            if (is_string($v) && preg_match('/^[a-z]{2}(-[a-z]{2})?$/', strtolower(trim($v)))) {
+                $out[] = strtolower(trim($v));
+            }
+        }
+        if (!empty($out)) {
+            return array_values(array_unique($out));
+        }
     }
+    return ['en', 'fr'];
+}
+
+/**
+ * @param float $subtotal
+ * @param array $rates settings_storefront_rates()
+ * @return array{tax: float, shipping: float, total: float}
+ */
+function compute_order_totals_from_subtotal($subtotal, $rates) {
+    $subtotal = max(0, (float)$subtotal);
+    $tax = round($subtotal * $rates['tax_combined_rate'], 2);
+    $shipping = $subtotal <= 0
+        ? 0.0
+        : ($subtotal >= $rates['free_shipping_threshold'] ? 0.0 : (float)$rates['flat_shipping_rate']);
+    $total = round($subtotal + $tax + $shipping, 2);
+    return ['tax' => $tax, 'shipping' => $shipping, 'total' => $total];
+}
+
+function remquip_setting_is_on($conn, $key) {
+    $v = settings_fetch_value($conn, $key, '0');
+    return $v === '1' || strcasecmp((string)$v, 'true') === 0;
+}
+
+function remquip_notification_recipient($conn) {
+    $to = trim(settings_fetch_value($conn, 'notif_recipient_email', ''));
+    if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        $to = trim(settings_fetch_value($conn, 'contact_email', ''));
+    }
+    return filter_var($to, FILTER_VALIDATE_EMAIL) ? $to : null;
+}
+
+function remquip_mail_from_address($conn) {
+    $f = trim(settings_fetch_value($conn, 'notif_from_email', ''));
+    if ($f !== '' && filter_var($f, FILTER_VALIDATE_EMAIL)) {
+        return $f;
+    }
+    $c = trim(settings_fetch_value($conn, 'contact_email', ''));
+    return filter_var($c, FILTER_VALIDATE_EMAIL) ? $c : null;
+}
+
+/**
+ * Admin/system notifications (uses From = notif_from_email or contact_email).
+ *
+ * @param object $conn
+ * @param string $to
+ * @param string $subject
+ * @param string $body
+ * @return bool
+ */
+function remquip_send_admin_mail($conn, $to, $subject, $body) {
+    if (!$to) {
+        return false;
+    }
+    $from = remquip_mail_from_address($conn);
+    if (!$from) {
+        Logger::info('remquip_mail_skip', ['reason' => 'no_from']);
+        return false;
+    }
+    $headers = 'From: ' . $from . "\r\nContent-Type: text/plain; charset=UTF-8";
+    $ok = @mail($to, $subject, $body, $headers);
+    Logger::info('remquip_admin_mail', ['to' => $to, 'subject' => $subject, 'ok' => $ok]);
+    return $ok;
+}
+
+/**
+ * Customer-facing (order shipped); Reply-To = store address.
+ *
+ * @param object $conn
+ * @param string $to
+ * @param string $subject
+ * @param string $body
+ * @return bool
+ */
+function remquip_send_customer_mail($conn, $to, $subject, $body) {
+    if (!$to) {
+        return false;
+    }
+    $from = remquip_mail_from_address($conn);
+    if (!$from) {
+        return false;
+    }
+    $headers = 'From: ' . $from . "\r\nReply-To: " . $from . "\r\nContent-Type: text/plain; charset=UTF-8";
+    $ok = @mail($to, $subject, $body, $headers);
+    Logger::info('remquip_customer_mail', ['to' => $to, 'subject' => $subject, 'ok' => $ok]);
+    return $ok;
+}
+
+function remquip_notify_new_order($conn, $orderId, $orderNumber, $total) {
+    if (!remquip_setting_is_on($conn, 'notif_new_order')) {
+        return;
+    }
+    $to = remquip_notification_recipient($conn);
+    if (!$to) {
+        return;
+    }
+    $body = "A new order was placed.\r\n\r\nOrder number: {$orderNumber}\r\nTotal: {$total}\r\nOrder ID: {$orderId}\r\n";
+    remquip_send_admin_mail($conn, $to, 'REMQUIP: New order ' . $orderNumber, $body);
+}
+
+function remquip_notify_new_customer($conn, $companyName, $email) {
+    if (!remquip_setting_is_on($conn, 'notif_new_customer')) {
+        return;
+    }
+    $to = remquip_notification_recipient($conn);
+    if (!$to) {
+        return;
+    }
+    $body = "New customer record created.\r\n\r\nCompany: {$companyName}\r\nEmail: {$email}\r\n";
+    remquip_send_admin_mail($conn, $to, 'REMQUIP: New customer ' . $email, $body);
+}
+
+function remquip_notify_low_stock($conn, $sku, $name, $qtyAvailable, $reorderLevel) {
+    if (!remquip_setting_is_on($conn, 'notif_low_stock')) {
+        return;
+    }
+    $to = remquip_notification_recipient($conn);
+    if (!$to) {
+        return;
+    }
+    $body = "Low stock alert.\r\n\r\nSKU: {$sku}\r\nProduct: {$name}\r\nAvailable: {$qtyAvailable}\r\nReorder level: {$reorderLevel}\r\n";
+    remquip_send_admin_mail($conn, $to, 'REMQUIP: Low stock ' . $sku, $body);
+}
+
+/**
+ * Email the customer when an order ships (tracking optional).
+ */
+function remquip_notify_order_shipped_to_customer($conn, $orderId, $carrier = null, $trackingNumber = null) {
+    if (!remquip_setting_is_on($conn, 'notif_order_shipped')) {
+        return;
+    }
+    $row = $conn->fetch(
+        'SELECT o.order_number, c.email FROM remquip_orders o
+         INNER JOIN remquip_customers c ON c.id = o.customer_id AND c.deleted_at IS NULL
+         WHERE o.id = :id AND o.deleted_at IS NULL',
+        ['id' => $orderId]
+    );
+    if (!$row || empty($row['email'])) {
+        return;
+    }
+    $cust = filter_var($row['email'], FILTER_VALIDATE_EMAIL);
+    if (!$cust) {
+        return;
+    }
+    $num = $row['order_number'];
+    $body = "Your order {$num} has shipped.\r\n\r\n";
+    if ($carrier && $trackingNumber) {
+        $body .= "Carrier: {$carrier}\r\nTracking: {$trackingNumber}\r\n";
+    }
+    remquip_send_customer_mail($conn, $cust, 'REMQUIP: Order ' . $num . ' shipped', $body);
 }
 
 // Initialize on include

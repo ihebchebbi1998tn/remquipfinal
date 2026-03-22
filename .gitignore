@@ -9,6 +9,10 @@ lerna-debug.log*
 
 node_modules
 dist
+
+# Backend secrets (DB, JWT) — never commit
+Backend/.env
+.env
 dist-ssr
 *.local
 

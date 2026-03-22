@@ -7,10 +7,11 @@ import { Pool, PoolConnection } from 'mysql2/promise';
  */
 
 const pool: Pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'remquip',
+  host: 'luccybcdb.mysql.db',
+  port: 3306,
+  user: 'luccybcdb',
+  password: 'Dadouhibou2025',
+  database: 'luccybcdb',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

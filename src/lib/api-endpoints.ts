@@ -1,162 +1,218 @@
 /**
  * API Endpoints Configuration
- * All REST API endpoints for REMQUIP backend
- * Base URL: http://luccibyey.com.tn/remquip/backend
+ * Paths are relative to API_BASE_URL (`http://luccibyey.com.tn/remquip/api`, see Backend/config.php API_URL).
  */
 
 export const API_ENDPOINTS = {
+  /** GET — Backend `index.php` case `health` (no auth). */
+  HEALTH: '/health',
+
+  /** Files land under `Backend/uploads/*` — see `Backend/routes/uploads.php`. */
+  UPLOADS: {
+    /** POST multipart `file`; optional `productId`, `altText`, `isPrimary`. */
+    IMAGE: '/uploads/image',
+    /** POST multipart `file`; optional `customerId`, `documentType` (admin). */
+    CONTRACT: '/uploads/contract',
+    /** POST multipart `file` — `file_uploads` registry (auth). */
+    FILE: '/uploads/file',
+    /** GET — paginated `file_uploads` (admin). */
+    FILES_LIST: '/uploads/files',
+    /** DELETE — `file_uploads.id` (admin). */
+    FILE_DELETE: '/uploads/files/:id',
+    /** GET — list documents for a customer (admin). */
+    CONTRACTS_BY_CUSTOMER: '/uploads/contracts/:customerId',
+    /** DELETE — `customer_documents.id` (admin). */
+    DELETE: '/uploads/:id',
+  },
+
+  /** Site config — `settings` table (Backend/routes/settings.php). */
+  SETTINGS: {
+    PUBLIC: '/settings/public',
+    /** GET — tax/shipping/currency for cart (no auth). */
+    STOREFRONT: '/settings/storefront',
+    LIST: '/settings',
+  },
+
   // ==================== AUTH ENDPOINTS ====================
   AUTH: {
-    LOGIN: '/api/auth/login',
-    REGISTER: '/api/auth/register',
-    LOGOUT: '/api/auth/logout',
-    REFRESH: '/api/auth/refresh',
-    VERIFY: '/api/auth/verify',
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    LOGOUT: '/auth/logout',
+    REFRESH: '/auth/refresh',
+    VERIFY: '/auth/verify',
   },
 
   // ==================== USERS ENDPOINTS ====================
+  /** Per-user settings live under USER_DASHBOARD; avatar via UPDATE body `avatar_url`. */
   USERS: {
-    LIST: '/api/users',
-    CREATE: '/api/users',
-    PROFILE: '/api/users/profile',
-    GET: '/api/users/:id',
-    UPDATE: '/api/users/:id',
-    DELETE: '/api/users/:id',
-    UPDATE_PASSWORD: '/api/users/:id/password',
-    UPDATE_AVATAR: '/api/users/:id/avatar',
-    GET_SETTINGS: '/api/users/:id/settings',
-    UPDATE_SETTINGS: '/api/users/:id/settings',
+    LIST: '/users',
+    CREATE: '/users',
+    PROFILE: '/users/profile',
+    GET: '/users/:id',
+    UPDATE: '/users/:id',
+    DELETE: '/users/:id',
+    UPDATE_PASSWORD: '/users/:id/password',
+    /** POST: multipart `file` (csv/json) or JSON `{ users: [...] }` (admin). */
+    IMPORT: '/users/import',
   },
 
   // ==================== PRODUCTS ENDPOINTS ====================
   PRODUCTS: {
-    LIST: '/api/products',
-    CREATE: '/api/products',
-    GET: '/api/products/:id',
-    UPDATE: '/api/products/:id',
-    DELETE: '/api/products/:id',
-    SEARCH: '/api/products/search',
-    FEATURED: '/api/products/featured',
-    BY_CATEGORY: '/api/products/category/:categoryId',
+    LIST: '/products',
+    CREATE: '/products',
+    GET: '/products/:id',
+    UPDATE: '/products/:id',
+    DELETE: '/products/:id',
+    SEARCH: '/products/search',
+    FEATURED: '/products/featured',
+    BY_CATEGORY: '/products/category/:categoryId',
   },
 
   // ==================== PRODUCT IMAGES ENDPOINTS ====================
   PRODUCT_IMAGES: {
-    LIST: '/api/products/:id/images',
-    UPLOAD: '/api/products/:id/images',
-    DELETE: '/api/products/:id/images/:imageId',
+    LIST: '/products/:id/images',
+    UPLOAD: '/products/:id/images',
+    DELETE: '/products/:id/images/:imageId',
   },
 
   // ==================== CATEGORIES ENDPOINTS ====================
   CATEGORIES: {
-    LIST: '/api/categories',
-    CREATE: '/api/categories',
-    GET: '/api/categories/:id',
-    UPDATE: '/api/categories/:id',
-    DELETE: '/api/categories/:id',
+    LIST: '/categories',
+    CREATE: '/categories',
+    GET: '/categories/:id',
+    UPDATE: '/categories/:id',
+    DELETE: '/categories/:id',
+    /** GET/PUT — admin; body `{ en?: { name, description }, fr?: { ... } }` */
+    TRANSLATIONS: '/categories/:id/translations',
   },
 
   // ==================== CUSTOMERS ENDPOINTS ====================
   CUSTOMERS: {
-    LIST: '/api/customers',
-    CREATE: '/api/customers',
-    GET: '/api/customers/:id',
-    UPDATE: '/api/customers/:id',
-    DELETE: '/api/customers/:id',
-    SEARCH: '/api/customers/search',
-    ORDERS: '/api/customers/:id/orders',
-    ADDRESSES: '/api/customers/:id/addresses',
+    LIST: '/customers',
+    CREATE: '/customers',
+    GET: '/customers/:id',
+    UPDATE: '/customers/:id',
+    DELETE: '/customers/:id',
+    SEARCH: '/customers/search',
+    ORDERS: '/customers/:id/orders',
+    ADDRESSES: '/customers/:id/addresses',
+    /** POST: multipart `file` (csv/json) or JSON `{ customers: [...] }` (admin). */
+    IMPORT: '/customers/import',
   },
 
   // ==================== ORDERS ENDPOINTS ====================
   ORDERS: {
-    LIST: '/api/orders',
-    CREATE: '/api/orders',
-    GET: '/api/orders/:id',
-    UPDATE: '/api/orders/:id',
-    DELETE: '/api/orders/:id',
-    SEARCH: '/api/orders/search',
-    STATUS: '/api/orders/:id/status',
-    TRACKING: '/api/orders/:id/tracking',
-    ADD_NOTE: '/api/orders/:id/notes',
-    GET_NOTES: '/api/orders/:id/notes',
-    USER_ORDERS: '/api/users/:userId/orders',
+    LIST: '/orders',
+    CREATE: '/orders',
+    GET: '/orders/:id',
+    UPDATE: '/orders/:id',
+    DELETE: '/orders/:id',
+    SEARCH: '/orders/search',
+    STATUS: '/orders/:id/status',
+    TRACKING: '/orders/:id/tracking',
+    ADD_NOTE: '/orders/:id/notes',
+    GET_NOTES: '/orders/:id/notes',
+    USER_ORDERS: '/users/:userId/orders',
   },
 
   // ==================== DISCOUNTS ENDPOINTS ====================
   DISCOUNTS: {
-    LIST: '/api/discounts',
-    CREATE: '/api/discounts',
-    GET: '/api/discounts/:id',
-    UPDATE: '/api/discounts/:id',
-    DELETE: '/api/discounts/:id',
-    VALIDATE: '/api/discounts/validate/:code',
+    LIST: '/discounts',
+    CREATE: '/discounts',
+    GET: '/discounts/:id',
+    UPDATE: '/discounts/:id',
+    DELETE: '/discounts/:id',
+    VALIDATE: '/discounts/validate/:code',
   },
 
   // ==================== INVENTORY ENDPOINTS ====================
   INVENTORY: {
-    LOGS: '/api/inventory/logs',
-    ADJUST: '/api/inventory/adjust',
-    LOW_STOCK: '/api/inventory/low-stock',
-    HISTORY: '/api/inventory/product/:productId/history',
+    LOGS: '/inventory/logs',
+    ADJUST: '/inventory/adjust',
+    LOW_STOCK: '/inventory/low-stock',
+    HISTORY: '/inventory/product/:productId/history',
   },
 
   // ==================== ANALYTICS ENDPOINTS ====================
   ANALYTICS: {
-    DASHBOARD: '/api/analytics/dashboard',
-    DAILY_METRICS: '/api/analytics/metrics',
-    REVENUE: '/api/analytics/revenue',
+    DASHBOARD: '/analytics/dashboard',
+    DAILY_METRICS: '/analytics/metrics',
+    REVENUE: '/analytics/revenue',
+    SALES: '/analytics/sales',
+    INVENTORY_OVERVIEW: '/analytics/inventory',
+    CUSTOMERS_OVERVIEW: '/analytics/customers',
+    /** POST — insert `analytics` row (public; optional Bearer). */
+    EVENTS: '/analytics/events',
+    /** GET — admin paginated events. */
+    EVENTS_SUMMARY: '/analytics/events/summary',
   },
 
   // ==================== DASHBOARD ENDPOINTS ====================
   DASHBOARD: {
-    STATS: '/api/dashboard/stats',
-    RECENT_ORDERS: '/api/dashboard/recent-orders',
-    ACTIVITY_LOG: '/api/dashboard/activity-log',
-    TOP_PRODUCTS: '/api/dashboard/top-products',
+    STATS: '/dashboard/stats',
+    RECENT_ORDERS: '/dashboard/recent-orders',
+    ACTIVITY_LOG: '/dashboard/activity-log',
+    TOP_PRODUCTS: '/dashboard/top-products',
   },
 
   // ==================== CMS ENDPOINTS ====================
   CMS: {
-    PAGES: '/api/cms/pages',
-    CREATE_PAGE: '/api/cms/pages',
-    GET_PAGE: '/api/cms/pages/:slug',
-    UPDATE_PAGE: '/api/cms/pages/:id',
-    DELETE_PAGE: '/api/cms/pages/:id',
-    PAGE_CONTENT: '/api/cms/pages/:pageName/content',
-    SECTION_CONTENT: '/api/cms/pages/:pageName/sections/:sectionKey',
+    PAGES: '/cms/pages',
+    CREATE_PAGE: '/cms/pages',
+    GET_PAGE: '/cms/pages/:slug',
+    UPDATE_PAGE: '/cms/pages/:id',
+    DELETE_PAGE: '/cms/pages/:id',
+    PAGE_CONTENT: '/cms/pages/:pageName/content',
+    SECTION_CONTENT: '/cms/pages/:pageName/sections/:sectionKey',
+    /** POST body creates/updates a section on a page (Backend: cms.php). */
+    CONTENT: '/cms/content',
+    /** `id` is `pageUuid:sectionKey` (URL-encoded in client). */
+    CONTENT_BY_ID: '/cms/content/:id',
+    IMAGES_UPLOAD: '/cms/images/upload',
+    /** GET/PUT — admin; per-locale title/excerpt/content */
+    PAGE_TRANSLATIONS: '/cms/pages/:id/translations',
+  },
+
+  /** Hero / marketing banners (Backend routes/cms.php). */
+  CMS_BANNERS: {
+    LIST: '/cms/banners',
+    CREATE: '/cms/banners',
+    UPDATE: '/cms/banners/:id',
+    DELETE: '/cms/banners/:id',
+    /** GET/PUT — admin; per-locale title/description */
+    TRANSLATIONS: '/cms/banners/:id/translations',
   },
 
   // ==================== AUDIT ENDPOINTS ====================
   AUDIT: {
-    LOGS: '/api/audit/logs',
-    USER_LOGS: '/api/audit/users/:userId/logs',
+    LOGS: '/audit/logs',
+    USER_LOGS: '/audit/users/:userId/logs',
   },
 
   // ==================== ADMIN CONTACTS ENDPOINTS ====================
   ADMIN_CONTACTS: {
-    LIST: '/api/admin-contacts',
-    GET: '/api/admin-contacts/:id',
-    BY_DEPARTMENT: '/api/admin-contacts/department/:department',
-    BY_SPECIALIZATION: '/api/admin-contacts/specialization/:specialization',
-    AVAILABLE: '/api/admin-contacts/available',
+    LIST: '/admin-contacts',
+    GET: '/admin-contacts/:id',
+    BY_DEPARTMENT: '/admin-contacts/department/:department',
+    BY_SPECIALIZATION: '/admin-contacts/specialization/:specialization',
+    AVAILABLE: '/admin-contacts/available',
   },
 
   // ==================== ADMIN PERMISSIONS ENDPOINTS ====================
   ADMIN_PERMISSIONS: {
-    GET_USER_PERMISSIONS: '/api/admin/permissions/user/:userId',
-    UPDATE_PERMISSIONS: '/api/admin/permissions/user/:userId',
-    GET_ALL_PERMISSIONS: '/api/admin/permissions',
+    GET_USER_PERMISSIONS: '/admin/permissions/user/:userId',
+    UPDATE_PERMISSIONS: '/admin/permissions/user/:userId',
+    GET_ALL_PERMISSIONS: '/admin/permissions',
   },
 
   // ==================== USER DASHBOARD ENDPOINTS ====================
   USER_DASHBOARD: {
-    PROFILE: '/api/user/dashboard/profile',
-    ORDERS: '/api/user/dashboard/orders',
-    ORDER_SUMMARY: '/api/user/dashboard/orders/summary',
-    ADDRESSES: '/api/user/dashboard/addresses',
-    SETTINGS: '/api/user/dashboard/settings',
-    UPDATE_SETTINGS: '/api/user/dashboard/settings',
-    CONTACT_US: '/api/user/dashboard/contacts',
+    PROFILE: '/user/dashboard/profile',
+    ORDERS: '/user/dashboard/orders',
+    ORDER_SUMMARY: '/user/dashboard/orders/summary',
+    ADDRESSES: '/user/dashboard/addresses',
+    SETTINGS: '/user/dashboard/settings',
+    UPDATE_SETTINGS: '/user/dashboard/settings',
+    CONTACT_US: '/user/dashboard/contacts',
   },
 } as const;

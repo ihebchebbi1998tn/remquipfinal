@@ -37,9 +37,9 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const response = await api.getCMSPageContent(pageName);
-      if (response.success && response.data) {
+      if (response.success && response.data && Array.isArray(response.data)) {
         const contentMap = new Map<string, CMSContent>();
-        response.data.forEach((item: CMSContent) => {
+        (response.data as CMSContent[]).forEach((item: CMSContent) => {
           contentMap.set(`${item.page_name}:${item.section_key}`, item);
         });
         setContent(contentMap);

@@ -39,7 +39,8 @@ define('REMQUIP_PASSWORD_RESET_TABLE', 'remquip_password_reset_tokens');
 define('REMQUIP_EMAIL_VERIFICATION_TABLE', 'remquip_email_verification_tokens');
 
 // Product Management
-define('REMQUIP_PRODUCT_CATEGORIES_TABLE', 'remquip_product_categories');
+/** Canonical name in remquip_full_schema.sql */
+define('REMQUIP_PRODUCT_CATEGORIES_TABLE', 'remquip_categories');
 define('REMQUIP_PRODUCTS_TABLE', 'remquip_products');
 define('REMQUIP_PRODUCT_IMAGES_TABLE', 'remquip_product_images');
 define('REMQUIP_PRODUCT_VARIANTS_TABLE', 'remquip_product_variants');
@@ -65,7 +66,7 @@ define('REMQUIP_CMS_SECTIONS_TABLE', 'remquip_cms_sections');
 
 // Audit & Analytics
 define('REMQUIP_AUDIT_LOGS_TABLE', 'remquip_audit_logs');
-define('REMQUIP_ANALYTICS_TABLE', 'remquip_analytics_daily_metrics');
+define('REMQUIP_ANALYTICS_TABLE', 'remquip_analytics');
 
 // =====================================================================
 // BACKWARD COMPATIBILITY ALIASES (Optional - for gradual migration)
@@ -264,6 +265,7 @@ function getTableName($shortName) {
         'customers' => REMQUIP_CUSTOMERS_TABLE,
         'orders' => REMQUIP_ORDERS_TABLE,
         'product_categories' => REMQUIP_PRODUCT_CATEGORIES_TABLE,
+        'categories' => REMQUIP_PRODUCT_CATEGORIES_TABLE,
         'product_images' => REMQUIP_PRODUCT_IMAGES_TABLE,
         'product_variants' => REMQUIP_PRODUCT_VARIANTS_TABLE,
         'inventory_logs' => REMQUIP_INVENTORY_LOGS_TABLE,

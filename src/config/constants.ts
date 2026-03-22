@@ -8,24 +8,16 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export const SHIPMENT_STATUSES = ["pending", "label_created", "in_transit", "delivered", "exception"] as const;
 export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number];
 
+/** Fallbacks when GET /settings/storefront is unavailable (matches seeded DB defaults). */
 export const TAX_RATE = 0.14975;
 export const FREE_SHIPPING_THRESHOLD = 500;
 export const FLAT_SHIPPING_RATE = 25;
 
-// API Base URL - configured for REMQUIP backend
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://luccibyey.com.tn/remquip/backend';
-
-export const API_ENDPOINTS = {
-  auth: "/api/auth",
-  products: "/api/products",
-  inventory: "/api/inventory",
-  orders: "/api/orders",
-  customers: "/api/customers",
-  cms: "/api/cms",
-  translations: "/api/translations",
-  currencies: "/api/currencies",
-  media: "/api/media",
-} as const;
+/**
+ * Backend API origin (no .env — change here only).
+ * Must match `API_URL` in `Backend/config.php` (same host + `/remquip/api` path).
+ */
+export const API_BASE_URL = "http://luccibyey.com.tn/remquip/api";
 
 export const RATE_LIMITS = {
   auth: { requests: 10, windowMs: 60_000 },

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Plus, Search, Grid3x3, User, AlertCircle, Eye, Edit, Trash2, Copy, Loader2 } from "lucide-react";
 import { AdminUser, AdminPage, AccessRecord } from "@/types/admin";
 import { useUsers, useAllPermissions, useUpdateUserPermissions } from "@/hooks/useApi";
+import { api, unwrapApiList, type User } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
-// Static admin pages definition (these are routes, not CMS pages)
-const adminPages: AdminPage[] = [
+// Fallback when /admin/permissions has no `pages` yet (UI-only; persist uses DB page ids when API provides them)
+const fallbackAdminPages: AdminPage[] = [
   { id: "page-1", name: "Dashboard", slug: "dashboard", description: "Admin dashboard overview", order: 1, isPublic: false },
   { id: "page-2", name: "Products", slug: "products", description: "Product management", order: 2, isPublic: false },
   { id: "page-3", name: "Inventory", slug: "inventory", description: "Inventory management", order: 3, isPublic: false },
@@ -21,6 +22,7 @@ export default function AdminAccess() {
   const [viewMode, setViewMode] = useState<ViewMode>("matrix");
   const [search, setSearch] = useState("");
   const [accessRecords, setAccessRecords] = useState<AccessRecord[]>([]);
+  const [accessPages, setAccessPages] = useState<AdminPage[]>(fallbackAdminPages);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [bulkUsers, setBulkUsers] = useState<string[]>([]);
   const [bulkPages, setBulkPages] = useState<string[]>([]);
@@ -31,16 +33,76 @@ export default function AdminAccess() {
   const { data: permissionsResponse, isLoading: isLoadingPermissions } = useAllPermissions();
   const updatePermissionsMutation = useUpdateUserPermissions();
 
-  // Extract data with proper typing
-  const users: AdminUser[] = usersResponse?.data || [];
+  const rawUsers = unwrapApiList<User>(usersResponse, []);
+  const users: AdminUser[] = useMemo(
+    () =>
+      rawUsers.map((u) => ({
+        id: u.id,
+        name: u.full_name || u.email || u.id,
+        email: u.email,
+        role: u.role,
+        status: u.status === "suspended" ? "inactive" : (u.status as "active" | "inactive"),
+        created: u.created_at,
+      })),
+    [rawUsers]
+  );
+  const userIdsKey = useMemo(() => users.map((u) => u.id).sort().join(","), [users]);
   const isLoading = isLoadingUsers || isLoadingPermissions;
 
-  // Sync permissions from API to local state
+  // Matrix columns: real `pages` rows from GET /admin/permissions when present
   useEffect(() => {
-    if (permissionsResponse?.data) {
-      setAccessRecords(permissionsResponse.data);
+    const d = permissionsResponse?.data as
+      | { pages?: Array<{ id: string; name: string; slug: string; description?: string; display_order?: number }> }
+      | undefined;
+    if (d?.pages && d.pages.length > 0) {
+      setAccessPages(
+        d.pages.map((p) => ({
+          id: String(p.id),
+          name: p.name,
+          slug: p.slug,
+          description: p.description ?? "",
+          order: Number(p.display_order ?? 0),
+          isPublic: false,
+        }))
+      );
     }
   }, [permissionsResponse]);
+
+  // Load each user's row-level access (GET /admin/permissions/user/:id)
+  useEffect(() => {
+    if (!users.length) {
+      setAccessRecords([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const chunks = await Promise.all(
+        users.map(async (u) => {
+          try {
+            const res = await api.getUserPermissions(u.id);
+            const data = res.data as { access?: Array<Record<string, unknown>> } | undefined;
+            const rows = data?.access ?? [];
+            return rows
+              .filter((r) => (r.page_id ?? r.pageId) != null && String(r.page_id ?? r.pageId) !== "")
+              .map((r) => ({
+                userId: u.id,
+                pageId: String(r.page_id ?? r.pageId),
+                canView: !!(r.can_view ?? r.canView),
+                canEdit: !!(r.can_edit ?? r.canEdit),
+                canDelete: !!(r.can_delete ?? r.canDelete),
+                assigned: new Date().toISOString().split("T")[0],
+              }));
+          } catch {
+            return [];
+          }
+        })
+      );
+      if (!cancelled) setAccessRecords(chunks.flat());
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userIdsKey]);
 
   const handleAccessChange = async (userId: string, pageId: string, newAccess: { canView: boolean; canEdit: boolean; canDelete: boolean }) => {
     const existing = accessRecords.find((a) => a.userId === userId && a.pageId === pageId);
@@ -218,7 +280,7 @@ export default function AdminAccess() {
             <div>
               <label className="text-sm font-medium block mb-2">Select Pages</label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
-                {adminPages.map((p) => (
+                {accessPages.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
                       type="checkbox"
@@ -293,7 +355,7 @@ export default function AdminAccess() {
             <thead>
               <tr className="bg-secondary border-b border-border">
                 <th className="p-3 text-left font-medium sticky left-0 bg-secondary">User</th>
-                {adminPages.map((page) => (
+                {accessPages.map((page) => (
                   <th key={page.id} className="p-2 text-center font-medium text-xs whitespace-nowrap">{page.name}</th>
                 ))}
               </tr>
@@ -302,7 +364,7 @@ export default function AdminAccess() {
               {users.map((user) => (
                 <tr key={user.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
                   <td className="p-3 font-medium sticky left-0 bg-background hover:bg-secondary/50 truncate max-w-[150px]">{user.name}</td>
-                  {adminPages.map((page) => {
+                  {accessPages.map((page) => {
                     const access = accessRecords.find((a) => a.userId === user.id && a.pageId === page.id);
                     return (
                       <td key={`${user.id}-${page.id}`} className="p-2 text-center">
@@ -374,7 +436,7 @@ export default function AdminAccess() {
 
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground font-medium">Access: {getPermissionCount(user.id)} pages</p>
-                    {adminPages.map((page) => {
+                    {accessPages.map((page) => {
                       const access = accessRecords.find((a) => a.userId === user.id && a.pageId === page.id);
                       return (
                         <div key={page.id} className="flex items-center justify-between p-2 border border-border rounded text-sm">
@@ -427,7 +489,7 @@ export default function AdminAccess() {
           </div>
 
           <div className="grid gap-4">
-            {adminPages
+            {accessPages
               .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()))
               .map((page) => {
                 const pageUsers = users.filter((u) => accessRecords.some((a) => a.userId === u.id && a.pageId === page.id));

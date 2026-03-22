@@ -2,24 +2,26 @@
 /**
  * =====================================================================
  * REMQUIP NEXUS - CONFIGURATION
+ * All settings below are hardcoded (no .env / getenv).
  * =====================================================================
  */
 
-// Database Configuration
-define('DB_HOST', getenv('DB_HOST') ?: 'luccybcdb.mysql.db');
-define('DB_USER', getenv('DB_USER') ?: 'luccybcdb');
-define('DB_PASS', getenv('DB_PASS') ?: 'Dadouhibou2025');
-define('DB_NAME', getenv('DB_NAME') ?: 'luccybcdb');
+// Database — same host as `Database` in database.php (OVH MySQL)
+define('DB_HOST', 'luccybcdb.mysql.db');
+define('DB_USER', 'luccybcdb');
+define('DB_PASS', 'Dadouhibou2025');
+define('DB_NAME', 'luccybcdb');
+define('DB_PORT', 3306);
 define('DB_CHARSET', 'utf8mb4');
 define('DB_COLLATION', 'utf8mb4_unicode_ci');
 
-// API Configuration
-define('API_URL', getenv('API_URL') ?: 'http://localhost:3000/api');
-define('FRONTEND_URL', getenv('FRONTEND_URL') ?: 'http://localhost:5173');
+// API / app URLs — backend deployed under /remquip/ (Frontend: src/config/constants.ts API_BASE_URL)
+define('API_URL', 'http://luccibyey.com.tn/remquip/api');
+define('FRONTEND_URL', 'http://luccibyey.com.tn/remquip');
 define('API_VERSION', '1.0.0');
 
-// JWT/Token Configuration
-define('JWT_SECRET', getenv('JWT_SECRET') ?: 'your-secret-key-change-in-production');
+// JWT — change this string if tokens must be invalidated site-wide
+define('JWT_SECRET', 'remquip_jwt_hs256_2025_luccybc_production_change_if_leaked_min_32_chars');
 define('TOKEN_EXPIRY', 24 * 60 * 60); // 24 hours in seconds
 
 // File Upload Configuration
@@ -50,15 +52,15 @@ define('CURRENCY_CODE', 'CAD');
 define('CURRENCY_SYMBOL', 'C$');
 
 // Email Configuration
-define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp.gmail.com');
-define('SMTP_PORT', getenv('SMTP_PORT') ?: 587);
-define('SMTP_USER', getenv('SMTP_USER') ?: 'your-email@gmail.com');
-define('SMTP_PASS', getenv('SMTP_PASS') ?: 'your-app-password');
-define('SMTP_FROM', getenv('SMTP_FROM') ?: 'noreply@remquip.com');
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_PORT', 587);
+define('SMTP_USER', 'your-email@gmail.com');
+define('SMTP_PASS', 'your-app-password');
+define('SMTP_FROM', 'noreply@remquip.com');
 
 // Logging
 define('LOG_DIR', __DIR__ . '/logs');
-define('LOG_LEVEL', getenv('LOG_LEVEL') ?: 'info'); // debug, info, warning, error
+define('LOG_LEVEL', 'info'); // debug, info, warning, error
 
 // Permissions
 define('ROLES', ['admin', 'manager', 'user']);
@@ -93,7 +95,7 @@ define('CUSTOMER_TYPES', [
 
 // Status enums
 define('USER_STATUS', ['active', 'inactive', 'suspended']);
-define('ORDER_STATUS', ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']);
+define('ORDER_STATUS', ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'completed', 'cancelled']);
 define('PRODUCT_STATUS', ['active', 'inactive', 'discontinued']);
 define('INVENTORY_STATUS', ['in_stock', 'low_stock', 'out_of_stock']);
 
@@ -105,8 +107,8 @@ define('FEATURE_INVENTORY_TRACKING', true);
 define('FEATURE_CUSTOMER_NOTES', true);
 define('FEATURE_MULTI_CURRENCY', false);
 
-// Development mode
-define('DEBUG_MODE', getenv('DEBUG_MODE') === 'true');
+// Development mode (set true locally to expose DB errors in API responses)
+define('DEBUG_MODE', false);
 
 // Ensure upload directory exists
 if (!is_dir(UPLOAD_DIR)) {

@@ -9,11 +9,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-// CORS & Headers
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/cors.php';
+header('Content-Type: application/json; charset=UTF-8');
 
 // Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -21,8 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Include database config
-require_once 'database.php';
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/database.php';
 
 // ==================== HELPER FUNCTIONS ====================
 
@@ -170,7 +167,7 @@ if ($resource === 'auth') {
         }
         
         try {
-            $stmt = $conn->prepare("SELECT id, password_hash, role, full_name FROM users WHERE email = :email AND deleted_at IS NULL");
+            $stmt = $conn->prepare("SELECT id, password_hash, role, full_name FROM remquip_users WHERE email = :email AND deleted_at IS NULL");
             $stmt->execute(['email' => sanitize($data['email'])]);
             $user = $stmt->fetch();
             
@@ -180,7 +177,7 @@ if ($resource === 'auth') {
             
             $token = generateToken($user['id'], $user['role']);
             
-            $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
+            $updateStmt = $conn->prepare("UPDATE remquip_users SET last_login = NOW() WHERE id = :id");
             $updateStmt->execute(['id' => $user['id']]);
             
             sendSuccess([
@@ -214,7 +211,7 @@ if ($resource === 'users') {
             $limit = (int)getQuery('limit', 10);
             $offset = (int)getQuery('offset', 0);
             
-            $query = "SELECT id, email, full_name, role, status, phone, created_at, updated_at FROM users WHERE deleted_at IS NULL";
+            $query = "SELECT id, email, full_name, role, status, phone, created_at, updated_at FROM remquip_users WHERE deleted_at IS NULL";
             $params = [];
             
             if ($search) {
@@ -239,7 +236,7 @@ if ($resource === 'users') {
             
             $users = $stmt->fetchAll();
             
-            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM users WHERE deleted_at IS NULL");
+            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM remquip_users WHERE deleted_at IS NULL");
             $countStmt->execute();
             $total = $countStmt->fetch()['total'];
             
@@ -267,7 +264,7 @@ if ($resource === 'users') {
                 sendError('Invalid email format');
             }
             
-            $checkStmt = $conn->prepare("SELECT id FROM users WHERE email = :email");
+            $checkStmt = $conn->prepare("SELECT id FROM remquip_users WHERE email = :email");
             $checkStmt->execute(['email' => $data['email']]);
             
             if ($checkStmt->fetch()) {
@@ -275,7 +272,7 @@ if ($resource === 'users') {
             }
             
             $userId = bin2hex(random_bytes(18));
-            $stmt = $conn->prepare("INSERT INTO users (id, email, password_hash, full_name, role, status) VALUES (:id, :email, :password, :name, :role, 'active')");
+            $stmt = $conn->prepare("INSERT INTO remquip_users (id, email, password_hash, full_name, role, status) VALUES (:id, :email, :password, :name, :role, 'active')");
             
             $stmt->execute([
                 'id' => $userId,
@@ -294,7 +291,7 @@ if ($resource === 'users') {
     if ($method === 'GET' && $id) {
         // Get single user
         try {
-            $stmt = $conn->prepare("SELECT id, email, full_name, role, status, phone, avatar_url, created_at FROM users WHERE id = :id AND deleted_at IS NULL");
+            $stmt = $conn->prepare("SELECT id, email, full_name, role, status, phone, avatar_url, created_at FROM remquip_users WHERE id = :id AND deleted_at IS NULL");
             $stmt->execute(['id' => $id]);
             $user = $stmt->fetch();
             
@@ -346,7 +343,7 @@ if ($resource === 'users') {
             }
             
             $updates[] = "updated_at = NOW()";
-            $query = "UPDATE users SET " . implode(', ', $updates) . " WHERE id = :id";
+            $query = "UPDATE remquip_users SET " . implode(', ', $updates) . " WHERE id = :id";
             
             $stmt = $conn->prepare($query);
             $stmt->execute($params);
@@ -360,7 +357,7 @@ if ($resource === 'users') {
     if ($method === 'DELETE' && $id) {
         // Soft delete user
         try {
-            $stmt = $conn->prepare("UPDATE users SET deleted_at = NOW(), status = 'inactive' WHERE id = :id");
+            $stmt = $conn->prepare("UPDATE remquip_users SET deleted_at = NOW(), status = 'inactive' WHERE id = :id");
             $stmt->execute(['id' => $id]);
             
             sendSuccess([], 'User deleted successfully');
@@ -383,7 +380,7 @@ if ($resource === 'products') {
             $limit = (int)getQuery('limit', 20);
             $offset = (int)getQuery('offset', 0);
             
-            $query = "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.deleted_at IS NULL";
+            $query = "SELECT p.*, c.name as category_name FROM remquip_products p LEFT JOIN remquip_categories c ON p.category_id = c.id WHERE p.deleted_at IS NULL";
             $params = [];
             
             if ($search) {
@@ -408,7 +405,7 @@ if ($resource === 'products') {
             
             $products = $stmt->fetchAll();
             
-            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM products WHERE deleted_at IS NULL");
+            $countStmt = $conn->prepare("SELECT COUNT(*) as total FROM remquip_products WHERE deleted_at IS NULL");
             $countStmt->execute();
             $total = $countStmt->fetch()['total'];
             
@@ -434,7 +431,7 @@ if ($resource === 'products') {
             
             $productId = bin2hex(random_bytes(18));
             
-            $stmt = $conn->prepare("INSERT INTO products (id, category_id, sku, name, description, base_price, cost_price, is_active) 
+            $stmt = $conn->prepare("INSERT INTO remquip_products (id, category_id, sku, name, description, base_price, cost_price, is_active) 
                                    VALUES (:id, :category, :sku, :name, :description, :price, :cost, 1)");
             
             $stmt->execute([
@@ -456,7 +453,7 @@ if ($resource === 'products') {
     if ($method === 'GET' && $id) {
         // Get single product
         try {
-            $stmt = $conn->prepare("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = :id AND p.deleted_at IS NULL");
+            $stmt = $conn->prepare("SELECT p.*, c.name as category_name FROM remquip_products p LEFT JOIN remquip_categories c ON p.category_id = c.id WHERE p.id = :id AND p.deleted_at IS NULL");
             $stmt->execute(['id' => $id]);
             $product = $stmt->fetch();
             
@@ -465,12 +462,12 @@ if ($resource === 'products') {
             }
             
             // Get images
-            $imagesStmt = $conn->prepare("SELECT * FROM product_images WHERE product_id = :id ORDER BY display_order");
+            $imagesStmt = $conn->prepare("SELECT * FROM remquip_product_images WHERE product_id = :id ORDER BY display_order");
             $imagesStmt->execute(['id' => $id]);
             $product['images'] = $imagesStmt->fetchAll();
             
             // Get variants
-            $variantsStmt = $conn->prepare("SELECT * FROM product_variants WHERE product_id = :id AND is_active = 1");
+            $variantsStmt = $conn->prepare("SELECT * FROM remquip_product_variants WHERE product_id = :id AND is_active = 1");
             $variantsStmt->execute(['id' => $id]);
             $product['variants'] = $variantsStmt->fetchAll();
             
@@ -513,7 +510,7 @@ if ($resource === 'products') {
             }
             
             $updates[] = "updated_at = NOW()";
-            $query = "UPDATE products SET " . implode(', ', $updates) . " WHERE id = :id";
+            $query = "UPDATE remquip_products SET " . implode(', ', $updates) . " WHERE id = :id";
             
             $stmt = $conn->prepare($query);
             $stmt->execute($params);
@@ -527,7 +524,7 @@ if ($resource === 'products') {
     if ($method === 'DELETE' && $id) {
         // Soft delete product
         try {
-            $stmt = $conn->prepare("UPDATE products SET deleted_at = NOW(), is_active = 0 WHERE id = :id");
+            $stmt = $conn->prepare("UPDATE remquip_products SET deleted_at = NOW(), is_active = 0 WHERE id = :id");
             $stmt->execute(['id' => $id]);
             
             sendSuccess([], 'Product deleted successfully');
@@ -545,7 +542,7 @@ if ($resource === 'categories') {
     if ($method === 'GET' && !$id) {
         // List categories
         try {
-            $stmt = $conn->prepare("SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY display_order");
+            $stmt = $conn->prepare("SELECT * FROM remquip_categories WHERE deleted_at IS NULL ORDER BY display_order");
             $stmt->execute();
             $categories = $stmt->fetchAll();
             
@@ -567,7 +564,7 @@ if ($resource === 'categories') {
             $slug = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '-', $data['name']), '-'));
             $categoryId = bin2hex(random_bytes(18));
             
-            $stmt = $conn->prepare("INSERT INTO categories (id, name, slug, description, display_order, is_active) VALUES (:id, :name, :slug, :description, :order, 1)");
+            $stmt = $conn->prepare("INSERT INTO remquip_categories (id, name, slug, description, display_order, is_active) VALUES (:id, :name, :slug, :description, :order, 1)");
             
             $stmt->execute([
                 'id' => $categoryId,
@@ -586,7 +583,7 @@ if ($resource === 'categories') {
     if ($method === 'GET' && $id) {
         // Get single category
         try {
-            $stmt = $conn->prepare("SELECT * FROM categories WHERE id = :id AND deleted_at IS NULL");
+            $stmt = $conn->prepare("SELECT * FROM remquip_categories WHERE id = :id AND deleted_at IS NULL");
             $stmt->execute(['id' => $id]);
             $category = $stmt->fetch();
             
@@ -612,7 +609,7 @@ if ($resource === 'inventory') {
             $limit = (int)getQuery('limit', 20);
             $offset = (int)getQuery('offset', 0);
             
-            $stmt = $conn->prepare("SELECT i.*, p.sku, p.name FROM inventory i JOIN products p ON i.product_id = p.id ORDER BY i.updated_at DESC LIMIT :limit OFFSET :offset");
+            $stmt = $conn->prepare("SELECT i.*, p.sku, p.name FROM remquip_inventory i JOIN remquip_products p ON i.product_id = p.id ORDER BY i.updated_at DESC LIMIT :limit OFFSET :offset");
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
@@ -635,7 +632,7 @@ if ($resource === 'inventory') {
             }
             
             // Get current inventory
-            $inventoryStmt = $conn->prepare("SELECT * FROM inventory WHERE product_id = :id");
+            $inventoryStmt = $conn->prepare("SELECT * FROM remquip_inventory WHERE product_id = :id");
             $inventoryStmt->execute(['id' => $id]);
             $inventory = $inventoryStmt->fetch();
             
@@ -651,12 +648,12 @@ if ($resource === 'inventory') {
             }
             
             // Update inventory
-            $updateStmt = $conn->prepare("UPDATE inventory SET quantity_on_hand = :qty WHERE product_id = :id");
+            $updateStmt = $conn->prepare("UPDATE remquip_inventory SET quantity_on_hand = :qty WHERE product_id = :id");
             $updateStmt->execute(['qty' => $newQuantity, 'id' => $id]);
             
             // Log change
             $logId = bin2hex(random_bytes(18));
-            $logStmt = $conn->prepare("INSERT INTO inventory_logs (id, product_id, user_id, action, quantity_change, reason, old_quantity, new_quantity) VALUES (:id, :product, :user, 'adjustment', :change, :reason, :old, :new)");
+            $logStmt = $conn->prepare("INSERT INTO remquip_inventory_logs (id, product_id, user_id, action, quantity_change, reason, old_quantity, new_quantity) VALUES (:id, :product, :user, 'adjustment', :change, :reason, :old, :new)");
             
             $logStmt->execute([
                 'id' => $logId,
@@ -688,7 +685,7 @@ if ($resource === 'customers') {
             $limit = (int)getQuery('limit', 20);
             $offset = (int)getQuery('offset', 0);
             
-            $query = "SELECT * FROM customers WHERE deleted_at IS NULL";
+            $query = "SELECT * FROM remquip_customers WHERE deleted_at IS NULL";
             $params = [];
             
             if ($search) {
@@ -730,7 +727,7 @@ if ($resource === 'customers') {
             
             $customerId = bin2hex(random_bytes(18));
             
-            $stmt = $conn->prepare("INSERT INTO customers (id, company_name, contact_person, email, phone, customer_type, status, address, city, province, postal_code, country) 
+            $stmt = $conn->prepare("INSERT INTO remquip_customers (id, company_name, contact_person, email, phone, customer_type, status, address, city, province, postal_code, country) 
                                    VALUES (:id, :company, :contact, :email, :phone, :type, 'active', :address, :city, :province, :zip, :country)");
             
             $stmt->execute([
@@ -756,7 +753,7 @@ if ($resource === 'customers') {
     if ($method === 'GET' && $id) {
         // Get single customer
         try {
-            $stmt = $conn->prepare("SELECT * FROM customers WHERE id = :id AND deleted_at IS NULL");
+            $stmt = $conn->prepare("SELECT * FROM remquip_customers WHERE id = :id AND deleted_at IS NULL");
             $stmt->execute(['id' => $id]);
             $customer = $stmt->fetch();
             
@@ -784,7 +781,7 @@ if ($resource === 'orders') {
             $limit = (int)getQuery('limit', 20);
             $offset = (int)getQuery('offset', 0);
             
-            $query = "SELECT * FROM orders WHERE deleted_at IS NULL";
+            $query = "SELECT * FROM remquip_orders WHERE deleted_at IS NULL";
             $params = [];
             
             if ($status) {
@@ -837,7 +834,7 @@ if ($resource === 'orders') {
             $discount = isset($data['discount']) ? (float)$data['discount'] : 0;
             $total = $subtotal + $tax + $shipping - $discount;
             
-            $stmt = $conn->prepare("INSERT INTO orders (id, customer_id, order_number, status, subtotal, tax, shipping, discount, total, created_by) VALUES (:id, :customer, :number, 'pending', :subtotal, :tax, :shipping, :discount, :total, :user)");
+            $stmt = $conn->prepare("INSERT INTO remquip_orders (id, customer_id, order_number, status, subtotal, tax, shipping, discount, total, created_by) VALUES (:id, :customer, :number, 'pending', :subtotal, :tax, :shipping, :discount, :total, :user)");
             
             $stmt->execute([
                 'id' => $orderId,
@@ -854,7 +851,7 @@ if ($resource === 'orders') {
             // Add order items
             foreach ($data['items'] as $item) {
                 $itemId = bin2hex(random_bytes(18));
-                $itemStmt = $conn->prepare("INSERT INTO order_items (id, order_id, product_id, quantity, unit_price, line_total) VALUES (:id, :order, :product, :qty, :price, :total)");
+                $itemStmt = $conn->prepare("INSERT INTO remquip_order_items (id, order_id, product_id, quantity, unit_price, line_total) VALUES (:id, :order, :product, :qty, :price, :total)");
                 
                 $lineTotal = $item['quantity'] * $item['unit_price'];
                 $itemStmt->execute([
@@ -876,7 +873,7 @@ if ($resource === 'orders') {
     if ($method === 'GET' && $id && $subresource === 'items') {
         // Get order items
         try {
-            $stmt = $conn->prepare("SELECT * FROM order_items WHERE order_id = :id");
+            $stmt = $conn->prepare("SELECT * FROM remquip_order_items WHERE order_id = :id");
             $stmt->execute(['id' => $id]);
             $items = $stmt->fetchAll();
             
@@ -899,7 +896,7 @@ if ($resource === 'discounts') {
             $limit = (int)getQuery('limit', 20);
             $offset = (int)getQuery('offset', 0);
             
-            $query = "SELECT * FROM discounts";
+            $query = "SELECT * FROM remquip_discounts";
             $params = [];
             
             if ($active !== '') {
@@ -936,7 +933,7 @@ if ($resource === 'discounts') {
             
             $discountId = bin2hex(random_bytes(18));
             
-            $stmt = $conn->prepare("INSERT INTO discounts (id, code, name, discount_type, discount_value, customer_type, is_active) VALUES (:id, :code, :name, :type, :value, :customer_type, 1)");
+            $stmt = $conn->prepare("INSERT INTO remquip_discounts (id, code, name, discount_type, discount_value, customer_type, is_active) VALUES (:id, :code, :name, :type, :value, :customer_type, 1)");
             
             $stmt->execute([
                 'id' => $discountId,
@@ -1018,7 +1015,7 @@ if ($resource === 'upload') {
             $fileId = bin2hex(random_bytes(18));
             $uploadType = getQuery('type', 'general');
             
-            $stmt = $conn->prepare("INSERT INTO file_uploads (id, original_filename, stored_filename, file_path, file_size, mime_type, upload_type, user_id) VALUES (:id, :original, :stored, :path, :size, :mime, :type, :user)");
+            $stmt = $conn->prepare("INSERT INTO remquip_file_uploads (id, original_filename, stored_filename, file_path, file_size, mime_type, upload_type, user_id) VALUES (:id, :original, :stored, :path, :size, :mime, :type, :user)");
             
             $stmt->execute([
                 'id' => $fileId,

@@ -4,21 +4,53 @@
  */
 
 $method = $_SERVER['REQUEST_METHOD'];
+$rs = $routeSegments ?? [];
 $isAdmin = false;
 
 // Check if admin for POST/PATCH/DELETE
-if (in_array($method, ['POST', 'PATCH', 'DELETE'])) {
+if (in_array($method, ['POST', 'PATCH', 'PUT', 'DELETE'])) {
     Auth::requireAuth('admin');
     $isAdmin = true;
 }
 
-// GET /products - List all products
-if ($method === 'GET' && !$id) {
+// GET /products/featured
+if ($method === 'GET' && $id === 'featured' && !$action) {
+    try {
+        $rows = $conn->fetchAll(
+            "SELECT p.id, p.sku, p.name, p.description, p.base_price as price, c.slug as categorySlug,
+                    (SELECT image_url FROM remquip_product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image,
+                    COALESCE(inv.quantity_available, 0) as stock
+             FROM remquip_products p
+             LEFT JOIN remquip_categories c ON p.category_id = c.id
+             LEFT JOIN remquip_inventory inv ON p.id = inv.product_id
+             WHERE p.is_active = 1 AND p.deleted_at IS NULL
+             ORDER BY p.created_at DESC
+             LIMIT 24"
+        );
+        ResponseHelper::sendSuccess($rows, 'Featured products');
+    } catch (Exception $e) {
+        Logger::error('Featured products error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to load featured products', 500);
+    }
+}
+
+// GET /products — list (also /products/search?q= via id=search)
+if ($method === 'GET' && (!$id || $id === 'search' || ($id === 'category' && $action))) {
     try {
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
         $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+        if (isset($_GET['page'])) {
+            $page = max(1, (int)$_GET['page']);
+            $offset = ($page - 1) * $limit;
+        }
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        if ($id === 'search') {
+            $search = trim($_GET['q'] ?? $_GET['search'] ?? '');
+        }
         $category = isset($_GET['category']) ? trim($_GET['category']) : '';
+        if ($id === 'category' && $action) {
+            $category = $action;
+        }
         $inStock = isset($_GET['inStock']) ? $_GET['inStock'] === 'true' : false;
         $sort = isset($_GET['sort']) ? $_GET['sort'] : 'featured';
         
@@ -32,8 +64,10 @@ if ($method === 'GET' && !$id) {
         }
         
         if ($category) {
-            $where[] = "c.slug = :category";
-            $params['category'] = $category;
+            // Path is /products/category/:segment — match slug or category UUID
+            $where[] = "(c.slug = :categorySlug OR c.id = :categoryId)";
+            $params['categorySlug'] = $category;
+            $params['categoryId'] = $category;
         }
         
         if ($inStock) {
@@ -43,9 +77,9 @@ if ($method === 'GET' && !$id) {
         $whereClause = implode(' AND ', $where);
         
         // Count total
-        $countSql = "SELECT COUNT(DISTINCT p.id) as total FROM products p 
-                     LEFT JOIN categories c ON p.category_id = c.id 
-                     LEFT JOIN inventory inv ON p.id = inv.product_id 
+        $countSql = "SELECT COUNT(DISTINCT p.id) as total FROM remquip_products p 
+                     LEFT JOIN remquip_categories c ON p.category_id = c.id 
+                     LEFT JOIN remquip_inventory inv ON p.id = inv.product_id 
                      WHERE $whereClause";
         $total = $conn->fetch($countSql, $params)['total'] ?? 0;
         
@@ -57,13 +91,13 @@ if ($method === 'GET' && !$id) {
             default => 'p.created_at DESC'
         };
         
-        $sql = "SELECT p.id, p.sku, p.name, p.description, p.base_price as price, 
+        $sql = "SELECT p.id, p.sku, p.name, p.description, p.category_id, p.base_price as price, p.created_at,
                        c.name as category, c.slug as categorySlug,
-                       (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image,
+                       (SELECT image_url FROM remquip_product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image,
                        COALESCE(inv.quantity_available, 0) as stock
-                FROM products p
-                LEFT JOIN categories c ON p.category_id = c.id
-                LEFT JOIN inventory inv ON p.id = inv.product_id
+                FROM remquip_products p
+                LEFT JOIN remquip_categories c ON p.category_id = c.id
+                LEFT JOIN remquip_inventory inv ON p.id = inv.product_id
                 WHERE $whereClause
                 ORDER BY $orderBy
                 LIMIT :limit OFFSET :offset";
@@ -81,14 +115,20 @@ if ($method === 'GET' && !$id) {
     }
 }
 
-// GET /products/:id - Get product details
-if ($method === 'GET' && $id && !$action) {
+// GET /products/:id - Get product details (exclude reserved paths)
+if ($method === 'GET' && $id && !$action && $id !== 'search' && $id !== 'featured' && $id !== 'category') {
     try {
         $product = $conn->fetch(
             "SELECT p.*, c.name as category, c.slug as categorySlug
-             FROM products p
-             LEFT JOIN categories c ON p.category_id = c.id
-             WHERE (p.id = :id OR p.sku = :id) AND p.deleted_at IS NULL",
+             FROM remquip_products p
+             LEFT JOIN remquip_categories c ON p.category_id = c.id
+             WHERE (p.id = :id OR p.sku = :id
+                OR (
+                    p.details IS NOT NULL AND TRIM(p.details) <> ''
+                    AND JSON_VALID(p.details)
+                    AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(p.details, '$.slug'))) = LOWER(:id)
+                ))
+             AND p.deleted_at IS NULL",
             ['id' => $id]
         );
         
@@ -97,19 +137,19 @@ if ($method === 'GET' && $id && !$action) {
         }
         
         $images = $conn->fetchAll(
-            "SELECT id, image_url, alt_text, is_primary FROM product_images 
+            "SELECT id, image_url, alt_text, is_primary FROM remquip_product_images 
              WHERE product_id = :id ORDER BY is_primary DESC, display_order ASC",
             ['id' => $product['id']]
         );
         
         $variants = $conn->fetchAll(
-            "SELECT id, variant_name, variant_value, price_modifier FROM product_variants 
+            "SELECT id, variant_name, variant_value, price_modifier FROM remquip_product_variants 
              WHERE product_id = :id AND is_active = 1 ORDER BY display_order ASC",
             ['id' => $product['id']]
         );
         
         $inventory = $conn->fetch(
-            "SELECT quantity_on_hand, quantity_reserved, quantity_available FROM inventory WHERE product_id = :id",
+            "SELECT quantity_on_hand, quantity_reserved, quantity_available FROM remquip_inventory WHERE product_id = :id",
             ['id' => $product['id']]
         );
         
@@ -131,6 +171,12 @@ if ($method === 'POST' && !$id) {
     try {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         
+        if (empty($data['categoryId']) && !empty($data['category_id'])) {
+            $data['categoryId'] = $data['category_id'];
+        }
+        if (isset($data['base_price']) && !isset($data['basePrice'])) {
+            $data['basePrice'] = $data['base_price'];
+        }
         $required = ['sku', 'name', 'categoryId', 'basePrice'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
@@ -138,10 +184,12 @@ if ($method === 'POST' && !$id) {
             }
         }
         
+        $productId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(
-            "INSERT INTO products (sku, name, category_id, description, details, base_price, cost_price, is_active)
-             VALUES (:sku, :name, :categoryId, :description, :details, :basePrice, :costPrice, 1)",
+            "INSERT INTO remquip_products (id, sku, name, category_id, description, details, base_price, cost_price, is_active)
+             VALUES (:id, :sku, :name, :categoryId, :description, :details, :basePrice, :costPrice, 1)",
             [
+                'id' => $productId,
                 'sku' => strtoupper($data['sku']),
                 'name' => $data['name'],
                 'categoryId' => $data['categoryId'],
@@ -151,14 +199,25 @@ if ($method === 'POST' && !$id) {
                 'costPrice' => isset($data['costPrice']) ? (float)$data['costPrice'] : null
             ]
         );
-        
-        $productId = $conn->lastInsertId();
-        
+
         $conn->execute(
-            "INSERT INTO inventory (product_id, quantity_on_hand, reorder_level, reorder_quantity)
+            "INSERT INTO remquip_inventory (product_id, quantity_on_hand, reorder_level, reorder_quantity)
              VALUES (:productId, 0, 10, 50)",
             ['productId' => $productId]
         );
+
+        $initial = 0;
+        if (isset($data['initialStock'])) {
+            $initial = max(0, (int)$data['initialStock']);
+        } elseif (isset($data['stock_quantity'])) {
+            $initial = max(0, (int)$data['stock_quantity']);
+        }
+        if ($initial > 0) {
+            $conn->execute(
+                "UPDATE remquip_inventory SET quantity_on_hand = :q WHERE product_id = :id",
+                ['q' => $initial, 'id' => $productId]
+            );
+        }
         
         Logger::info('Product created', ['product_id' => $productId]);
         ResponseHelper::sendSuccess(['id' => $productId], 'Product created successfully', 201);
@@ -169,31 +228,78 @@ if ($method === 'POST' && !$id) {
     }
 }
 
-// PATCH /products/:id - Update product (Admin only)
-if ($method === 'PATCH' && $id && !$action) {
+// PATCH/PUT /products/:id - Update product (Admin only)
+if (($method === 'PATCH' || $method === 'PUT') && $id && !$action) {
     try {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (isset($data['base_price']) && !isset($data['basePrice'])) {
+            $data['basePrice'] = $data['base_price'];
+        }
+        if (isset($data['cost_price']) && !isset($data['costPrice'])) {
+            $data['costPrice'] = $data['cost_price'];
+        }
+        if (empty($data['categoryId']) && !empty($data['category_id'])) {
+            $data['categoryId'] = $data['category_id'];
+        }
+
         $updates = [];
         $params = ['id' => $id];
-        
+
         if (isset($data['name'])) {
             $updates[] = "name = :name";
             $params['name'] = $data['name'];
+        }
+        if (isset($data['sku'])) {
+            $updates[] = "sku = :sku";
+            $params['sku'] = strtoupper(trim((string)$data['sku']));
         }
         if (isset($data['basePrice'])) {
             $updates[] = "base_price = :basePrice";
             $params['basePrice'] = (float)$data['basePrice'];
         }
+        if (array_key_exists('costPrice', $data)) {
+            $updates[] = "cost_price = :costPrice";
+            $params['costPrice'] = ($data['costPrice'] === null || $data['costPrice'] === '')
+                ? null
+                : (float)$data['costPrice'];
+        }
+        if (isset($data['categoryId'])) {
+            $updates[] = "category_id = :categoryId";
+            $params['categoryId'] = $data['categoryId'];
+        }
+        if (array_key_exists('description', $data)) {
+            $updates[] = "description = :description";
+            $params['description'] = $data['description'] ?? '';
+        }
+        if (array_key_exists('details', $data) && is_array($data['details'])) {
+            $updates[] = "details = :details";
+            $params['details'] = json_encode($data['details']);
+        }
         if (isset($data['status'])) {
             $updates[] = "is_active = :isActive";
             $params['isActive'] = $data['status'] === 'active' ? 1 : 0;
         }
-        
-        if (!$updates) ResponseHelper::sendError('No fields to update', 400);
-        
-        $updates[] = "updated_at = NOW()";
-        $conn->execute("UPDATE products SET " . implode(', ', $updates) . " WHERE id = :id", $params);
-        
+
+        $didSomething = false;
+        if ($updates) {
+            $updates[] = "updated_at = NOW()";
+            $conn->execute("UPDATE remquip_products SET " . implode(', ', $updates) . " WHERE id = :id", $params);
+            $didSomething = true;
+        }
+
+        if (array_key_exists('stock_quantity', $data) || array_key_exists('quantityOnHand', $data)) {
+            $qty = max(0, (int)($data['stock_quantity'] ?? $data['quantityOnHand'] ?? 0));
+            $conn->execute(
+                "UPDATE remquip_inventory SET quantity_on_hand = :qty, updated_at = NOW() WHERE product_id = :id",
+                ['qty' => $qty, 'id' => $id]
+            );
+            $didSomething = true;
+        }
+
+        if (!$didSomething) {
+            ResponseHelper::sendError('No fields to update', 400);
+        }
+
         Logger::info('Product updated', ['product_id' => $id]);
         ResponseHelper::sendSuccess(['id' => $id], 'Product updated successfully');
         
@@ -206,7 +312,7 @@ if ($method === 'PATCH' && $id && !$action) {
 // DELETE /products/:id - Delete product (Admin only, soft delete)
 if ($method === 'DELETE' && $id && !$action) {
     try {
-        $conn->execute("UPDATE products SET deleted_at = NOW() WHERE id = :id", ['id' => $id]);
+        $conn->execute("UPDATE remquip_products SET deleted_at = NOW() WHERE id = :id", ['id' => $id]);
         Logger::info('Product deleted', ['product_id' => $id]);
         ResponseHelper::sendSuccess(null, 'Product deleted successfully');
         
@@ -217,37 +323,84 @@ if ($method === 'DELETE' && $id && !$action) {
 }
 
 // =====================================================================
-// PRODUCT IMAGES MANAGEMENT
+// PRODUCT IMAGES MANAGEMENT (/products/:id/images[/:imageId])
 // =====================================================================
 
-// DELETE /products/:id/images/:imageId - Delete product image
-if ($method === 'DELETE' && $id && $action === 'images') {
+$imgProductId = isset($rs[0], $rs[1]) && $rs[1] === 'images' ? $rs[0] : null;
+$imgId = (isset($rs[2]) && $rs[1] === 'images') ? $rs[2] : ($_GET['imageId'] ?? null);
+
+// POST /products/:id/images — multipart field "image"
+if ($method === 'POST' && $imgProductId && ($rs[1] ?? '') === 'images' && !isset($rs[2])) {
     try {
-        $imageId = $_GET['imageId'] ?? null;
-        if (!$imageId) {
-            ResponseHelper::sendError('Image ID required', 400);
+        if (empty($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            ResponseHelper::sendError('No image uploaded', 400);
         }
-        
+        $file = $_FILES['image'];
+        if ($file['size'] === 0 || $file['size'] > MAX_UPLOAD_SIZE) {
+            ResponseHelper::sendError('Invalid file size', 400);
+        }
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        if (!in_array($mimeType, ALLOWED_IMAGE_TYPES, true)) {
+            ResponseHelper::sendError('Invalid image type', 400);
+        }
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ALLOWED_IMAGE_EXT, true)) {
+            ResponseHelper::sendError('Invalid extension', 400);
+        }
+        $uploadDir = UPLOAD_DIR . '/images';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        $filename = 'PRD-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $filepath = $uploadDir . '/' . $filename;
+        $publicPath = '/Backend/uploads/images/' . $filename;
+        if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+            ResponseHelper::sendError('Failed to save file', 500);
+        }
+        $newId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $conn->execute(
+            "INSERT INTO remquip_product_images (id, product_id, image_url, alt_text, is_primary, display_order)
+             VALUES (:id, :pid, :url, :alt, 0, 99)",
+            ['id' => $newId, 'pid' => $imgProductId, 'url' => $publicPath, 'alt' => $_POST['altText'] ?? '']
+        );
+        ResponseHelper::sendSuccess(
+            ['id' => $newId, 'product_id' => $imgProductId, 'image_url' => $publicPath],
+            'Image uploaded',
+            201
+        );
+    } catch (Exception $e) {
+        Logger::error('Product image upload error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to upload image', 500);
+    }
+}
+
+// DELETE /products/:id/images/:imageId - Delete product image
+if ($method === 'DELETE' && $imgProductId && ($rs[1] ?? '') === 'images' && $imgId) {
+    try {
+        $imageId = $imgId;
+        $productId = $imgProductId;
+
         // Get image details
         $image = $conn->fetch(
-            "SELECT file_url FROM product_images WHERE id = :id AND product_id = :productId",
-            ['id' => $imageId, 'productId' => $id]
+            "SELECT COALESCE(NULLIF(file_url, ''), image_url) AS path FROM remquip_product_images WHERE id = :id AND product_id = :productId",
+            ['id' => $imageId, 'productId' => $productId]
         );
         
-        if (!$image) {
+        if (!$image || empty($image['path'])) {
             ResponseHelper::sendError('Image not found', 404);
         }
         
-        // Delete from filesystem
-        $filePath = __DIR__ . '/..' . $image['file_url'];
+        $filePath = __DIR__ . '/..' . $image['path'];
         if (file_exists($filePath)) {
             @unlink($filePath);
         }
         
         // Delete from database
-        $conn->execute("DELETE FROM product_images WHERE id = :id", ['id' => $imageId]);
+        $conn->execute("DELETE FROM remquip_product_images WHERE id = :id", ['id' => $imageId]);
         
-        Logger::info('Product image deleted', ['product_id' => $id, 'image_id' => $imageId]);
+        Logger::info('Product image deleted', ['product_id' => $productId, 'image_id' => $imageId]);
         ResponseHelper::sendSuccess(null, 'Image deleted successfully');
         
     } catch (Exception $e) {
@@ -256,10 +409,11 @@ if ($method === 'DELETE' && $id && $action === 'images') {
     }
 }
 
-// PATCH /products/:id/images/:imageId - Update image details
-if ($method === 'PATCH' && $id && $action === 'images') {
+// PATCH/PUT /products/:id/images/:imageId - Update image details
+if (($method === 'PATCH' || $method === 'PUT') && $imgProductId && ($rs[1] ?? '') === 'images' && $imgId) {
     try {
-        $imageId = $_GET['imageId'] ?? null;
+        $imageId = $imgId;
+        $id = $imgProductId;
         if (!$imageId) {
             ResponseHelper::sendError('Image ID required', 400);
         }
@@ -277,7 +431,7 @@ if ($method === 'PATCH' && $id && $action === 'images') {
             // If setting as primary, unset other primary images
             if ($data['isPrimary']) {
                 $conn->execute(
-                    "UPDATE product_images SET is_primary = 0 WHERE product_id = :productId",
+                    "UPDATE remquip_product_images SET is_primary = 0 WHERE product_id = :productId",
                     ['productId' => $id]
                 );
             }
@@ -292,7 +446,7 @@ if ($method === 'PATCH' && $id && $action === 'images') {
         
         if (!$updates) ResponseHelper::sendError('No fields to update', 400);
         
-        $conn->execute("UPDATE product_images SET " . implode(', ', $updates) . " WHERE id = :id", $params);
+        $conn->execute("UPDATE remquip_product_images SET " . implode(', ', $updates) . " WHERE id = :id", $params);
         
         Logger::info('Product image updated', ['product_id' => $id, 'image_id' => $imageId]);
         ResponseHelper::sendSuccess(['id' => $imageId], 'Image updated successfully');
@@ -304,13 +458,13 @@ if ($method === 'PATCH' && $id && $action === 'images') {
 }
 
 // GET /products/:id/images - Get all product images
-if ($method === 'GET' && $id && $action === 'images') {
+if ($method === 'GET' && $imgProductId && ($rs[1] ?? '') === 'images' && !isset($rs[2])) {
     try {
         $images = $conn->fetchAll(
-            "SELECT id, image_url, alt_text, is_primary, display_order FROM product_images
+            "SELECT id, image_url, alt_text, is_primary, display_order FROM remquip_product_images
              WHERE product_id = :id
              ORDER BY is_primary DESC, display_order ASC",
-            ['id' => $id]
+            ['id' => $imgProductId]
         );
         
         ResponseHelper::sendSuccess($images, 'Product images retrieved');
@@ -321,7 +475,5 @@ if ($method === 'GET' && $id && $action === 'images') {
     }
 }
 
-if (!$method) {
-    ResponseHelper::sendError('Invalid request method', 405);
-}
+ResponseHelper::sendError('Product endpoint not found', 404);
 ?>

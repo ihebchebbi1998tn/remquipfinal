@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, ArrowUpDown, ArrowLeftRight, Search, ChevronDown, ChevronUp, Loader2, AlertCircle, Plus, Minus } from "lucide-react";
 import { useProducts, useLowStockProducts, useInventoryLogs, useAdjustInventory } from "@/hooks/useApi";
-import { Product, InventoryLog } from "@/lib/api";
+import { Product, InventoryLog, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminInventory() {
@@ -26,11 +26,10 @@ export default function AdminInventory() {
   // Mutation for adjusting inventory
   const adjustInventoryMutation = useAdjustInventory();
 
-  // Get data from responses
-  const products: Product[] = productsResponse?.data || [];
-  const lowStockProducts: Product[] = lowStockResponse?.data || [];
-  const inventoryLogs: InventoryLog[] = logsResponse?.data || [];
-  const pagination = productsResponse?.pagination;
+  const products: Product[] = unwrapApiList<Product>(productsResponse, []);
+  const lowStockProducts: Product[] = unwrapApiList<Product>(lowStockResponse as any, []);
+  const inventoryLogs: InventoryLog[] = unwrapApiList<InventoryLog>(logsResponse as any, []);
+  const pagination = unwrapPagination(productsResponse);
 
   // Filter and sort products
   const filtered = products

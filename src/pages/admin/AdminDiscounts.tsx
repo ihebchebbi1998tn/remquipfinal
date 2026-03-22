@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Search, Edit, Trash2, Copy, Tag, Percent, DollarSign, Calendar, CheckCircle, X, ChevronDown, ChevronUp, Loader2, AlertCircle } from "lucide-react";
 import { useDiscounts, useApiMutation } from "@/hooks/useApi";
-import { api, Discount } from "@/lib/api";
+import { api, Discount, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 
 const statusStyles: Record<string, string> = {
@@ -91,9 +91,8 @@ export default function AdminDiscounts() {
     });
   }
 
-  // Get data from responses
-  const discounts: Discount[] = discountsResponse?.data || [];
-  const pagination = discountsResponse?.pagination;
+  const discounts: Discount[] = unwrapApiList<Discount>(discountsResponse, []);
+  const pagination = unwrapPagination(discountsResponse);
 
   // Filter discounts locally
   const filtered = discounts.filter((d) => {

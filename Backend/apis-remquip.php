@@ -13,7 +13,7 @@
  * - remquip_orders
  * - remquip_inventory_logs
  * - remquip_discounts
- * - remquip_product_categories
+ * - remquip_categories (product categories)
  * - remquip_product_images
  * - remquip_product_variants
  * - remquip_order_items
@@ -30,11 +30,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-// CORS & Headers
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/cors.php';
+header('Content-Type: application/json; charset=UTF-8');
 
 // Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -52,7 +49,7 @@ require_once 'helpers.php';
 const USERS_TABLE = 'remquip_users';
 const CUSTOMERS_TABLE = 'remquip_customers';
 const PRODUCTS_TABLE = 'remquip_products';
-const PRODUCT_CATEGORIES_TABLE = 'remquip_product_categories';
+const PRODUCT_CATEGORIES_TABLE = 'remquip_categories';
 const PRODUCT_IMAGES_TABLE = 'remquip_product_images';
 const PRODUCT_VARIANTS_TABLE = 'remquip_product_variants';
 const ORDERS_TABLE = 'remquip_orders';
@@ -66,7 +63,8 @@ const USER_PAGE_ACCESS_TABLE = 'remquip_user_page_access';
 const CMS_PAGES_TABLE = 'remquip_cms_pages';
 const CMS_SECTIONS_TABLE = 'remquip_cms_sections';
 const AUDIT_LOGS_TABLE = 'remquip_audit_logs';
-const ANALYTICS_TABLE = 'remquip_analytics_daily_metrics';
+/** Events table (see remquip_full_schema.sql); optional daily rollup table not in canonical schema */
+const ANALYTICS_TABLE = 'remquip_analytics';
 const PASSWORD_RESET_TABLE = 'remquip_password_reset_tokens';
 const EMAIL_VERIFICATION_TABLE = 'remquip_email_verification_tokens';
 

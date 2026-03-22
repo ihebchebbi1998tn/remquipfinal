@@ -1,14 +1,20 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, ChevronDown, CheckCircle } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Search, ShoppingCart, User, Menu, X, ChevronDown, CheckCircle, Loader2 } from "lucide-react";
+import { useLanguage, localeLabel, localeFlag } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
-import { categories, products } from "@/config/products";
+import { categories } from "@/config/products";
 import FlagIcon from "@/components/FlagIcon";
+import { api, unwrapApiList, type ApiResponse, type Product } from "@/lib/api";
+import { usePublicSettings } from "@/hooks/useApi";
+import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
 
 export default function Header() {
-  const { t, lang, setLang } = useLanguage();
+  const { data: pubRes } = usePublicSettings();
+  const pub = (pubRes?.data ?? {}) as Record<string, string>;
+  const brandName = pub.store_name || pub.site_name || "REMQUIP";
+  const { t, lang, setLang, supportedLocales } = useLanguage();
   const { currency, setCurrency, formatPrice } = useCurrency();
   const { itemCount, lastAddedAt } = useCart();
   const location = useLocation();
@@ -17,7 +23,9 @@ export default function Header() {
   const [langOpen, setLangOpen] = useState(false);
   const [currOpen, setCurrOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<typeof products>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<StorefrontProduct[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [mobileSearchFocused, setMobileSearchFocused] = useState(false);
   const [badgeBounce, setBadgeBounce] = useState(false);
@@ -60,28 +68,58 @@ export default function Header() {
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
+  /** Debounce trimmed query before hitting the catalog API */
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      setDebouncedQuery("");
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    const t = window.setTimeout(() => setDebouncedQuery(trimmed), 320);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (debouncedQuery.length < 2) return;
+
+    let cancelled = false;
+    setSearchLoading(true);
+    (async () => {
+      try {
+        const res = await api.searchProducts(debouncedQuery, 8);
+        if (cancelled) return;
+        const rows = unwrapApiList<Product>(res as ApiResponse<unknown>, []);
+        setSearchResults(
+          rows.slice(0, 6).map((row) => apiProductToStorefront(row as Record<string, unknown>))
+        );
+      } catch {
+        if (!cancelled) setSearchResults([]);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
+
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-    if (query.length >= 2) {
-      const q = query.toLowerCase();
-      const results = products.filter((p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        (p.compatibility && p.compatibility.some(c => c.toLowerCase().includes(q)))
-      ).slice(0, 6);
-      setSearchResults(results);
+    const trimmed = query.trim();
+    if (trimmed.length >= 2) {
       setShowResults(true);
       setMobileSearchFocused(true);
     } else {
-      setSearchResults([]);
       setShowResults(false);
       setMobileSearchFocused(false);
     }
   }, []);
 
-  function selectResult(slug: string) {
-    navigate(`/product/${slug}`);
+  function selectResult(p: StorefrontProduct) {
+    navigate(productDetailHref(p.id, p.slug));
     setShowResults(false);
     setMobileSearchFocused(false);
     setSearchQuery("");
@@ -98,33 +136,62 @@ export default function Header() {
     }
   }
 
-  const langFlag = lang === "en" ? "us" : "fr";
+  const langFlag = localeFlag(lang);
   const currFlag = currency === "CAD" ? "ca" : currency === "USD" ? "us" : "eu";
 
-  const SearchResultsList = ({ results, query }: { results: typeof products; query: string }) => (
+  const trimmedForUi = searchQuery.trim();
+  const pendingDebounce = trimmedForUi.length >= 2 && debouncedQuery !== trimmedForUi;
+  const showSearchPending = searchLoading || pendingDebounce;
+
+  const SearchResultsList = ({
+    results,
+    query,
+    loading,
+  }: {
+    results: StorefrontProduct[];
+    query: string;
+    loading: boolean;
+  }) => (
     <div className="bg-card border border-border rounded-md shadow-xl z-50 max-h-[360px] overflow-y-auto divide-y divide-border">
-      {results.map((p) => (
-        <button
-          key={p.id}
-          onClick={() => selectResult(p.slug)}
-          className="flex items-center gap-3 w-full px-3 py-3 text-left hover:bg-secondary/80 transition-colors"
-        >
-          <img src={p.image} alt="" className="w-11 h-11 rounded object-cover bg-secondary flex-shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
-            <p className="text-xs text-muted-foreground">{p.sku} · {formatPrice(p.price)}</p>
-          </div>
-          {p.stock > 0 && <CheckCircle className="h-3.5 w-3.5 text-success flex-shrink-0" />}
-        </button>
-      ))}
-      {results.length === 0 && query.length >= 2 && (
-        <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-          {t("products.not_found")}
+      {loading && (
+        <div className="flex items-center justify-center gap-2 px-4 py-5 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-accent" />
+          Searching…
         </div>
       )}
-      {results.length > 0 && (
+      {!loading &&
+        results.map((p) => (
+          <button
+            type="button"
+            key={p.id}
+            onClick={() => selectResult(p)}
+            className="flex items-center gap-3 w-full px-3 py-3 text-left hover:bg-secondary/80 transition-colors"
+          >
+            {p.image ? (
+              <img src={p.image} alt="" className="w-11 h-11 rounded object-cover bg-secondary flex-shrink-0" />
+            ) : (
+              <div className="w-11 h-11 rounded bg-secondary border border-border flex-shrink-0" aria-hidden />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {p.sku} · {formatPrice(p.price)}
+              </p>
+            </div>
+            {p.stock > 0 && <CheckCircle className="h-3.5 w-3.5 text-success flex-shrink-0" />}
+          </button>
+        ))}
+      {!loading && results.length === 0 && query.length >= 2 && (
+        <div className="px-4 py-6 text-center text-sm text-muted-foreground">{t("products.not_found")}</div>
+      )}
+      {!loading && results.length > 0 && (
         <button
-          onClick={() => { navigate(`/products?q=${encodeURIComponent(query)}`); setShowResults(false); setSearchQuery(""); }}
+          type="button"
+          onClick={() => {
+            navigate(`/products?q=${encodeURIComponent(query)}`);
+            setShowResults(false);
+            setSearchQuery("");
+          }}
           className="w-full px-4 py-2.5 text-center text-sm text-accent font-medium hover:bg-secondary/60 transition-colors"
         >
           View all results →
@@ -134,30 +201,47 @@ export default function Header() {
   );
 
   return (
-    <header className="sticky top-0 z-50">
-      {/* ── Top bar ── */}
-      <div className="nav-bar">
-        <div className="container mx-auto px-4 flex items-center justify-between h-14 md:h-16 gap-3">
+    <header className="sticky top-0 z-50 shadow-sm">
+      {/* Main bar */}
+      <div className="nav-bar border-b border-white/10">
+        <div className="container mx-auto px-4 flex items-center justify-between h-14 md:h-[60px] gap-4">
           {/* Logo */}
-          <Link to="/" className="font-display text-lg md:text-xl font-bold tracking-[0.2em] text-nav-foreground flex-shrink-0">
-            REMQUIP
+          <Link to="/" className="font-display text-base md:text-lg font-semibold tracking-[0.12em] text-nav-foreground flex-shrink-0 uppercase">
+            {brandName}
           </Link>
 
+          {/* Desktop nav links */}
+          <nav className="hidden lg:flex items-center gap-1">
+            <Link to="/products" className="px-4 py-2 text-sm font-medium text-nav-foreground/90 hover:text-nav-accent transition-colors">
+              {t("nav.products")}
+            </Link>
+            <Link to="/about" className="px-4 py-2 text-sm font-medium text-nav-foreground/90 hover:text-nav-accent transition-colors">
+              {t("nav.about")}
+            </Link>
+            <Link to="/contact" className="px-4 py-2 text-sm font-medium text-nav-foreground/90 hover:text-nav-accent transition-colors">
+              {t("nav.contact")}
+            </Link>
+          </nav>
+
           {/* Desktop search */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4 lg:max-w-lg lg:mx-6" ref={searchRef}>
+          <div className="hidden md:flex flex-1 max-w-sm mx-4 lg:max-w-md" ref={searchRef}>
             <form onSubmit={handleSearchSubmit} className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-nav-foreground/50 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
                 placeholder={t("nav.search.placeholder")}
-                className="w-full pl-10 pr-4 py-2 rounded-sm bg-background text-foreground text-sm border-0 focus:ring-2 focus:ring-accent outline-none placeholder:text-muted-foreground"
+                className="w-full pl-9 pr-3 py-2 rounded border-0 bg-white/10 text-nav-foreground text-sm focus:ring-1 focus:ring-white/30 outline-none placeholder:text-nav-foreground/50"
               />
               {showResults && (
                 <div className="absolute top-full left-0 right-0 mt-1.5">
-                  <SearchResultsList results={searchResults} query={searchQuery} />
+                  <SearchResultsList
+                    results={searchResults}
+                    query={searchQuery.trim()}
+                    loading={showSearchPending}
+                  />
                 </div>
               )}
             </form>
@@ -178,12 +262,16 @@ export default function Header() {
               </button>
               {langOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-md shadow-lg py-1 min-w-[140px] z-50 animate-fade-in">
-                  <button onClick={() => { setLang("en"); setLangOpen(false); }} className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors">
-                    <FlagIcon country="us" className="w-5 h-3.5 rounded-[2px] overflow-hidden" /> English
-                  </button>
-                  <button onClick={() => { setLang("fr"); setLangOpen(false); }} className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors">
-                    <FlagIcon country="fr" className="w-5 h-3.5 rounded-[2px] overflow-hidden" /> Français
-                  </button>
+                  {supportedLocales.map((loc) => (
+                    <button
+                      key={loc}
+                      onClick={() => { setLang(loc); setLangOpen(false); }}
+                      className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm hover:bg-secondary transition-colors"
+                    >
+                      <FlagIcon country={localeFlag(loc)} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
+                      {localeLabel(loc)}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -243,17 +331,17 @@ export default function Header() {
         </div>
       </div>
 
-      {/* ── Category bar (desktop) ── */}
+      {/* Category bar (desktop) */}
       <nav className="category-bar hidden md:block">
-        <div className="container mx-auto px-4 flex items-center justify-center gap-0">
+        <div className="container mx-auto px-4 flex items-center justify-center gap-px">
           {categories.map((cat) => (
             <Link
               key={cat.id}
               to={`/products/${cat.slug}`}
-              className={`px-5 lg:px-6 py-2.5 text-xs lg:text-sm font-medium uppercase tracking-wide transition-colors ${
+              className={`px-4 lg:px-5 py-3 text-xs font-medium transition-colors ${
                 location.pathname === `/products/${cat.slug}`
                   ? "bg-category-bar-active text-foreground"
-                  : "text-category-bar-foreground hover:bg-category-bar-active/20"
+                  : "text-category-bar-foreground/95 hover:bg-white/5"
               }`}
             >
               {t(cat.translationKey)}
@@ -261,7 +349,7 @@ export default function Header() {
           ))}
           <Link
             to="/products"
-            className="px-5 lg:px-6 py-2.5 text-xs lg:text-sm font-medium uppercase tracking-wide text-category-bar-foreground hover:bg-category-bar-active/20 transition-colors"
+            className="px-4 lg:px-5 py-3 text-xs font-medium text-category-bar-foreground/95 hover:bg-white/5 transition-colors"
           >
             {t("cat.shop_all")}
           </Link>
@@ -284,16 +372,35 @@ export default function Header() {
                   className="w-full pl-10 pr-4 py-2.5 rounded-md bg-secondary text-foreground text-sm border border-border outline-none focus:ring-2 focus:ring-accent"
                 />
               </form>
-              {mobileSearchFocused && searchResults.length > 0 && (
+              {mobileSearchFocused && searchQuery.trim().length >= 2 && (
                 <div className="mt-1.5">
-                  <SearchResultsList results={searchResults} query={searchQuery} />
+                  <SearchResultsList
+                    results={searchResults}
+                    query={searchQuery.trim()}
+                    loading={showSearchPending}
+                  />
                 </div>
               )}
             </div>
 
+            {/* Main links */}
+            <div className="space-y-0.5">
+              <Link to="/products" onClick={() => setMobileOpen(false)} className="block py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md">
+                {t("nav.products")}
+              </Link>
+              <Link to="/about" onClick={() => setMobileOpen(false)} className="block py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md">
+                {t("nav.about")}
+              </Link>
+              <Link to="/contact" onClick={() => setMobileOpen(false)} className="block py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md">
+                {t("footer.contact")}
+              </Link>
+            </div>
+
+            <hr className="border-border" />
+
             {/* Categories */}
             <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">{t("footer.categories")}</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 font-medium">{t("footer.categories")}</p>
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
@@ -325,22 +432,17 @@ export default function Header() {
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">{t("language")}</p>
               <div className="flex gap-2">
-                <button
-                  onClick={() => setLang("en")}
-                  className={`flex items-center gap-1.5 text-sm px-4 py-2 rounded-md transition-colors ${
-                    lang === "en" ? "bg-accent text-accent-foreground font-semibold" : "bg-secondary text-foreground hover:bg-border"
-                  }`}
-                >
-                  <FlagIcon country="us" className="w-5 h-3.5 rounded-[2px] overflow-hidden" /> English
-                </button>
-                <button
-                  onClick={() => setLang("fr")}
-                  className={`flex items-center gap-1.5 text-sm px-4 py-2 rounded-md transition-colors ${
-                    lang === "fr" ? "bg-accent text-accent-foreground font-semibold" : "bg-secondary text-foreground hover:bg-border"
-                  }`}
-                >
-                  <FlagIcon country="fr" className="w-5 h-3.5 rounded-[2px] overflow-hidden" /> Français
-                </button>
+                {supportedLocales.map((loc) => (
+                  <button
+                    key={loc}
+                    onClick={() => setLang(loc)}
+                    className={`flex items-center gap-1.5 text-sm px-4 py-2 rounded-md transition-colors ${
+                      lang === loc ? "bg-accent text-accent-foreground font-semibold" : "bg-secondary text-foreground hover:bg-border"
+                    }`}
+                  >
+                    <FlagIcon country={localeFlag(loc)} className="w-5 h-3.5 rounded-[2px] overflow-hidden" /> {localeLabel(loc)}
+                  </button>
+                ))}
               </div>
             </div>
 

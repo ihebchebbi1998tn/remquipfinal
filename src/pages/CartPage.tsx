@@ -4,6 +4,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
+import { productDetailHref } from "@/lib/storefront-product";
 
 export default function CartPage() {
   const { t } = useLanguage();
@@ -29,9 +30,13 @@ export default function CartPage() {
         <div className="lg:col-span-2 space-y-4">
           {items.map(({ product, quantity }) => (
             <div key={product.id} className="flex gap-4 border border-border rounded-sm p-4">
-              <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded-sm bg-secondary" />
+              {product.image ? (
+                <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded-sm bg-secondary" />
+              ) : (
+                <div className="w-20 h-20 rounded-sm bg-secondary border border-border flex-shrink-0" aria-hidden />
+              )}
               <div className="flex-1 min-w-0">
-                <Link to={`/product/${product.slug}`} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-1">{product.name}</Link>
+                <Link to={productDetailHref(product.id, product.slug)} className="text-sm font-medium text-foreground hover:text-accent transition-colors line-clamp-1">{product.name}</Link>
                 <p className="text-xs text-muted-foreground">{t("products.sku")}: {product.sku}</p>
                 <p className="text-sm font-bold mt-1">{formatPrice(product.price)}</p>
               </div>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Warehouse, ShoppingBag, Users, FileText,
-  BarChart3, Settings, ChevronLeft, Menu, X, Tag, Shield,
+  BarChart3, Settings, ChevronLeft, Menu, X, Tag, Shield, Layers, LayoutTemplate,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -10,10 +10,12 @@ import { usePermissions } from "@/hooks/usePermissions";
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, path: "/admin" },
   { label: "Products", icon: Package, path: "/admin/products" },
+  { label: "Categories", icon: Layers, path: "/admin/categories" },
   { label: "Inventory", icon: Warehouse, path: "/admin/inventory" },
   { label: "Orders", icon: ShoppingBag, path: "/admin/orders" },
   { label: "Customers", icon: Users, path: "/admin/customers" },
   { label: "Discounts", icon: Tag, path: "/admin/discounts" },
+  { label: "Landing", icon: LayoutTemplate, path: "/admin/landing" },
   { label: "CMS", icon: FileText, path: "/admin/cms" },
   { label: "Analytics", icon: BarChart3, path: "/admin/analytics" },
   { label: "Users", icon: Users, path: "/admin/users" },

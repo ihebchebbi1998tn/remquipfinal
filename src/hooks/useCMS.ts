@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, unwrapApiList, type ApiResponse } from '@/lib/api';
 import { CMSContent } from '@/contexts/CMSContext';
 
 const CMS_QUERY_KEYS = {
@@ -9,11 +9,11 @@ const CMS_QUERY_KEYS = {
   sections: (pageName: string) => [...CMS_QUERY_KEYS.page(pageName), 'sections'] as const,
 };
 
-export function useCMSPageContent(pageName: string, enabled = true) {
+export function useCMSPageContent(pageName: string, locale?: string, enabled = true) {
   return useQuery({
-    queryKey: CMS_QUERY_KEYS.page(pageName),
+    queryKey: [...CMS_QUERY_KEYS.page(pageName), locale ?? 'default'],
     queryFn: async () => {
-      const response = await api.getCMSPageContent(pageName);
+      const response = await api.getCMSPageContent(pageName, locale);
       return response.data || [];
     },
     enabled,
@@ -27,7 +27,7 @@ export function useCMSPages() {
     queryKey: CMS_QUERY_KEYS.pages(),
     queryFn: async () => {
       const response = await api.getCMSPages();
-      return response.data || [];
+      return unwrapApiList<unknown>(response as ApiResponse, []);
     },
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
@@ -37,8 +37,16 @@ export function useCMSPages() {
 export function useUpdateCMSContent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<CMSContent> }) => {
-      const response = await api.updateCMSContent(id, data);
+    mutationFn: async ({
+      id,
+      data,
+      locale,
+    }: {
+      id: string;
+      data: Partial<CMSContent>;
+      locale?: string;
+    }) => {
+      const response = await api.updateCMSContent(id, data, locale);
       return response.data;
     },
     onSuccess: (data: CMSContent | undefined) => {
@@ -46,6 +54,7 @@ export function useUpdateCMSContent() {
         queryClient.invalidateQueries({
           queryKey: CMS_QUERY_KEYS.page(data.page_name),
         });
+        queryClient.invalidateQueries({ queryKey: ['cms', 'page', 'home'] });
       }
     },
   });

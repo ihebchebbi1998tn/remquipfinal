@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import { api, unwrapApiList } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Navigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ interface UserOrder {
   id: string;
   order_number: string;
   total: number;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
   created_at: string;
   items_count: number;
   tracking_number?: string;
@@ -23,6 +23,7 @@ interface UserOrder {
 
 interface AdminContact {
   id: string;
+  name: string;
   user_id: string;
   position: string;
   department: string;
@@ -53,10 +54,21 @@ export default function UserDashboard() {
     const fetchOrders = async () => {
       try {
         setOrdersLoading(true);
-        const response = await api.request('GET', `/api/user/dashboard/orders`);
-        if (response.data) {
-          setOrders(response.data);
-        }
+        const response = await api.getUserOrders(1, 50);
+        const rows = unwrapApiList<Record<string, unknown>>(response as any, []);
+        setOrders(
+          rows.map((o) => ({
+            id: String(o.id ?? ''),
+            order_number: String(o.order_number ?? ''),
+            total: Number(o.total ?? 0),
+            status: (o.status as UserOrder['status']) || 'pending',
+            created_at: String(o.created_at ?? ''),
+            items_count: Number(o.items_count ?? 0),
+            tracking_number: o.tracking_number != null ? String(o.tracking_number) : undefined,
+            estimated_delivery_date:
+              o.estimated_delivery_date != null ? String(o.estimated_delivery_date) : undefined,
+          }))
+        );
       } catch {
         // Failed to load orders
       } finally {
@@ -72,10 +84,21 @@ export default function UserDashboard() {
     const fetchContacts = async () => {
       try {
         setContactsLoading(true);
-        const response = await api.request('GET', `/api/admin-contacts/available`);
-        if (response.data) {
-          setAdminContacts(response.data);
-        }
+        const response = await api.getAdminContacts();
+        const items = unwrapApiList<Record<string, unknown>>(response as any, []);
+        setAdminContacts(
+          items.map((c) => ({
+            id: String(c.id ?? ''),
+            name: String(c.name ?? 'Support'),
+            user_id: '',
+            position: String(c.specialization ?? c.department ?? ''),
+            department: String(c.department ?? ''),
+            phone: String(c.phone ?? ''),
+            email: String(c.email ?? ''),
+            specialization: c.specialization != null ? String(c.specialization) : undefined,
+            available: Boolean(c.is_available ?? true),
+          }))
+        );
       } catch {
         // Failed to load admin contacts
       } finally {
@@ -89,6 +112,7 @@ export default function UserDashboard() {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'delivered':
+      case 'completed':
         return 'bg-green-100 text-green-800';
       case 'shipped':
         return 'bg-blue-100 text-blue-800';
@@ -125,7 +149,7 @@ export default function UserDashboard() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-              Welcome, {user.first_name || user.email.split('@')[0]}
+              Welcome, {(user.full_name || '').split(/\s+/)[0] || user.email.split('@')[0]}
             </h1>
             <p className="text-muted-foreground text-sm">{user.email}</p>
           </div>
@@ -266,7 +290,7 @@ export default function UserDashboard() {
                   <div key={contact.id} className="bg-surface-container rounded-lg p-6 hover:shadow-md transition-all">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="font-display font-semibold text-foreground">Support</h3>
+                        <h3 className="font-display font-semibold text-foreground">{contact.name}</h3>
                         <p className="text-sm text-muted-foreground">{contact.department}</p>
                       </div>
                       <div className={`w-3 h-3 rounded-full ${contact.available ? 'bg-green-500' : 'bg-gray-400'}`} />

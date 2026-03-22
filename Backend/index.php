@@ -3,6 +3,7 @@
  * =====================================================================
  * REMQUIP NEXUS - API ROUTER
  * Main entry point for all API requests
+ * Supports paths like /auth/login, /api/auth/login, /remquip/backend/api/...
  * =====================================================================
  */
 
@@ -11,109 +12,115 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('log_errors_max_len', 1024);
 
-// Set proper headers
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json; charset=UTF-8");
+require_once __DIR__ . '/cors.php';
 
-// Handle CORS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+    http_response_code(204);
     exit;
 }
 
-// Include required files
+header('Content-Type: application/json; charset=UTF-8');
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/helpers.php';
 
-// Initialize system
 Logger::init();
 
-// Get request method and path
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$path = str_replace('/Backend', '', $path);
+$path = preg_replace('#/backend#i', '', (string)$path);
 $path = trim($path, '/');
 
-// Parse path segments
-$segments = explode('/', $path);
-$resource = $segments[0] ?? '';
-$id = $segments[1] ?? null;
-$action = $segments[2] ?? null;
+$segments = array_values(array_filter(explode('/', $path), 'strlen'));
+$knownResources = [
+    'auth', 'users', 'products', 'categories', 'inventory', 'customers',
+    'orders', 'discounts', 'uploads', 'analytics', 'cms', 'health',
+    'dashboard', 'audit', 'user', 'admin', 'admin-contacts', 'settings',
+];
+while (!empty($segments) && !in_array($segments[0], $knownResources, true)) {
+    array_shift($segments);
+}
+if (($segments[0] ?? '') === 'api') {
+    array_shift($segments);
+}
 
-// Log incoming request
+$resource = $segments[0] ?? '';
+$routeSegments = array_slice($segments, 1);
+$id = $routeSegments[0] ?? null;
+$action = $routeSegments[1] ?? null;
+
 Logger::logRequest($resource, [
     'method' => $method,
     'path' => $path,
     'id' => $id,
-    'action' => $action
+    'action' => $action,
+    'routeSegments' => $routeSegments,
 ]);
 
-// Initialize database
 $db = new Database();
-$conn = $db->getConnection();
+$db->getConnection();
+$conn = $db;
 
-if (!$conn) {
+if (!$db->conn) {
     ResponseHelper::sendError('Database connection failed', 500);
 }
-
-// =====================================================================
-// API ROUTING
-// =====================================================================
 
 switch ($resource) {
     case 'auth':
         require_once __DIR__ . '/routes/auth.php';
         break;
-    
     case 'users':
         require_once __DIR__ . '/routes/users.php';
         break;
-    
     case 'products':
         require_once __DIR__ . '/routes/products.php';
         break;
-    
     case 'categories':
         require_once __DIR__ . '/routes/categories.php';
         break;
-    
     case 'inventory':
         require_once __DIR__ . '/routes/inventory.php';
         break;
-    
     case 'customers':
         require_once __DIR__ . '/routes/customers.php';
         break;
-    
     case 'orders':
         require_once __DIR__ . '/routes/orders.php';
         break;
-    
     case 'discounts':
         require_once __DIR__ . '/routes/discounts.php';
         break;
-    
     case 'uploads':
         require_once __DIR__ . '/routes/uploads.php';
         break;
-    
     case 'analytics':
         require_once __DIR__ . '/routes/analytics.php';
         break;
-    
     case 'cms':
         require_once __DIR__ . '/routes/cms.php';
         break;
-    
     case 'health':
-        // Health check endpoint
         ResponseHelper::sendSuccess(['status' => 'ok', 'timestamp' => date('Y-m-d H:i:s')], 'API is running');
         break;
-    
+    case 'dashboard':
+        require_once __DIR__ . '/routes/dashboard.php';
+        break;
+    case 'audit':
+        require_once __DIR__ . '/routes/audit.php';
+        break;
+    case 'user':
+        require_once __DIR__ . '/routes/user.php';
+        break;
+    case 'admin':
+        require_once __DIR__ . '/routes/admin.php';
+        break;
+    case 'admin-contacts':
+        require_once __DIR__ . '/routes/admin-contacts.php';
+        break;
+    case 'settings':
+        require_once __DIR__ . '/routes/settings.php';
+        break;
     default:
         ResponseHelper::sendError('Resource not found', 404);
 }
-?>

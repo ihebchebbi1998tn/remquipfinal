@@ -13,6 +13,66 @@ $userId = $id ?? null;
 $subAction = $action ?? null;
 
 // =====================================================================
+// GET /users/profile — current user
+// =====================================================================
+if ($method === 'GET' && $userId === 'profile') {
+    try {
+        $stmt = $conn->prepare("
+            SELECT id, email, full_name, role, status, phone, avatar_url, created_at, updated_at
+            FROM remquip_users WHERE id = :id AND deleted_at IS NULL
+        ");
+        $stmt->execute(['id' => $auth['user_id']]);
+        $user = $stmt->fetch();
+        if (!$user) {
+            ResponseHelper::sendError('User not found', 404);
+        }
+        ResponseHelper::sendSuccess($user, 'Profile retrieved');
+    } catch (Exception $e) {
+        Logger::error('Failed to fetch profile', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to fetch profile', 500);
+    }
+}
+
+// =====================================================================
+// GET /users/:userId/orders — B2B orders where customer email matches user email
+// =====================================================================
+if ($method === 'GET' && $userId && $userId !== 'profile' && $userId !== 'import' && $subAction === 'orders') {
+    if ($auth['user_id'] !== $userId && $auth['role'] !== 'admin') {
+        ResponseHelper::sendError('Forbidden', 403);
+    }
+    try {
+        $u = $conn->fetch('SELECT email FROM remquip_users WHERE id = :id AND deleted_at IS NULL', ['id' => $userId]);
+        if (!$u) {
+            ResponseHelper::sendError('User not found', 404);
+        }
+        $limit = min((int)($_GET['limit'] ?? 20), 100);
+        $offset = (int)($_GET['offset'] ?? 0);
+        if (isset($_GET['page'])) {
+            $offset = (max(1, (int)$_GET['page']) - 1) * $limit;
+        }
+        $total = (int)($conn->fetch(
+            "SELECT COUNT(*) as t FROM remquip_orders o
+             INNER JOIN remquip_customers c ON o.customer_id = c.id AND c.email = :email AND c.deleted_at IS NULL
+             WHERE o.deleted_at IS NULL",
+            ['email' => $u['email']]
+        )['t'] ?? 0);
+        $orders = $conn->fetchAll(
+            "SELECT o.id, o.order_number, o.status, o.total, o.payment_status, o.created_at
+             FROM remquip_orders o
+             INNER JOIN remquip_customers c ON o.customer_id = c.id AND c.email = :email AND c.deleted_at IS NULL
+             WHERE o.deleted_at IS NULL
+             ORDER BY o.created_at DESC
+             LIMIT :limit OFFSET :offset",
+            ['email' => $u['email'], 'limit' => $limit, 'offset' => $offset]
+        );
+        ResponseHelper::sendPaginated($orders, $total, $limit, $offset, 'User orders');
+    } catch (Exception $e) {
+        Logger::error('User orders list error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to fetch orders', 500);
+    }
+}
+
+// =====================================================================
 // GET ALL USERS (Admin only)
 // =====================================================================
 if ($method === 'GET' && !$userId) {
@@ -23,11 +83,15 @@ if ($method === 'GET' && !$userId) {
     try {
         $limit = min((int)($_GET['limit'] ?? DEFAULT_LIMIT), MAX_LIMIT);
         $offset = (int)($_GET['offset'] ?? DEFAULT_OFFSET);
+        if (isset($_GET['page'])) {
+            $page = max(1, (int)$_GET['page']);
+            $offset = ($page - 1) * $limit;
+        }
         $search = trim($_GET['search'] ?? '');
         $role = trim($_GET['role'] ?? '');
         $status = trim($_GET['status'] ?? '');
         
-        $query = "SELECT id, email, full_name, role, status, phone, avatar_url, created_at, updated_at FROM users WHERE deleted_at IS NULL";
+        $query = "SELECT id, email, full_name, role, status, phone, avatar_url, created_at, updated_at FROM remquip_users WHERE deleted_at IS NULL";
         $params = [];
         
         if ($search) {
@@ -48,7 +112,7 @@ if ($method === 'GET' && !$userId) {
         $query .= " ORDER BY created_at DESC";
         
         // Get total count
-        $countQuery = "SELECT COUNT(*) as total FROM users WHERE deleted_at IS NULL";
+        $countQuery = "SELECT COUNT(*) as total FROM remquip_users WHERE deleted_at IS NULL";
         if ($search) {
             $countQuery .= " AND (full_name LIKE :search OR email LIKE :search)";
         }
@@ -111,7 +175,7 @@ if ($method === 'POST' && !$userId) {
     
     try {
         // Check if email already exists
-        $checkStmt = $conn->prepare("SELECT id FROM users WHERE email = :email");
+        $checkStmt = $conn->prepare("SELECT id FROM remquip_users WHERE email = :email");
         $checkStmt->execute(['email' => trim($data['email'])]);
         
         if ($checkStmt->fetch()) {
@@ -122,7 +186,7 @@ if ($method === 'POST' && !$userId) {
         $passwordHash = Auth::hashPassword($data['password']);
         
         $stmt = $conn->prepare("
-            INSERT INTO users (id, email, password_hash, full_name, role, phone, status) 
+            INSERT INTO remquip_users (id, email, password_hash, full_name, role, phone, status) 
             VALUES (:id, :email, :password, :full_name, :role, :phone, 'active')
         ");
         
@@ -147,11 +211,11 @@ if ($method === 'POST' && !$userId) {
 // =====================================================================
 // GET SINGLE USER
 // =====================================================================
-if ($method === 'GET' && $userId) {
+if ($method === 'GET' && $userId && $userId !== 'profile' && $userId !== 'import') {
     try {
         $stmt = $conn->prepare("
             SELECT id, email, full_name, role, status, phone, avatar_url, created_at, updated_at 
-            FROM users 
+            FROM remquip_users 
             WHERE id = :id AND deleted_at IS NULL
         ");
         $stmt->execute(['id' => $userId]);
@@ -175,9 +239,46 @@ if ($method === 'GET' && $userId) {
 }
 
 // =====================================================================
+// PUT/PATCH /users/:id/password
+// =====================================================================
+if (($method === 'PUT' || $method === 'PATCH') && $userId && $userId !== 'profile' && $subAction === 'password') {
+    if ($auth['user_id'] !== $userId && $auth['role'] !== 'admin') {
+        ResponseHelper::sendError('You can only change your own password', 403);
+    }
+    $data = json_decode(file_get_contents('php://input'), true) ?? [];
+    $current = $data['current_password'] ?? $data['currentPassword'] ?? '';
+    $newPass = $data['new_password'] ?? $data['newPassword'] ?? '';
+    if ($current === '' || $newPass === '') {
+        ResponseHelper::sendError('Current password and new password are required', 400);
+    }
+    if (strlen($newPass) < PASSWORD_MIN_LENGTH) {
+        ResponseHelper::sendError('Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters', 400);
+    }
+    try {
+        $stmt = $conn->prepare('SELECT password_hash FROM remquip_users WHERE id = :id');
+        $stmt->execute(['id' => $userId]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            ResponseHelper::sendError('User not found', 404);
+        }
+        if (!Auth::verifyPassword($current, $row['password_hash'])) {
+            ResponseHelper::sendError('Current password is incorrect', 400);
+        }
+        $hash = Auth::hashPassword($newPass);
+        $upd = $conn->prepare('UPDATE remquip_users SET password_hash = :password, updated_at = NOW() WHERE id = :id');
+        $upd->execute(['password' => $hash, 'id' => $userId]);
+        Logger::info('Password changed via users route', ['user_id' => $userId]);
+        ResponseHelper::sendSuccess([], 'Password updated successfully');
+    } catch (Exception $e) {
+        Logger::error('Password update failed', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to update password', 500);
+    }
+}
+
+// =====================================================================
 // UPDATE USER
 // =====================================================================
-if ($method === 'PATCH' && $userId) {
+if (($method === 'PATCH' || $method === 'PUT') && $userId && $userId !== 'profile' && $subAction !== 'password' && $subAction !== 'import') {
     // Users can update their own profile, admins can update anyone
     if ($auth['user_id'] !== $userId && $auth['role'] !== 'admin') {
         ResponseHelper::sendError('You do not have permission to update this user', 403);
@@ -222,7 +323,7 @@ if ($method === 'PATCH' && $userId) {
         }
         
         $updates[] = "updated_at = NOW()";
-        $query = "UPDATE users SET " . implode(', ', $updates) . " WHERE id = :id";
+        $query = "UPDATE remquip_users SET " . implode(', ', $updates) . " WHERE id = :id";
         
         $stmt = $conn->prepare($query);
         $stmt->execute($params);
@@ -239,7 +340,7 @@ if ($method === 'PATCH' && $userId) {
 // =====================================================================
 // DELETE USER (Soft delete)
 // =====================================================================
-if ($method === 'DELETE' && $userId) {
+if ($method === 'DELETE' && $userId && $userId !== 'import' && $userId !== 'profile') {
     if ($auth['role'] !== 'admin') {
         ResponseHelper::sendError('Only admins can delete users', 403);
     }
@@ -249,7 +350,7 @@ if ($method === 'DELETE' && $userId) {
     }
     
     try {
-        $stmt = $conn->prepare("UPDATE users SET deleted_at = NOW(), status = 'inactive' WHERE id = :id");
+        $stmt = $conn->prepare("UPDATE remquip_users SET deleted_at = NOW(), status = 'inactive' WHERE id = :id");
         $stmt->execute(['id' => $userId]);
         
         Logger::info('User deleted', ['user_id' => $userId, 'deleted_by' => $auth['user_id']]);
@@ -264,7 +365,7 @@ if ($method === 'DELETE' && $userId) {
 // =====================================================================
 // POST /users/import - Bulk import users from CSV/JSON (Admin only)
 // =====================================================================
-if ($method === 'POST' && $subAction === 'import') {
+if ($method === 'POST' && $userId === 'import') {
     if ($auth['role'] !== 'admin') {
         ResponseHelper::sendError('Only admins can import users', 403);
     }
@@ -330,7 +431,7 @@ if ($method === 'POST' && $subAction === 'import') {
                 
                 // Check if email already exists
                 $existing = $conn->fetch(
-                    "SELECT id FROM users WHERE email = :email",
+                    "SELECT id FROM remquip_users WHERE email = :email",
                     ['email' => $user['email']]
                 );
                 
@@ -344,7 +445,7 @@ if ($method === 'POST' && $subAction === 'import') {
                 $hashedPassword = password_hash($tempPassword, PASSWORD_BCRYPT);
                 
                 $conn->execute(
-                    "INSERT INTO users (email, password_hash, full_name, role, status, phone)
+                    "INSERT INTO remquip_users (email, password_hash, full_name, role, status, phone)
                      VALUES (:email, :password, :fullName, :role, 'active', :phone)",
                     [
                         'email' => $user['email'],

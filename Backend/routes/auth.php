@@ -27,7 +27,7 @@ if ($method === 'POST' && $action === 'login') {
     try {
         $stmt = $conn->prepare("
             SELECT id, email, password_hash, role, full_name, status 
-            FROM users 
+            FROM remquip_users 
             WHERE email = :email AND deleted_at IS NULL
         ");
         $stmt->execute(['email' => trim($data['email'])]);
@@ -57,7 +57,7 @@ if ($method === 'POST' && $action === 'login') {
         $token = Auth::generateToken($user['id'], $user['role']);
         
         // Update last login
-        $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
+        $updateStmt = $conn->prepare("UPDATE remquip_users SET last_login = NOW() WHERE id = :id");
         $updateStmt->execute(['id' => $user['id']]);
         
         Logger::info('User logged in successfully', ['user_id' => $user['id']]);
@@ -75,6 +75,66 @@ if ($method === 'POST' && $action === 'login') {
     } catch (Exception $e) {
         Logger::error('Login error', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Login failed', 500);
+    }
+}
+
+// =====================================================================
+// REGISTER
+// =====================================================================
+if ($method === 'POST' && $action === 'register') {
+    $data = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    if (empty($data['email']) || empty($data['password']) || empty($data['full_name'])) {
+        ResponseHelper::sendError('Email, password, and full name are required', 400);
+    }
+
+    if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        ResponseHelper::sendError('Invalid email format', 400);
+    }
+
+    if (strlen($data['password']) < PASSWORD_MIN_LENGTH) {
+        ResponseHelper::sendError('Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters', 400);
+    }
+
+    try {
+        $check = $conn->prepare('SELECT id FROM remquip_users WHERE email = :email AND deleted_at IS NULL');
+        $check->execute(['email' => trim($data['email'])]);
+        if ($check->fetch()) {
+            ResponseHelper::sendError('An account with this email already exists', 409);
+        }
+
+        $userId = bin2hex(random_bytes(18));
+        $passwordHash = Auth::hashPassword($data['password']);
+
+        $stmt = $conn->prepare("
+            INSERT INTO remquip_users (id, email, password_hash, full_name, role, phone, status)
+            VALUES (:id, :email, :password, :full_name, :role, :phone, 'active')
+        ");
+        $stmt->execute([
+            'id' => $userId,
+            'email' => trim($data['email']),
+            'password' => $passwordHash,
+            'full_name' => trim($data['full_name']),
+            'role' => 'user',
+            'phone' => trim($data['phone'] ?? ''),
+        ]);
+
+        $token = Auth::generateToken($userId, 'user');
+
+        Logger::info('User registered', ['user_id' => $userId]);
+
+        ResponseHelper::sendSuccess([
+            'token' => $token,
+            'user' => [
+                'id' => $userId,
+                'email' => trim($data['email']),
+                'full_name' => trim($data['full_name']),
+                'role' => 'user',
+            ],
+        ], 'Registration successful', 201);
+    } catch (Exception $e) {
+        Logger::error('Register error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Registration failed', 500);
     }
 }
 
@@ -105,7 +165,7 @@ if ($method === 'POST' && $action === 'change-password') {
     }
     
     try {
-        $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = :id");
+        $stmt = $conn->prepare("SELECT password_hash FROM remquip_users WHERE id = :id");
         $stmt->execute(['id' => $auth['user_id']]);
         $user = $stmt->fetch();
         
@@ -119,7 +179,7 @@ if ($method === 'POST' && $action === 'change-password') {
         
         $newHash = Auth::hashPassword($data['new_password']);
         
-        $updateStmt = $conn->prepare("UPDATE users SET password_hash = :password, updated_at = NOW() WHERE id = :id");
+        $updateStmt = $conn->prepare("UPDATE remquip_users SET password_hash = :password, updated_at = NOW() WHERE id = :id");
         $updateStmt->execute([
             'password' => $newHash,
             'id' => $auth['user_id']
@@ -131,6 +191,32 @@ if ($method === 'POST' && $action === 'change-password') {
     } catch (Exception $e) {
         Logger::error('Password change error', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Failed to change password', 500);
+    }
+}
+
+// =====================================================================
+// REFRESH TOKEN (same claims as login; client sends current Bearer token)
+// =====================================================================
+if ($method === 'POST' && $action === 'refresh') {
+    try {
+        $auth = Auth::requireAuth();
+        $stmt = $conn->prepare('SELECT id, role, status FROM remquip_users WHERE id = :id AND deleted_at IS NULL');
+        $stmt->execute(['id' => $auth['user_id']]);
+        $user = $stmt->fetch();
+        if (!$user) {
+            ResponseHelper::sendError('User not found', 404);
+        }
+        if ($user['status'] === 'inactive') {
+            ResponseHelper::sendError('Your account is inactive', 403);
+        }
+        if ($user['status'] === 'suspended') {
+            ResponseHelper::sendError('Your account has been suspended', 403);
+        }
+        $token = Auth::generateToken($user['id'], $user['role']);
+        ResponseHelper::sendSuccess(['token' => $token], 'Token refreshed', 200);
+    } catch (Exception $e) {
+        Logger::error('Token refresh error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Token refresh failed', 500);
     }
 }
 
@@ -152,7 +238,7 @@ if ($method === 'GET' && $action === 'verify') {
         }
         
         // Fetch user info
-        $stmt = $conn->prepare("SELECT id, email, full_name, role, status FROM users WHERE id = :id");
+        $stmt = $conn->prepare("SELECT id, email, full_name, role, status FROM remquip_users WHERE id = :id");
         $stmt->execute(['id' => $payload['user_id']]);
         $user = $stmt->fetch();
         

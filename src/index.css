@@ -186,9 +186,13 @@
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
   }
-  /* Gradient buttons as per design */
+  /* Primary CTA — solid accent orange (no dark→navy gradient) */
   .btn-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary-container)) 0%, hsl(var(--primary)) 100%);
+    background-color: hsl(var(--accent));
+    transition: filter 0.15s ease;
+  }
+  .btn-gradient:hover {
+    filter: brightness(1.08);
   }
   .btn-primary {
     @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold uppercase tracking-wide transition-all hover:opacity-90 shadow-md hover:shadow-lg;

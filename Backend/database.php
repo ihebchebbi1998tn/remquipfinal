@@ -11,6 +11,7 @@ class Database {
     private $password;
     private $database;
     private $charset;
+    private $port;
     public $conn;
 
     public function __construct() {
@@ -18,6 +19,7 @@ class Database {
         $this->username = DB_USER;
         $this->password = DB_PASS;
         $this->database = DB_NAME;
+        $this->port = (int)DB_PORT;
         $this->charset = DB_CHARSET;
     }
 
@@ -29,8 +31,9 @@ class Database {
         $this->conn = null;
         
         try {
-            $dsn = "mysql:host=" . $this->host . 
-                   ";dbname=" . $this->database . 
+            $dsn = "mysql:host=" . $this->host .
+                   ";port=" . $this->port .
+                   ";dbname=" . $this->database .
                    ";charset=" . $this->charset;
             
             $options = [
@@ -68,6 +71,13 @@ class Database {
         }
         
         return $this->conn;
+    }
+
+    /**
+     * @return PDOStatement
+     */
+    public function prepare($query) {
+        return $this->conn->prepare($query);
     }
 
     /**

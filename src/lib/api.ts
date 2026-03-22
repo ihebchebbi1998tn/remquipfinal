@@ -1,7 +1,7 @@
 /**
  * API Service Layer
  * Handles all API requests to the remquip backend
- * Backend URL: http://luccibyey.com.tn/remquip/backend
+ * Backend API URL: same as Backend/config.php API_URL (http://luccibyey.com.tn/remquip/api)
  * Includes comprehensive error handling and logging
  */
 
@@ -69,6 +69,18 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+/** GET /settings/storefront — aligned with Admin Settings tax/shipping fields. */
+export interface StorefrontRates {
+  tax_gst_rate: number;
+  tax_qst_rate: number;
+  tax_combined_rate: number;
+  free_shipping_threshold: number;
+  flat_shipping_rate: number;
+  default_currency: string;
+  /** Enabled languages for CMS, categories, banners. Add via Admin Settings. */
+  supported_locales?: string[];
+}
+
 // User
 export interface User {
   id: string;
@@ -125,6 +137,12 @@ export interface ProductVariant {
   created_at: string;
 }
 
+export interface CategoryTranslation {
+  locale: string;
+  name: string;
+  description?: string;
+}
+
 export interface ProductCategory {
   id: string;
   name: string;
@@ -132,9 +150,12 @@ export interface ProductCategory {
   description?: string;
   image_url?: string;
   parent_category_id?: string;
-  is_active: boolean;
+  is_active?: boolean;
   display_order: number;
-  created_at: string;
+  created_at?: string;
+  product_count?: number;
+  locale?: string;
+  translations?: CategoryTranslation[];
 }
 
 // Customers
@@ -199,6 +220,13 @@ export interface OrderItem {
   created_at: string;
 }
 
+/** Row from `order_notes` (GET order detail or GET /orders/:id/notes). */
+export interface OrderNote {
+  date: string;
+  user: string;
+  text: string;
+}
+
 // Discounts
 export interface Discount {
   id: string;
@@ -240,14 +268,132 @@ export interface ApiResponse<T = any> {
   timestamp: string;
 }
 
-// Pagination
-export interface PaginatedResponse<T> extends ApiResponse {
+/** Backend list responses: `data: { items, pagination }` or `data: T[]`. */
+export interface PaginatedResponse<T> extends Omit<ApiResponse<T[]>, 'data'> {
   data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
+  /** Present after {@link normalizePaginated}; also readable via {@link unwrapPagination}. */
+  pagination?: Record<string, unknown>;
+}
+
+/**
+ * Flattens `data.items` → `data` and copies `pagination` to the top level (single place for list/search).
+ */
+export function normalizePaginated<T>(res: ApiResponse<any>): PaginatedResponse<T> {
+  const raw = res?.data;
+  if (raw != null && typeof raw === 'object' && !Array.isArray(raw) && Array.isArray((raw as { items?: unknown }).items)) {
+    const inner = raw as { items: T[]; pagination?: Record<string, unknown> };
+    return {
+      ...res,
+      data: inner.items,
+      pagination: inner.pagination,
+    } as PaginatedResponse<T>;
+  }
+  if (Array.isArray(raw)) {
+    return { ...res, data: raw as T[] } as PaginatedResponse<T>;
+  }
+  return { ...res, data: [] as T[] } as PaginatedResponse<T>;
+}
+
+/** Backend paginated lists use data: { items, pagination }; unwrap for UI */
+export function unwrapApiList<T>(response: ApiResponse<any> | undefined | null, fallback: T[]): T[] {
+  if (!response?.data) return fallback;
+  const d = response.data as { items?: T[] } | T[] | undefined;
+  if (Array.isArray(d)) return d as T[];
+  if (d && typeof d === 'object' && Array.isArray((d as { items?: T[] }).items)) {
+    return (d as { items: T[] }).items;
+  }
+  return fallback;
+}
+
+export function unwrapPagination(response: ApiResponse<any> | undefined | null) {
+  if (!response) return undefined;
+  const top = (response as PaginatedResponse<unknown>).pagination;
+  if (top) return top;
+  const d = response.data;
+  if (d && typeof d === 'object' && !Array.isArray(d) && 'pagination' in d) {
+    return (d as { pagination?: Record<string, unknown> }).pagination;
+  }
+  return undefined;
+}
+
+/**
+ * Absolute URL for backend-stored assets (`/Backend/uploads/images|contracts|...`).
+ * Same path shape as PHP (`publicPath` in uploads/products/cms routes).
+ */
+export function resolveUploadImageUrl(imageUrl: string): string {
+  if (!imageUrl) return '';
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  const trimmed = API_BASE_URL.replace(/\/+$/, '');
+  const base = trimmed
+    .replace(/\/backend\/api$/i, '')
+    .replace(/\/api$/i, '')
+    .replace(/\/backend$/i, '');
+  const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  return `${base}${path}`;
+}
+
+/** Alias — documents and product images use the same `/Backend/uploads/...` base. */
+export function resolveBackendUploadUrl(url: string): string {
+  return resolveUploadImageUrl(url);
+}
+
+/** JSON body for POST /products or PUT /products/:id (accepts camelCase + snake_case source fields). */
+export function buildProductWritePayload(data: Record<string, unknown>, mode: 'create' | 'update'): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (data.sku != null && String(data.sku).trim() !== '') body.sku = String(data.sku).trim();
+  if (data.name != null) body.name = data.name;
+  const cat = data.categoryId ?? data.category_id;
+  if (cat != null && String(cat) !== '') body.categoryId = cat;
+
+  const basePrice = data.basePrice ?? data.base_price ?? data.price;
+  if (basePrice !== undefined && basePrice !== '' && basePrice !== null) {
+    body.basePrice = Number(basePrice);
+  }
+
+  if (data.costPrice !== undefined || data.cost_price !== undefined || data.wholesale_price !== undefined) {
+    const c = data.costPrice ?? data.cost_price ?? data.wholesale_price;
+    if (c === '' || c === null) {
+      if (mode === 'update') body.costPrice = null;
+    } else {
+      body.costPrice = Number(c);
+    }
+  }
+
+  if (data.description !== undefined) body.description = data.description ?? '';
+  if (data.details != null && typeof data.details === 'object') body.details = data.details;
+  if (data.status != null) body.status = data.status;
+
+  if (mode === 'create') {
+    const init = data.initialStock ?? data.stock_quantity ?? data.stock;
+    if (init !== undefined && init !== null && init !== '') {
+      body.initialStock = Math.max(0, Number(init));
+    }
+  } else {
+    if (data.stock_quantity != null || data.stock != null || data.quantityOnHand != null) {
+      const q = data.stock_quantity ?? data.quantityOnHand ?? data.stock;
+      body.stock_quantity = Math.max(0, Number(q));
+    }
+  }
+
+  return body;
+}
+
+/** Map MySQL discount row → frontend Discount (snake_case API fields). */
+export function mapDiscountRow(row: Record<string, unknown>): Discount {
+  return {
+    id: String(row.id ?? ''),
+    code: String(row.code ?? ''),
+    description: row.description != null ? String(row.description) : undefined,
+    discount_type: (row.discount_type as Discount['discount_type']) || 'percentage',
+    discount_value: Number(row.discount_value ?? 0),
+    min_purchase_amount: row.min_order_value != null ? Number(row.min_order_value) : undefined,
+    max_usage_count: row.max_uses != null && row.max_uses !== '' ? Number(row.max_uses) : undefined,
+    current_usage_count: Number(row.uses_count ?? 0),
+    valid_from: row.valid_from != null ? String(row.valid_from) : '',
+    valid_until: row.valid_until != null ? String(row.valid_until) : '',
+    is_active: Boolean(row.is_active),
+    created_at: row.created_at != null ? String(row.created_at) : '',
+    updated_at: row.updated_at != null ? String(row.updated_at) : '',
   };
 }
 
@@ -293,36 +439,44 @@ class APIService {
   }
 
   /**
-   * Make HTTP request with comprehensive error handling
+   * Make HTTP request with comprehensive error handling.
+   * For FormData uploads, pass body as FormData — Content-Type is omitted so the browser sets the boundary.
    */
-  private async request<T = any>(
+  async request<T = any>(
     method: string,
     endpoint: string,
     body?: any,
-    options?: RequestInit
+    options?: RequestInit & { skipAuthRedirect?: boolean }
   ): Promise<ApiResponse<T>> {
+    const skipAuthRedirect = options?.skipAuthRedirect === true;
+    const fetchExtras = { ...(options ?? {}) } as Record<string, unknown>;
+    delete fetchExtras.skipAuthRedirect;
+
     const url = `${this.baseUrl}${endpoint}`;
     const requestId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const headers = {
-      'Content-Type': 'application/json',
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
+    const headers: Record<string, string> = {
       'X-Request-ID': requestId,
       ...TokenManager.getAuthHeader(),
-      ...(options?.headers || {}),
+      ...(options?.headers as Record<string, string> | undefined),
     };
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      console.log(`[API] ${method} ${endpoint}`, { requestId, body });
+      console.log(`[API] ${method} ${endpoint}`, { requestId, body: isFormData ? '[FormData]' : body });
 
       const response = await fetch(url, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined,
+        body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
         signal: controller.signal,
-        ...options,
+        ...(fetchExtras as RequestInit),
       });
 
       clearTimeout(timeoutId);
@@ -347,8 +501,8 @@ class APIService {
 
         logError(apiError);
 
-        // Special handling for 401
-        if (response.status === HTTP_STATUS.UNAUTHORIZED) {
+        // Special handling for 401 (skip for optional public calls e.g. analytics beacon)
+        if (response.status === HTTP_STATUS.UNAUTHORIZED && !skipAuthRedirect) {
           TokenManager.removeToken();
           window.location.href = '/login';
         }
@@ -453,6 +607,15 @@ class APIService {
     return response;
   }
 
+  /** Exchanges a valid Bearer token for a new one (Backend POST /auth/refresh). */
+  async refreshToken(): Promise<ApiResponse<{ token: string }>> {
+    const response = await this.request<{ token: string }>('POST', API_ENDPOINTS.AUTH.REFRESH);
+    if (response.data?.token) {
+      TokenManager.setToken(response.data.token);
+    }
+    return response;
+  }
+
   async register(data: RegisterRequest): Promise<AuthResponse> {
     const response = await this.request<any>(
       'POST',
@@ -467,6 +630,99 @@ class APIService {
     return response as AuthResponse;
   }
 
+  /** Public liveness probe — `GET /api/health` (Backend `index.php`). */
+  getHealth(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
+    return this.request('GET', API_ENDPOINTS.HEALTH);
+  }
+
+  // ==================== UPLOADS (Backend/routes/uploads.php) ====================
+
+  /** POST `file` — optional `productId` saves row in `product_images`. Returns `url` like `/Backend/uploads/images/...`. */
+  async uploadGenericImageFile(
+    file: File,
+    opts?: { productId?: string; altText?: string; isPrimary?: boolean }
+  ): Promise<ApiResponse<{ filename: string; url: string; size: number }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (opts?.productId) formData.append('productId', opts.productId);
+    if (opts?.altText != null) formData.append('altText', opts.altText);
+    if (opts?.isPrimary !== undefined) formData.append('isPrimary', opts.isPrimary ? '1' : '0');
+    return this.request('POST', API_ENDPOINTS.UPLOADS.IMAGE, formData, {});
+  }
+
+  /** POST `file` — PDF/Office; optional `customerId` inserts `customer_documents`. */
+  async uploadContractFile(
+    file: File,
+    opts?: { customerId?: string; documentType?: string }
+  ): Promise<ApiResponse<{ filename: string; url: string; size: number }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (opts?.customerId) formData.append('customerId', opts.customerId);
+    if (opts?.documentType) formData.append('documentType', opts.documentType ?? 'contract');
+    return this.request('POST', API_ENDPOINTS.UPLOADS.CONTRACT, formData, {});
+  }
+
+  async getCustomerDocuments(customerId: string): Promise<ApiResponse<Record<string, unknown>[]>> {
+    return this.request(
+      'GET',
+      API_ENDPOINTS.UPLOADS.CONTRACTS_BY_CUSTOMER.replace(':customerId', encodeURIComponent(customerId))
+    );
+  }
+
+  async deleteCustomerDocument(documentId: string): Promise<ApiResponse> {
+    return this.request('DELETE', API_ENDPOINTS.UPLOADS.DELETE.replace(':id', encodeURIComponent(documentId)));
+  }
+
+  /** POST `file` — generic upload + `file_uploads` row (auth). */
+  async uploadRegistryFile(
+    file: File,
+    opts?: { uploadType?: string; relatedEntityType?: string; relatedEntityId?: string }
+  ): Promise<ApiResponse<{ id: string; filename: string; url: string; size: number; mime_type: string }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (opts?.uploadType) formData.append('upload_type', opts.uploadType);
+    if (opts?.relatedEntityType) formData.append('related_entity_type', opts.relatedEntityType);
+    if (opts?.relatedEntityId) formData.append('related_entity_id', opts.relatedEntityId);
+    return this.request('POST', API_ENDPOINTS.UPLOADS.FILE, formData, {});
+  }
+
+  async listRegistryFiles(limit = 50, offset = 0): Promise<ApiResponse> {
+    return this.request(
+      'GET',
+      `${API_ENDPOINTS.UPLOADS.FILES_LIST}?limit=${limit}&offset=${offset}`
+    );
+  }
+
+  async deleteRegistryFile(fileId: string): Promise<ApiResponse> {
+    return this.request(
+      'DELETE',
+      API_ENDPOINTS.UPLOADS.FILE_DELETE.replace(':id', encodeURIComponent(fileId))
+    );
+  }
+
+  // ==================== SETTINGS (Backend/routes/settings.php) ====================
+
+  /** Tax/shipping rates from DB — matches POST /orders totals. */
+  async getStorefrontSettings(): Promise<ApiResponse<StorefrontRates>> {
+    return this.request('GET', API_ENDPOINTS.SETTINGS.STOREFRONT);
+  }
+
+  async getPublicSettings(): Promise<ApiResponse<Record<string, unknown>>> {
+    return this.request('GET', API_ENDPOINTS.SETTINGS.PUBLIC);
+  }
+
+  async getAdminSettings(): Promise<ApiResponse<Record<string, unknown>[]>> {
+    return this.request('GET', API_ENDPOINTS.SETTINGS.LIST);
+  }
+
+  async patchSettingsBulk(settings: Record<string, string | number | boolean>): Promise<ApiResponse> {
+    const flat: Record<string, string> = {};
+    for (const [k, v] of Object.entries(settings)) {
+      flat[k] = typeof v === 'boolean' ? (v ? '1' : '0') : String(v);
+    }
+    return this.request('PATCH', API_ENDPOINTS.SETTINGS.LIST, { settings: flat });
+  }
+
   // ==================== USER METHODS ====================
 
   async getProfile(): Promise<ApiResponse<User>> {
@@ -478,7 +734,7 @@ class APIService {
   }
 
   async getUsers(page: number = 1, limit: number = 10): Promise<PaginatedResponse<User>> {
-    return this.request('GET', `${API_ENDPOINTS.USERS.LIST}?page=${page}&limit=${limit}`);
+    return normalizePaginated<User>(await this.request('GET', `${API_ENDPOINTS.USERS.LIST}?page=${page}&limit=${limit}`));
   }
 
   async createUser(data: Partial<User>): Promise<ApiResponse<User>> {
@@ -500,38 +756,76 @@ class APIService {
     });
   }
 
+  /** Bulk import users (Backend: POST body `{ users }` or multipart field `file`). */
+  async importUsersJson(payload: { users: Record<string, unknown>[] }): Promise<
+    ApiResponse<{ imported: number; total: number; errors: string[] }>
+  > {
+    return this.request('POST', API_ENDPOINTS.USERS.IMPORT, payload);
+  }
+
+  async importUsersFile(file: File): Promise<ApiResponse<{ imported: number; total: number; errors: string[] }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request('POST', API_ENDPOINTS.USERS.IMPORT, formData, {});
+  }
+
   // ==================== PRODUCT METHODS ====================
 
   async getProducts(page: number = 1, limit: number = 12): Promise<PaginatedResponse<Product>> {
-    return this.request('GET', `${API_ENDPOINTS.PRODUCTS.LIST}?page=${page}&limit=${limit}`);
+    return normalizePaginated<Product>(await this.request('GET', `${API_ENDPOINTS.PRODUCTS.LIST}?page=${page}&limit=${limit}`));
   }
 
   async getProduct(id: string): Promise<ApiResponse<Product>> {
-    return this.request('GET', API_ENDPOINTS.PRODUCTS.GET.replace(':id', id));
+    return this.request('GET', API_ENDPOINTS.PRODUCTS.GET.replace(':id', encodeURIComponent(id)));
   }
 
-  async createProduct(data: Partial<Product>): Promise<ApiResponse<Product>> {
-    return this.request('POST', API_ENDPOINTS.PRODUCTS.CREATE, data);
+  async createProduct(data: Partial<Product> & Record<string, unknown>): Promise<ApiResponse<Product>> {
+    return this.request('POST', API_ENDPOINTS.PRODUCTS.CREATE, buildProductWritePayload(data as Record<string, unknown>, 'create'));
   }
 
-  async updateProduct(id: string, data: Partial<Product>): Promise<ApiResponse<Product>> {
-    return this.request('PUT', API_ENDPOINTS.PRODUCTS.UPDATE.replace(':id', id), data);
+  async updateProduct(id: string, data: Partial<Product> & Record<string, unknown>): Promise<ApiResponse<Product>> {
+    return this.request('PUT', API_ENDPOINTS.PRODUCTS.UPDATE.replace(':id', id), buildProductWritePayload(data as Record<string, unknown>, 'update'));
   }
 
   async deleteProduct(id: string): Promise<ApiResponse> {
     return this.request('DELETE', API_ENDPOINTS.PRODUCTS.DELETE.replace(':id', id));
   }
 
-  async searchProducts(query: string): Promise<ApiResponse<Product[]>> {
-    return this.request('GET', `${API_ENDPOINTS.PRODUCTS.SEARCH}?q=${encodeURIComponent(query)}`);
+  async searchProducts(query: string, limit: number = 12): Promise<PaginatedResponse<Product>> {
+    const q = encodeURIComponent(query);
+    return normalizePaginated<Product>(await this.request('GET', `${API_ENDPOINTS.PRODUCTS.SEARCH}?q=${q}&limit=${limit}`));
   }
 
-  async getProductsByCategory(categoryId: string): Promise<ApiResponse<Product[]>> {
-    return this.request('GET', API_ENDPOINTS.PRODUCTS.BY_CATEGORY.replace(':categoryId', categoryId));
+  /** Category segment may be slug or UUID; backend matches either. */
+  async getProductsByCategory(categorySlugOrId: string): Promise<PaginatedResponse<Product>> {
+    const seg = encodeURIComponent(categorySlugOrId);
+    return normalizePaginated<Product>(
+      await this.request('GET', API_ENDPOINTS.PRODUCTS.BY_CATEGORY.replace(':categoryId', seg))
+    );
   }
 
   async getFeaturedProducts(): Promise<ApiResponse<Product[]>> {
-    return this.request('GET', API_ENDPOINTS.PRODUCTS.FEATURED);
+    const response = await this.request<any[]>('GET', API_ENDPOINTS.PRODUCTS.FEATURED);
+    if (response.data && Array.isArray(response.data)) {
+      response.data = response.data.map((row: Record<string, unknown>) => ({
+        id: String(row.id ?? ''),
+        sku: String(row.sku ?? ''),
+        name: String(row.name ?? ''),
+        description: row.description != null ? String(row.description) : undefined,
+        price: Number(row.price ?? row.base_price ?? 0),
+        category_id: String(row.category_id ?? ''),
+        category: row.category != null ? String(row.category) : (row.categorySlug != null ? String(row.categorySlug) : undefined),
+        stock_quantity: Number(row.stock_quantity ?? row.stock ?? 0),
+        is_featured: true,
+        status: 'active' as const,
+        images: row.image
+          ? [{ id: '', product_id: String(row.id ?? ''), image_url: String(row.image), is_primary: true, display_order: 0, uploaded_at: '' }]
+          : undefined,
+        created_at: String(row.created_at ?? new Date().toISOString()),
+        updated_at: String(row.updated_at ?? new Date().toISOString()),
+      })) as unknown as Product[];
+    }
+    return response as ApiResponse<Product[]>;
   }
 
   async uploadProductImage(productId: string, file: File): Promise<ApiResponse<ProductImage>> {
@@ -542,8 +836,12 @@ class APIService {
       'POST',
       API_ENDPOINTS.PRODUCT_IMAGES.UPLOAD.replace(':id', productId),
       formData,
-      { headers: {} }
+      {}
     );
+  }
+
+  async getProductImages(productId: string): Promise<ApiResponse<unknown[]>> {
+    return this.request('GET', API_ENDPOINTS.PRODUCT_IMAGES.LIST.replace(':id', productId));
   }
 
   async deleteProductImage(productId: string, imageId: string): Promise<ApiResponse> {
@@ -555,12 +853,41 @@ class APIService {
 
   // ==================== CATEGORY METHODS ====================
 
-  async getCategories(): Promise<ApiResponse<ProductCategory[]>> {
-    return this.request('GET', API_ENDPOINTS.CATEGORIES.LIST);
+  async getCategories(
+    page: number = 1,
+    limit: number = 100,
+    opts?: { locale?: string; admin?: boolean }
+  ): Promise<PaginatedResponse<ProductCategory>> {
+    const p = new URLSearchParams();
+    p.set('page', String(page));
+    p.set('limit', String(limit));
+    if (opts?.locale) p.set('locale', opts.locale);
+    if (opts?.admin) p.set('admin', '1');
+    const qs = p.toString();
+    return normalizePaginated<ProductCategory>(
+      await this.request('GET', `${API_ENDPOINTS.CATEGORIES.LIST}${qs ? `?${qs}` : ''}`)
+    );
   }
 
-  async getCategory(id: string): Promise<ApiResponse<ProductCategory>> {
-    return this.request('GET', API_ENDPOINTS.CATEGORIES.GET.replace(':id', id));
+  async getCategory(id: string, locale?: string): Promise<ApiResponse<ProductCategory>> {
+    const p = new URLSearchParams();
+    if (locale) p.set('locale', locale);
+    const qs = p.toString();
+    return this.request(
+      'GET',
+      `${API_ENDPOINTS.CATEGORIES.GET.replace(':id', encodeURIComponent(id))}${qs ? `?${qs}` : ''}`
+    );
+  }
+
+  async getCategoryTranslations(id: string): Promise<ApiResponse<{ translations: Record<string, { name: string; description?: string } | null> }>> {
+    return this.request('GET', API_ENDPOINTS.CATEGORIES.TRANSLATIONS.replace(':id', encodeURIComponent(id)));
+  }
+
+  async putCategoryTranslations(
+    id: string,
+    body: Record<string, { name: string; description?: string }>
+  ): Promise<ApiResponse> {
+    return this.request('PUT', API_ENDPOINTS.CATEGORIES.TRANSLATIONS.replace(':id', encodeURIComponent(id)), body);
   }
 
   async createCategory(data: Partial<ProductCategory>): Promise<ApiResponse<ProductCategory>> {
@@ -578,27 +905,55 @@ class APIService {
   // ==================== CUSTOMER METHODS ====================
 
   async getCustomers(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Customer>> {
-    return this.request('GET', `${API_ENDPOINTS.CUSTOMERS.LIST}?page=${page}&limit=${limit}`);
+    return normalizePaginated<Customer>(await this.request('GET', `${API_ENDPOINTS.CUSTOMERS.LIST}?page=${page}&limit=${limit}`));
   }
 
   async getCustomer(id: string): Promise<ApiResponse<Customer>> {
     return this.request('GET', API_ENDPOINTS.CUSTOMERS.GET.replace(':id', id));
   }
 
-  async createCustomer(data: Partial<Customer>): Promise<ApiResponse<Customer>> {
-    return this.request('POST', API_ENDPOINTS.CUSTOMERS.CREATE, data);
+  async createCustomer(data: Partial<Customer> & Record<string, unknown>): Promise<ApiResponse<Customer>> {
+    const d = data as Record<string, unknown>;
+    const contact =
+      String(d.contactPerson ?? d.contact_person ?? d.full_name ?? '').trim();
+    const company = String(d.companyName ?? d.company_name ?? '').trim();
+    const body = {
+      companyName: company || contact || 'Web Customer',
+      contactPerson: contact,
+      email: d.email,
+      phone: d.phone ?? '',
+      customerType: d.customerType ?? d.customer_type ?? 'Wholesale',
+      address: d.address,
+      city: d.city,
+      province: d.province ?? d.state,
+      postalCode: d.postalCode ?? d.postal_code,
+      country: d.country,
+      taxNumber: d.taxNumber ?? d.tax_number,
+    };
+    return this.request('POST', API_ENDPOINTS.CUSTOMERS.CREATE, body);
   }
 
-  async updateCustomer(id: string, data: Partial<Customer>): Promise<ApiResponse<Customer>> {
-    return this.request('PUT', API_ENDPOINTS.CUSTOMERS.UPDATE.replace(':id', id), data);
+  async updateCustomer(id: string, data: Partial<Customer> & Record<string, unknown>): Promise<ApiResponse<Customer>> {
+    const d = data as Record<string, unknown>;
+    const body: Record<string, unknown> = { ...d };
+    if (d.company_name != null && d.companyName == null) body.companyName = d.company_name;
+    if (d.full_name != null && d.contactPerson == null && d.contact_person == null) body.contactPerson = d.full_name;
+    if (d.contact_person != null && d.contactPerson == null) body.contactPerson = d.contact_person;
+    if (d.postal_code != null && d.postalCode == null) body.postalCode = d.postal_code;
+    if (d.tax_number != null && d.taxNumber == null) body.taxNumber = d.tax_number;
+    if (d.customer_type != null && d.customerType == null) body.customerType = d.customer_type;
+    if (d.state != null && d.province == null) body.province = d.state;
+    return this.request('PUT', API_ENDPOINTS.CUSTOMERS.UPDATE.replace(':id', id), body);
   }
 
   async deleteCustomer(id: string): Promise<ApiResponse> {
     return this.request('DELETE', API_ENDPOINTS.CUSTOMERS.DELETE.replace(':id', id));
   }
 
-  async searchCustomers(query: string): Promise<ApiResponse<Customer[]>> {
-    return this.request('GET', `${API_ENDPOINTS.CUSTOMERS.SEARCH}?q=${encodeURIComponent(query)}`);
+  async searchCustomers(query: string): Promise<PaginatedResponse<Customer>> {
+    return normalizePaginated<Customer>(
+      await this.request('GET', `${API_ENDPOINTS.CUSTOMERS.SEARCH}?q=${encodeURIComponent(query)}`)
+    );
   }
 
   async getCustomerOrders(customerId: string): Promise<ApiResponse<Order[]>> {
@@ -609,10 +964,23 @@ class APIService {
     return this.request('GET', API_ENDPOINTS.CUSTOMERS.ADDRESSES.replace(':id', customerId));
   }
 
+  /** Bulk import customers (Backend: POST body `{ customers }` or multipart `file`). */
+  async importCustomersJson(payload: { customers: Record<string, unknown>[] }): Promise<
+    ApiResponse<{ imported: number; total: number; errors: string[] }>
+  > {
+    return this.request('POST', API_ENDPOINTS.CUSTOMERS.IMPORT, payload);
+  }
+
+  async importCustomersFile(file: File): Promise<ApiResponse<{ imported: number; total: number; errors: string[] }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request('POST', API_ENDPOINTS.CUSTOMERS.IMPORT, formData, {});
+  }
+
   // ==================== ORDER METHODS ====================
 
   async getOrders(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Order>> {
-    return this.request('GET', `${API_ENDPOINTS.ORDERS.LIST}?page=${page}&limit=${limit}`);
+    return normalizePaginated<Order>(await this.request('GET', `${API_ENDPOINTS.ORDERS.LIST}?page=${page}&limit=${limit}`));
   }
 
   async getOrder(id: string): Promise<ApiResponse<Order>> {
@@ -631,26 +999,62 @@ class APIService {
     return this.request('PATCH', API_ENDPOINTS.ORDERS.STATUS.replace(':id', id), { status });
   }
 
+  /** Same handler as shipment on the backend (carrier + trackingNumber). */
+  async updateOrderTracking(
+    id: string,
+    payload: { carrier: string; trackingNumber: string }
+  ): Promise<ApiResponse> {
+    return this.request('PATCH', API_ENDPOINTS.ORDERS.TRACKING.replace(':id', id), payload);
+  }
+
   async deleteOrder(id: string): Promise<ApiResponse> {
     return this.request('DELETE', API_ENDPOINTS.ORDERS.DELETE.replace(':id', id));
   }
 
-  async searchOrders(query: string): Promise<ApiResponse<Order[]>> {
-    return this.request('GET', `${API_ENDPOINTS.ORDERS.SEARCH}?q=${encodeURIComponent(query)}`);
+  async searchOrders(query: string): Promise<PaginatedResponse<Order>> {
+    return normalizePaginated<Order>(
+      await this.request('GET', `${API_ENDPOINTS.ORDERS.SEARCH}?q=${encodeURIComponent(query)}`)
+    );
   }
 
   async addOrderNote(orderId: string, note: string): Promise<ApiResponse> {
     return this.request('POST', API_ENDPOINTS.ORDERS.ADD_NOTE.replace(':id', orderId), { note });
   }
 
+  getOrderNotes(orderId: string): Promise<ApiResponse<OrderNote[]>> {
+    return this.request('GET', API_ENDPOINTS.ORDERS.GET_NOTES.replace(':id', orderId));
+  }
+
+  /** B2B orders for a user where customer email matches user email (Backend: users.php). */
+  async getOrdersByUserId(
+    userId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<PaginatedResponse<unknown>> {
+    return normalizePaginated(
+      await this.request(
+        'GET',
+        `${API_ENDPOINTS.ORDERS.USER_ORDERS.replace(':userId', userId)}?page=${page}&limit=${limit}`
+      )
+    );
+  }
+
   // ==================== DISCOUNT METHODS ====================
 
   async getDiscounts(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Discount>> {
-    return this.request('GET', `${API_ENDPOINTS.DISCOUNTS.LIST}?page=${page}&limit=${limit}`);
+    const norm = normalizePaginated<Record<string, unknown>>(
+      await this.request('GET', `${API_ENDPOINTS.DISCOUNTS.LIST}?page=${page}&limit=${limit}`)
+    );
+    norm.data = norm.data.map((r) => mapDiscountRow(r));
+    return norm as PaginatedResponse<Discount>;
   }
 
   async getDiscount(id: string): Promise<ApiResponse<Discount>> {
-    return this.request('GET', API_ENDPOINTS.DISCOUNTS.GET.replace(':id', id));
+    const res = await this.request<Record<string, unknown>>('GET', API_ENDPOINTS.DISCOUNTS.GET.replace(':id', id));
+    if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
+      res.data = mapDiscountRow(res.data as Record<string, unknown>) as unknown as Record<string, unknown>;
+    }
+    return res as ApiResponse<Discount>;
   }
 
   async createDiscount(data: Partial<Discount>): Promise<ApiResponse<Discount>> {
@@ -666,13 +1070,20 @@ class APIService {
   }
 
   async validateDiscount(code: string): Promise<ApiResponse<Discount>> {
-    return this.request('GET', API_ENDPOINTS.DISCOUNTS.VALIDATE.replace(':code', code));
+    const res = await this.request<Record<string, unknown>>(
+      'GET',
+      API_ENDPOINTS.DISCOUNTS.VALIDATE.replace(':code', encodeURIComponent(code))
+    );
+    if (res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
+      res.data = mapDiscountRow(res.data as Record<string, unknown>) as unknown as Record<string, unknown>;
+    }
+    return res as ApiResponse<Discount>;
   }
 
   // ==================== INVENTORY METHODS ====================
 
   async getInventoryLogs(page: number = 1, limit: number = 20): Promise<PaginatedResponse<InventoryLog>> {
-    return this.request('GET', `${API_ENDPOINTS.INVENTORY.LOGS}?page=${page}&limit=${limit}`);
+    return normalizePaginated<InventoryLog>(await this.request('GET', `${API_ENDPOINTS.INVENTORY.LOGS}?page=${page}&limit=${limit}`));
   }
 
   async adjustInventory(productId: string, quantity: number, reason: string): Promise<ApiResponse> {
@@ -684,7 +1095,25 @@ class APIService {
   }
 
   async getLowStockProducts(): Promise<ApiResponse<Product[]>> {
-    return this.request('GET', API_ENDPOINTS.INVENTORY.LOW_STOCK);
+    const res = await this.request<any[]>('GET', API_ENDPOINTS.INVENTORY.LOW_STOCK);
+    if (res.data && Array.isArray(res.data)) {
+      res.data = res.data.map((row: Record<string, unknown>) => {
+        const stock = Number(row.quantity_available ?? row.quantity_on_hand ?? row.stock ?? 0);
+        return {
+          id: String(row.id ?? ''),
+          sku: String(row.sku ?? ''),
+          name: String(row.name ?? ''),
+          price: Number(row.price ?? row.base_price ?? 0),
+          category_id: String(row.category_id ?? ''),
+          stock_quantity: stock,
+          is_featured: false,
+          status: 'active' as const,
+          created_at: String(row.created_at ?? new Date().toISOString()),
+          updated_at: String(row.updated_at ?? new Date().toISOString()),
+        };
+      }) as unknown as Product[];
+    }
+    return res as ApiResponse<Product[]>;
   }
 
   async getProductHistory(productId: string): Promise<ApiResponse<InventoryLog[]>> {
@@ -694,7 +1123,29 @@ class APIService {
   // ==================== ANALYTICS METHODS ====================
 
   async getAnalyticsDashboard(): Promise<ApiResponse> {
-    return this.request('GET', API_ENDPOINTS.ANALYTICS.DASHBOARD);
+    const res = await this.request<any>('GET', API_ENDPOINTS.ANALYTICS.DASHBOARD);
+    const d = res?.data;
+    if (d?.summary && typeof d.summary === 'object') {
+      const monthly = Array.isArray(d.monthlyRevenue)
+        ? d.monthlyRevenue.map((r: Record<string, unknown>) => ({
+            month: String(r.month ?? '').length >= 7 ? String(r.month).slice(5) : String(r.month ?? ''),
+            value: Number(r.revenue ?? 0),
+          }))
+        : undefined;
+      res.data = {
+        ...d,
+        ...d.summary,
+        total_orders: d.summary.totalOrders,
+        total_revenue: d.summary.totalRevenue,
+        total_products: d.summary.totalProducts,
+        active_customers: d.summary.activeCustomers,
+        new_customers: d.summary.activeCustomers,
+        monthly_sales: monthly ?? d.monthly_sales,
+        page_views: d.summary.page_views ?? 0,
+        tracked_events_30d: d.summary.tracked_events_30d ?? 0,
+      };
+    }
+    return res;
   }
 
   async getAnalyticsMetrics(startDate: string, endDate: string): Promise<ApiResponse> {
@@ -711,38 +1162,125 @@ class APIService {
     );
   }
 
+  /** Optional: `?period=day|week|month|year` (Backend: analytics.php). */
+  async getAnalyticsSales(period?: string): Promise<ApiResponse> {
+    const q = period ? `?period=${encodeURIComponent(period)}` : '';
+    return this.request('GET', `${API_ENDPOINTS.ANALYTICS.SALES}${q}`);
+  }
+
+  async getAnalyticsInventoryOverview(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ANALYTICS.INVENTORY_OVERVIEW);
+  }
+
+  async getAnalyticsCustomersOverview(): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.ANALYTICS.CUSTOMERS_OVERVIEW);
+  }
+
+  /** Fire-and-forget tracking row in `analytics` (no redirect on 401). */
+  async postAnalyticsEvent(
+    eventType: string,
+    data?: Record<string, unknown>
+  ): Promise<ApiResponse<{ id: string }>> {
+    return this.request('POST', API_ENDPOINTS.ANALYTICS.EVENTS, { event_type: eventType, data }, { skipAuthRedirect: true });
+  }
+
+  async getAnalyticsEvents(params?: {
+    limit?: number;
+    offset?: number;
+    event_type?: string;
+  }): Promise<ApiResponse> {
+    const q = new URLSearchParams();
+    if (params?.limit != null) q.set('limit', String(params.limit));
+    if (params?.offset != null) q.set('offset', String(params.offset));
+    if (params?.event_type) q.set('event_type', params.event_type);
+    const qs = q.toString();
+    return this.request('GET', `${API_ENDPOINTS.ANALYTICS.EVENTS}${qs ? `?${qs}` : ''}`);
+  }
+
+  async getAnalyticsEventsSummary(days = 30): Promise<ApiResponse> {
+    return this.request('GET', `${API_ENDPOINTS.ANALYTICS.EVENTS_SUMMARY}?days=${days}`);
+  }
+
   // ==================== CMS METHODS ====================
 
-  async getCMSPages(page: number = 1, limit: number = 10): Promise<PaginatedResponse> {
-    return this.request('GET', `${API_ENDPOINTS.CMS.PAGES}?page=${page}&limit=${limit}`);
+  /** Align admin form fields with Backend/routes/cms.php (isPublished, excerpt). */
+  private mapCMSPageBody(data: Record<string, unknown>): Record<string, unknown> {
+    const body: Record<string, unknown> = { ...data };
+    if ('status' in body) {
+      const s = body.status;
+      body.isPublished = s === 'published' || s === true;
+      delete body.status;
+    }
+    if (body.meta_description != null && body.excerpt === undefined) {
+      body.excerpt = body.meta_description;
+    }
+    delete body.meta_title;
+    delete body.meta_description;
+    return body;
   }
 
-  async getCMSPage(slug: string): Promise<ApiResponse> {
-    return this.request('GET', API_ENDPOINTS.CMS.GET_PAGE.replace(':slug', slug));
+  async getCMSPages(page: number = 1, limit: number = 10): Promise<PaginatedResponse<unknown>> {
+    return normalizePaginated(await this.request('GET', `${API_ENDPOINTS.CMS.PAGES}?page=${page}&limit=${limit}`));
   }
 
-  async getCMSPageContent(pageName: string): Promise<ApiResponse<any>> {
-    return this.request('GET', `/api/cms/pages/${encodeURIComponent(pageName)}/content`);
+  async getCMSPage(slug: string, locale?: string): Promise<ApiResponse> {
+    const p = new URLSearchParams();
+    if (locale) p.set('locale', locale);
+    const qs = p.toString();
+    return this.request(
+      'GET',
+      `${API_ENDPOINTS.CMS.GET_PAGE.replace(':slug', encodeURIComponent(slug))}${qs ? `?${qs}` : ''}`
+    );
+  }
+
+  async getCMSPageTranslations(pageId: string): Promise<ApiResponse> {
+    return this.request('GET', API_ENDPOINTS.CMS.PAGE_TRANSLATIONS.replace(':id', encodeURIComponent(pageId)));
+  }
+
+  async putCMSPageTranslations(
+    pageId: string,
+    body: Record<string, { title: string; excerpt?: string; content?: string }>
+  ): Promise<ApiResponse> {
+    return this.request('PUT', API_ENDPOINTS.CMS.PAGE_TRANSLATIONS.replace(':id', encodeURIComponent(pageId)), body);
+  }
+
+  async getCMSPageContent(pageName: string, locale?: string): Promise<ApiResponse<any>> {
+    const qs = locale ? `?locale=${encodeURIComponent(locale)}` : '';
+    return this.request(
+      'GET',
+      `${API_ENDPOINTS.CMS.PAGE_CONTENT.replace(':pageName', encodeURIComponent(pageName))}${qs}`
+    );
   }
 
   async getCMSSectionContent(pageName: string, sectionKey: string): Promise<ApiResponse<any>> {
-    return this.request('GET', `/api/cms/pages/${encodeURIComponent(pageName)}/sections/${encodeURIComponent(sectionKey)}`);
+    return this.request(
+      'GET',
+      API_ENDPOINTS.CMS.SECTION_CONTENT.replace(':pageName', encodeURIComponent(pageName)).replace(
+        ':sectionKey',
+        encodeURIComponent(sectionKey)
+      )
+    );
   }
 
   async createCMSPage(data: any): Promise<ApiResponse> {
-    return this.request('POST', API_ENDPOINTS.CMS.CREATE_PAGE, data);
+    return this.request('POST', API_ENDPOINTS.CMS.CREATE_PAGE, this.mapCMSPageBody(data));
   }
 
   async createCMSContent(data: any): Promise<ApiResponse<any>> {
-    return this.request('POST', `/api/cms/content`, data);
+    return this.request('POST', API_ENDPOINTS.CMS.CONTENT, data);
   }
 
   async updateCMSPage(id: string, data: any): Promise<ApiResponse> {
-    return this.request('PUT', API_ENDPOINTS.CMS.UPDATE_PAGE.replace(':id', id), data);
+    return this.request('PUT', API_ENDPOINTS.CMS.UPDATE_PAGE.replace(':id', id), this.mapCMSPageBody(data));
   }
 
-  async updateCMSContent(id: string, data: any): Promise<ApiResponse<any>> {
-    return this.request('PUT', `/api/cms/content/${id}`, data);
+  async updateCMSContent(id: string, data: any, locale?: string): Promise<ApiResponse<any>> {
+    const qs = locale ? `?locale=${encodeURIComponent(locale)}` : '';
+    return this.request(
+      'PUT',
+      `${API_ENDPOINTS.CMS.CONTENT_BY_ID.replace(':id', encodeURIComponent(id))}${qs}`,
+      data
+    );
   }
 
   async deleteCMSPage(id: string): Promise<ApiResponse> {
@@ -750,25 +1288,45 @@ class APIService {
   }
 
   async deleteCMSContent(id: string): Promise<ApiResponse> {
-    return this.request('DELETE', `/api/cms/content/${id}`);
+    return this.request('DELETE', API_ENDPOINTS.CMS.CONTENT_BY_ID.replace(':id', encodeURIComponent(id)));
   }
 
   async uploadCMSImage(file: File): Promise<ApiResponse<{ url: string }>> {
     const formData = new FormData();
     formData.append('image', file);
-    return this.request('POST', '/api/cms/images/upload', formData);
+    return this.request('POST', API_ENDPOINTS.CMS.IMAGES_UPLOAD, formData, {});
+  }
+
+  // ==================== ADMIN DASHBOARD (matches API_ENDPOINTS.DASHBOARD) ====================
+
+  async getDashboardStats(): Promise<ApiResponse<Record<string, number>>> {
+    return this.request('GET', API_ENDPOINTS.DASHBOARD.STATS);
+  }
+
+  async getDashboardRecentOrders(): Promise<ApiResponse<unknown[]>> {
+    return this.request('GET', API_ENDPOINTS.DASHBOARD.RECENT_ORDERS);
+  }
+
+  async getDashboardActivityLog(): Promise<ApiResponse<unknown[]>> {
+    return this.request('GET', API_ENDPOINTS.DASHBOARD.ACTIVITY_LOG);
+  }
+
+  async getDashboardTopProducts(): Promise<ApiResponse<unknown[]>> {
+    return this.request('GET', API_ENDPOINTS.DASHBOARD.TOP_PRODUCTS);
   }
 
   // ==================== AUDIT METHODS ====================
 
-  async getAuditLogs(page: number = 1, limit: number = 20): Promise<PaginatedResponse> {
-    return this.request('GET', `${API_ENDPOINTS.AUDIT.LOGS}?page=${page}&limit=${limit}`);
+  async getAuditLogs(page: number = 1, limit: number = 20): Promise<PaginatedResponse<unknown>> {
+    return normalizePaginated(await this.request('GET', `${API_ENDPOINTS.AUDIT.LOGS}?page=${page}&limit=${limit}`));
   }
 
-  async getUserAuditLogs(userId: string, page: number = 1, limit: number = 20): Promise<PaginatedResponse> {
-    return this.request(
-      'GET',
-      `${API_ENDPOINTS.AUDIT.USER_LOGS.replace(':userId', userId)}?page=${page}&limit=${limit}`
+  async getUserAuditLogs(userId: string, page: number = 1, limit: number = 20): Promise<PaginatedResponse<unknown>> {
+    return normalizePaginated(
+      await this.request(
+        'GET',
+        `${API_ENDPOINTS.AUDIT.USER_LOGS.replace(':userId', userId)}?page=${page}&limit=${limit}`
+      )
     );
   }
 
@@ -778,8 +1336,8 @@ class APIService {
     return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.PROFILE);
   }
 
-  async getUserOrders(page: number = 1, limit: number = 10): Promise<PaginatedResponse> {
-    return this.request('GET', `${API_ENDPOINTS.USER_DASHBOARD.ORDERS}?page=${page}&limit=${limit}`);
+  async getUserOrders(page: number = 1, limit: number = 10): Promise<PaginatedResponse<unknown>> {
+    return normalizePaginated(await this.request('GET', `${API_ENDPOINTS.USER_DASHBOARD.ORDERS}?page=${page}&limit=${limit}`));
   }
 
   async getUserOrderSummary(): Promise<ApiResponse> {
@@ -824,14 +1382,67 @@ class APIService {
     return this.request('GET', API_ENDPOINTS.ADMIN_CONTACTS.AVAILABLE);
   }
 
+  async createAdminContact(data: Record<string, unknown>): Promise<ApiResponse> {
+    return this.request('POST', API_ENDPOINTS.ADMIN_CONTACTS.LIST, data);
+  }
+
+  async updateAdminContact(id: string, data: Record<string, unknown>): Promise<ApiResponse> {
+    return this.request('PUT', API_ENDPOINTS.ADMIN_CONTACTS.GET.replace(':id', id), data);
+  }
+
+  async deleteAdminContact(id: string): Promise<ApiResponse> {
+    return this.request('DELETE', API_ENDPOINTS.ADMIN_CONTACTS.GET.replace(':id', id));
+  }
+
+  async getBanners(locale?: string): Promise<ApiResponse<unknown[]>> {
+    const qs = locale ? `?locale=${encodeURIComponent(locale)}` : '';
+    return this.request('GET', API_ENDPOINTS.CMS_BANNERS.LIST + qs);
+  }
+
+  async createBanner(data: Record<string, unknown>): Promise<ApiResponse> {
+    return this.request('POST', API_ENDPOINTS.CMS_BANNERS.CREATE, data);
+  }
+
+  async updateBanner(id: string, data: Record<string, unknown>): Promise<ApiResponse> {
+    return this.request(
+      'PUT',
+      API_ENDPOINTS.CMS_BANNERS.UPDATE.replace(':id', encodeURIComponent(id)),
+      data
+    );
+  }
+
+  async deleteBanner(id: string): Promise<ApiResponse> {
+    return this.request('DELETE', API_ENDPOINTS.CMS_BANNERS.DELETE.replace(':id', encodeURIComponent(id)));
+  }
+
   // ==================== ADMIN PERMISSIONS METHODS ====================
 
   async getUserPermissions(userId: string): Promise<ApiResponse> {
     return this.request('GET', API_ENDPOINTS.ADMIN_PERMISSIONS.GET_USER_PERMISSIONS.replace(':userId', userId));
   }
 
-  async updateUserPermissions(userId: string, permissions: any): Promise<ApiResponse> {
-    return this.request('PUT', API_ENDPOINTS.ADMIN_PERMISSIONS.UPDATE_PERMISSIONS.replace(':userId', userId), permissions);
+  async updateUserPermissions(userId: string, permissions: unknown): Promise<ApiResponse> {
+    const rows = Array.isArray(permissions)
+      ? permissions
+      : (permissions as { permissions?: unknown[] })?.permissions;
+    const list = Array.isArray(rows) ? rows : [];
+    const access = list
+      .map((p: Record<string, unknown>) => {
+        const pageId = p.page_id ?? p.pageId;
+        if (pageId == null || pageId === '') return null;
+        return {
+          page_id: String(pageId),
+          can_view: !!(p.can_view ?? p.canView),
+          can_edit: !!(p.can_edit ?? p.canEdit),
+          can_delete: !!(p.can_delete ?? p.canDelete),
+        };
+      })
+      .filter(Boolean);
+    return this.request(
+      'PUT',
+      API_ENDPOINTS.ADMIN_PERMISSIONS.UPDATE_PERMISSIONS.replace(':userId', userId),
+      { access }
+    );
   }
 
   async getAllPermissions(): Promise<ApiResponse> {

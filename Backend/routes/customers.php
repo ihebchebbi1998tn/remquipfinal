@@ -6,12 +6,18 @@
 $method = $_SERVER['REQUEST_METHOD'];
 Auth::requireAuth('admin');
 
-// GET /customers - List customers (Admin)
-if ($method === 'GET' && !$id) {
+// GET /customers — list (also /customers/search?q=)
+if ($method === 'GET' && (!$id || $id === 'search')) {
     try {
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
         $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+        if (isset($_GET['page'])) {
+            $offset = (max(1, (int)$_GET['page']) - 1) * $limit;
+        }
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        if ($id === 'search') {
+            $search = trim($_GET['q'] ?? $_GET['search'] ?? '');
+        }
         $type = isset($_GET['type']) ? trim($_GET['type']) : '';
         $status = isset($_GET['status']) ? trim($_GET['status']) : '';
         
@@ -36,7 +42,7 @@ if ($method === 'GET' && !$id) {
         $whereClause = implode(' AND ', $where);
         
         $total = $conn->fetch(
-            "SELECT COUNT(*) as total FROM customers c WHERE $whereClause",
+            "SELECT COUNT(*) as total FROM remquip_customers c WHERE $whereClause",
             $params
         )['total'] ?? 0;
         
@@ -44,8 +50,9 @@ if ($method === 'GET' && !$id) {
         $params['offset'] = $offset;
         
         $customers = $conn->fetchAll(
-            "SELECT c.id, c.company_name, c.contact_person, c.email, c.phone, c.customer_type, c.status, c.total_orders, c.total_spent
-             FROM customers c
+            "SELECT c.id, c.company_name, c.contact_person, c.contact_person AS full_name,
+                    c.email, c.phone, c.customer_type, c.status, c.total_orders, c.total_spent, c.created_at, c.updated_at
+             FROM remquip_customers c
              WHERE $whereClause
              ORDER BY c.created_at DESC
              LIMIT :limit OFFSET :offset",
@@ -64,7 +71,7 @@ if ($method === 'GET' && !$id) {
 if ($method === 'GET' && $id && !$action) {
     try {
         $customer = $conn->fetch(
-            "SELECT * FROM customers WHERE id = :id AND deleted_at IS NULL",
+            "SELECT * FROM remquip_customers WHERE id = :id AND deleted_at IS NULL",
             ['id' => $id]
         );
         
@@ -74,8 +81,8 @@ if ($method === 'GET' && $id && !$action) {
         
         $notes = $conn->fetchAll(
             "SELECT cn.id, cn.note, cn.is_internal, u.full_name as user, cn.created_at
-             FROM customer_notes cn
-             LEFT JOIN users u ON cn.user_id = u.id
+             FROM remquip_customer_notes cn
+             LEFT JOIN remquip_users u ON cn.user_id = u.id
              WHERE cn.customer_id = :id
              ORDER BY cn.created_at DESC",
             ['id' => $id]
@@ -83,7 +90,7 @@ if ($method === 'GET' && $id && !$action) {
         
         $orders = $conn->fetchAll(
             "SELECT o.id, o.order_number, o.total, o.status, o.created_at
-             FROM orders o
+             FROM remquip_orders o
              WHERE o.customer_id = :id AND o.deleted_at IS NULL
              ORDER BY o.created_at DESC LIMIT 10",
             ['id' => $id]
@@ -100,21 +107,80 @@ if ($method === 'GET' && $id && !$action) {
     }
 }
 
+// GET /customers/:id/orders — aligns with api.getCustomerOrders
+if ($method === 'GET' && $id && $action === 'orders') {
+    try {
+        $orders = $conn->fetchAll(
+            "SELECT o.id, o.order_number, o.customer_id, o.status, o.total, o.subtotal,
+                    o.tax AS tax_amount, o.shipping AS shipping_amount, o.discount AS discount_amount,
+                    o.payment_status, o.created_at AS order_date, o.created_at, o.updated_at
+             FROM remquip_orders o
+             WHERE o.customer_id = :cid AND o.deleted_at IS NULL
+             ORDER BY o.created_at DESC",
+            ['cid' => $id]
+        );
+        ResponseHelper::sendSuccess($orders, 'Customer orders');
+    } catch (Exception $e) {
+        Logger::error('Get customer orders error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to retrieve orders', 500);
+    }
+}
+
+// GET /customers/:id/addresses — single billing row from customers.* (no separate address table)
+if ($method === 'GET' && $id && $action === 'addresses') {
+    try {
+        $c = $conn->fetch(
+            "SELECT id, address, city, province, postal_code, country, created_at FROM remquip_customers WHERE id = :id AND deleted_at IS NULL",
+            ['id' => $id]
+        );
+        if (!$c) {
+            ResponseHelper::sendError('Customer not found', 404);
+        }
+        $rows = [];
+        if (($c['address'] ?? '') !== '' || ($c['city'] ?? '') !== '') {
+            $rows[] = [
+                'id' => $c['id'] . ':primary',
+                'customer_id' => $c['id'],
+                'address_line1' => $c['address'] ?? '',
+                'address_line2' => '',
+                'city' => $c['city'] ?? '',
+                'state' => $c['province'] ?? '',
+                'postal_code' => $c['postal_code'] ?? '',
+                'country' => $c['country'] ?? '',
+                'is_default' => true,
+                'address_type' => 'billing',
+                'created_at' => $c['created_at'],
+            ];
+        }
+        ResponseHelper::sendSuccess($rows, 'Customer addresses');
+    } catch (Exception $e) {
+        Logger::error('Get customer addresses error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to retrieve addresses', 500);
+    }
+}
+
 // POST /customers - Create customer (Admin)
 if ($method === 'POST' && !$id) {
     try {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         
-        if (empty($data['companyName']) || empty($data['email']) || empty($data['contactPerson'])) {
-            ResponseHelper::sendError('Missing required fields', 400);
+        $contactPerson = $data['contactPerson'] ?? $data['contact_person'] ?? $data['full_name'] ?? '';
+        $companyName = $data['companyName'] ?? $data['company_name'] ?? '';
+        if ($companyName === '') {
+            $companyName = $contactPerson !== '' ? $contactPerson : 'Web Customer';
         }
-        
+        if ($contactPerson === '' || empty($data['email'])) {
+            ResponseHelper::sendError('Email and contact name are required', 400);
+        }
+
+        $customerId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(
-            "INSERT INTO customers (company_name, contact_person, email, phone, customer_type, address, city, province, postal_code, country, tax_number)
-             VALUES (:companyName, :contactPerson, :email, :phone, :type, :address, :city, :province, :postalCode, :country, :taxNumber)",
+            "INSERT INTO remquip_customers (id, company_name, contact_person, email, phone, customer_type, address, city, province, postal_code, country, tax_number)
+             VALUES (:id, :companyName, :contactPerson, :email, :phone, :type, :address, :city, :province, :postalCode, :country, :taxNumber)",
             [
-                'companyName' => $data['companyName'],
-                'contactPerson' => $data['contactPerson'],
+                'id' => $customerId,
+                'companyName' => $companyName,
+                'contactPerson' => $contactPerson,
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? '',
                 'type' => $data['customerType'] ?? 'Wholesale',
@@ -126,9 +192,9 @@ if ($method === 'POST' && !$id) {
                 'taxNumber' => $data['taxNumber'] ?? ''
             ]
         );
-        
-        $customerId = $conn->lastInsertId();
-        
+
+        remquip_notify_new_customer($conn, $companyName, $data['email']);
+
         Logger::info('Customer created', ['customer_id' => $customerId]);
         ResponseHelper::sendSuccess(['id' => $customerId], 'Customer created successfully', 201);
         
@@ -138,39 +204,100 @@ if ($method === 'POST' && !$id) {
     }
 }
 
-// PATCH /customers/:id - Update customer (Admin)
-if ($method === 'PATCH' && $id && !$action) {
+// PATCH/PUT /customers/:id - Update customer (Admin) — snake_case + camelCase
+if (($method === 'PATCH' || $method === 'PUT') && $id && !$action) {
     try {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $updates = [];
         $params = ['id' => $id];
-        
+
+        $company = $data['companyName'] ?? $data['company_name'] ?? null;
+        if ($company !== null && $company !== '') {
+            $updates[] = 'company_name = :company_name';
+            $params['company_name'] = $company;
+        }
+        $contact = $data['contactPerson'] ?? $data['contact_person'] ?? $data['full_name'] ?? null;
+        if ($contact !== null && $contact !== '') {
+            $updates[] = 'contact_person = :contact_person';
+            $params['contact_person'] = $contact;
+        }
+        if (isset($data['email']) && $data['email'] !== '') {
+            $updates[] = 'email = :email';
+            $params['email'] = trim($data['email']);
+        }
+        if (array_key_exists('phone', $data)) {
+            $updates[] = 'phone = :phone';
+            $params['phone'] = $data['phone'] ?? '';
+        }
+        $ctype = $data['customerType'] ?? $data['customer_type'] ?? null;
+        if ($ctype !== null && $ctype !== '') {
+            $updates[] = 'customer_type = :customer_type';
+            $params['customer_type'] = $ctype;
+        }
         if (isset($data['status'])) {
-            $updates[] = "status = :status";
+            $updates[] = 'status = :status';
             $params['status'] = $data['status'];
         }
-        
+        if (array_key_exists('address', $data)) {
+            $updates[] = 'address = :address';
+            $params['address'] = $data['address'] ?? '';
+        }
+        if (array_key_exists('city', $data)) {
+            $updates[] = 'city = :city';
+            $params['city'] = $data['city'] ?? '';
+        }
+        $prov = $data['province'] ?? $data['state'] ?? null;
+        if ($prov !== null) {
+            $updates[] = 'province = :province';
+            $params['province'] = $prov;
+        }
+        $pc = $data['postalCode'] ?? $data['postal_code'] ?? null;
+        if ($pc !== null) {
+            $updates[] = 'postal_code = :postal_code';
+            $params['postal_code'] = $pc;
+        }
+        if (array_key_exists('country', $data)) {
+            $updates[] = 'country = :country';
+            $params['country'] = $data['country'] ?? '';
+        }
+        $tax = $data['taxNumber'] ?? $data['tax_number'] ?? null;
+        if ($tax !== null) {
+            $updates[] = 'tax_number = :tax_number';
+            $params['tax_number'] = $tax;
+        }
         if (isset($data['paymentTerms'])) {
-            $updates[] = "payment_terms = :paymentTerms";
+            $updates[] = 'payment_terms = :paymentTerms';
             $params['paymentTerms'] = $data['paymentTerms'];
         }
-        
         if (isset($data['creditLimit'])) {
-            $updates[] = "credit_limit = :creditLimit";
+            $updates[] = 'credit_limit = :creditLimit';
             $params['creditLimit'] = (float)$data['creditLimit'];
         }
-        
-        if (!$updates) ResponseHelper::sendError('No fields to update', 400);
-        
-        $updates[] = "updated_at = NOW()";
-        $conn->execute("UPDATE customers SET " . implode(', ', $updates) . " WHERE id = :id", $params);
-        
+
+        if (!$updates) {
+            ResponseHelper::sendError('No fields to update', 400);
+        }
+
+        $updates[] = 'updated_at = NOW()';
+        $conn->execute('UPDATE remquip_customers SET ' . implode(', ', $updates) . ' WHERE id = :id AND deleted_at IS NULL', $params);
+
         Logger::info('Customer updated', ['customer_id' => $id]);
         ResponseHelper::sendSuccess(['id' => $id], 'Customer updated successfully');
-        
     } catch (Exception $e) {
         Logger::error('Update customer error', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Failed to update customer', 500);
+    }
+}
+
+// DELETE /customers/:id — soft delete (aligns with api.deleteCustomer)
+if ($method === 'DELETE' && $id && !$action) {
+    try {
+        $conn->execute('UPDATE remquip_customers SET deleted_at = NOW(), updated_at = NOW() WHERE id = :id AND deleted_at IS NULL', ['id' => $id]);
+        Logger::info('Customer deleted (soft)', ['customer_id' => $id]);
+        ResponseHelper::sendSuccess(null, 'Customer deleted successfully');
+    } catch (Exception $e) {
+        Logger::error('Delete customer error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to delete customer', 500);
     }
 }
 
@@ -185,9 +312,11 @@ if ($method === 'POST' && $id && $action === 'notes') {
         
         $payload = Auth::verifyToken(Auth::getToken());
         
+        $noteId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(
-            "INSERT INTO customer_notes (customer_id, user_id, note, is_internal) VALUES (:customerId, :userId, :note, :isInternal)",
+            "INSERT INTO remquip_customer_notes (id, customer_id, user_id, note, is_internal) VALUES (:nid, :customerId, :userId, :note, :isInternal)",
             [
+                'nid' => $noteId,
                 'customerId' => $id,
                 'userId' => $payload['user_id'] ?? null,
                 'note' => $data['note'],
@@ -271,7 +400,7 @@ if ($method === 'POST' && $id === 'import' && !$action) {
                 
                 // Check if customer already exists by email
                 $existing = $conn->fetch(
-                    "SELECT id FROM customers WHERE email = :email",
+                    "SELECT id FROM remquip_customers WHERE email = :email",
                     ['email' => $customer['email']]
                 );
                 
@@ -279,33 +408,42 @@ if ($method === 'POST' && $id === 'import' && !$action) {
                     $errors[] = "Row $index: Email {$customer['email']} already exists";
                     continue;
                 }
-                
+
+                $ctype = $customer['customer_type'] ?? 'Wholesale';
+                if (!in_array($ctype, ['Fleet', 'Wholesale', 'Distributor'], true)) {
+                    $ctype = 'Wholesale';
+                }
+                $cstatus = $customer['status'] ?? 'active';
+                if (!in_array($cstatus, ['active', 'inactive', 'suspended'], true)) {
+                    $cstatus = 'active';
+                }
+                $addr = $customer['address'] ?? $customer['billing_address'] ?? '';
+
+                $customerId = $conn->fetch('SELECT UUID() AS u')['u'];
                 $conn->execute(
-                    "INSERT INTO customers (company_name, contact_person, email, phone, customer_type, status, billing_address, shipping_address)
-                     VALUES (:company, :contact, :email, :phone, :type, :status, :billing, :shipping)",
+                    "INSERT INTO remquip_customers (id, company_name, contact_person, email, phone, customer_type, status, address, city, province, postal_code, country)
+                     VALUES (:id, :company, :contact, :email, :phone, :type, :status, :address, :city, :province, :pc, :country)",
                     [
+                        'id' => $customerId,
                         'company' => $customer['company_name'],
-                        'contact' => $customer['contact_person'] ?? '',
+                        'contact' => $customer['contact_person'] ?? $customer['contact'] ?? '',
                         'email' => $customer['email'],
                         'phone' => $customer['phone'] ?? '',
-                        'type' => $customer['customer_type'] ?? 'retail',
-                        'status' => $customer['status'] ?? 'active',
-                        'billing' => $customer['billing_address'] ?? '',
-                        'shipping' => $customer['shipping_address'] ?? ''
+                        'type' => $ctype,
+                        'status' => $cstatus,
+                        'address' => $addr,
+                        'city' => $customer['city'] ?? '',
+                        'province' => $customer['province'] ?? $customer['state'] ?? '',
+                        'pc' => $customer['postal_code'] ?? '',
+                        'country' => $customer['country'] ?? '',
                     ]
                 );
-                
-                $customerId = $conn->lastInsertId();
-                
-                // Add initial note if provided
+
                 if (!empty($customer['notes'])) {
+                    $nid = $conn->fetch('SELECT UUID() AS u')['u'];
                     $conn->execute(
-                        "INSERT INTO customer_notes (customer_id, note, is_internal)
-                         VALUES (:customerId, :note, 1)",
-                        [
-                            'customerId' => $customerId,
-                            'note' => $customer['notes']
-                        ]
+                        "INSERT INTO remquip_customer_notes (id, customer_id, note, is_internal) VALUES (:id, :customerId, :note, 1)",
+                        ['id' => $nid, 'customerId' => $customerId, 'note' => $customer['notes']]
                     );
                 }
                 

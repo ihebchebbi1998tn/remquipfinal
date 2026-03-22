@@ -1,8 +1,18 @@
-import React, { useState } from "react";
-import { Eye, Search, X, Mail, Phone, ChevronDown, ChevronUp, ArrowLeft, ShoppingBag, MapPin, FileText, Tag, Edit, Ban, CheckCircle, Plus, Loader2, AlertCircle } from "lucide-react";
-import { useCustomers, useCustomer, useCustomerOrders, useApiMutation } from "@/hooks/useApi";
-import { api, Customer, Order } from "@/lib/api";
+import React, { useState, useRef } from "react";
+import { Eye, Search, X, Mail, Phone, ChevronDown, ChevronUp, ArrowLeft, ShoppingBag, FileText, Edit, Ban, CheckCircle, Plus, Loader2, AlertCircle, Upload, Trash2, ExternalLink } from "lucide-react";
+import { useCustomers, useCustomer, useCustomerOrders, useCustomerDocuments, useApiMutation } from "@/hooks/useApi";
+import { api, Customer, Order, unwrapApiList, unwrapPagination, resolveBackendUploadUrl } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
+
+type CustomerDocumentRow = {
+  id: string;
+  document_type: string;
+  file_url: string;
+  file_name: string;
+  uploaded_by: string | null;
+  created_at: string;
+};
 
 const statusStyles: Record<string, string> = {
   pending: "badge-warning",
@@ -26,6 +36,8 @@ export default function AdminCustomers() {
     email: "",
     phone: "",
   });
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
 
@@ -37,6 +49,10 @@ export default function AdminCustomers() {
 
   // Fetch customer orders when selected
   const { data: customerOrdersResponse } = useCustomerOrders(selectedCustomerId || "");
+
+  const { data: customerDocumentsResponse, isLoading: documentsLoading } = useCustomerDocuments(
+    selectedCustomerId || ""
+  );
 
   // Mutations
   const createCustomerMutation = useApiMutation(
@@ -70,11 +86,59 @@ export default function AdminCustomers() {
     }
   );
 
-  // Get data from responses
-  const customers = customersResponse?.data || [];
-  const pagination = customersResponse?.pagination;
+  const uploadDocumentMutation = useApiMutation(
+    ({ file, customerId }: { file: File; customerId: string }) =>
+      api.uploadContractFile(file, { customerId, documentType: "contract" }),
+    {
+      onSuccess: (res, { customerId }) => {
+        queryClient.invalidateQueries({ queryKey: ["customer", customerId, "documents"] });
+        showSuccessToast(res.message || "Document uploaded.");
+      },
+      onError: (e: unknown) => {
+        showErrorToast(e instanceof Error ? e.message : "Upload failed");
+      },
+    }
+  );
+
+  const deleteDocumentMutation = useApiMutation(
+    ({ documentId, customerId }: { documentId: string; customerId: string }) =>
+      api.deleteCustomerDocument(documentId),
+    {
+      onSuccess: (res, { customerId }) => {
+        queryClient.invalidateQueries({ queryKey: ["customer", customerId, "documents"] });
+        showSuccessToast(res.message || "Document removed.");
+      },
+      onError: (e: unknown) => {
+        showErrorToast(e instanceof Error ? e.message : "Delete failed");
+      },
+    }
+  );
+
+  const importCustomersMutation = useApiMutation((file: File) => api.importCustomersFile(file), {
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      const d = res.data as { imported?: number; errors?: string[] } | undefined;
+      const n = d?.imported ?? 0;
+      const errs = d?.errors?.length ?? 0;
+      showSuccessToast(res.message || `Imported ${n} customer(s).`);
+      if (errs > 0) {
+        showErrorToast(`${errs} row(s) skipped (duplicate email or missing fields).`);
+        if (d?.errors?.length) console.warn('Customer import row errors:', d.errors);
+      }
+    },
+    onError: (e: unknown) => {
+      showErrorToast(e instanceof Error ? e.message : 'Import failed');
+    },
+  });
+
+  const customers = unwrapApiList<Customer>(customersResponse, []);
+  const pagination = unwrapPagination(customersResponse);
   const selectedCustomer = customerDetailResponse?.data;
-  const customerOrders: Order[] = customerOrdersResponse?.data || [];
+  const customerOrders: Order[] = unwrapApiList<Order>(customerOrdersResponse as any, []);
+  const customerDocuments: CustomerDocumentRow[] = unwrapApiList<CustomerDocumentRow>(
+    customerDocumentsResponse,
+    []
+  );
 
   // Filter customers locally
   const filtered = customers.filter((c: Customer) => {
@@ -97,6 +161,20 @@ export default function AdminCustomers() {
       id: customer.id,
       data: { status: newStatus }
     });
+  };
+
+  const handleImportCustomersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    importCustomersMutation.mutate(file);
+  };
+
+  const handleDocumentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !selectedCustomerId) return;
+    uploadDocumentMutation.mutate({ file, customerId: selectedCustomerId });
   };
 
   // Loading state
@@ -160,6 +238,17 @@ export default function AdminCustomers() {
               className="px-3 py-2 border border-destructive text-destructive rounded-sm text-xs font-medium hover:bg-destructive/10 transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               {c.status === "active" ? <><Ban className="h-3.5 w-3.5" /> Deactivate</> : <><CheckCircle className="h-3.5 w-3.5" /> Activate</>}
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("Delete this customer? Their record will be archived (soft delete).")) {
+                  deleteCustomerMutation.mutate(c.id);
+                }
+              }}
+              disabled={deleteCustomerMutation.isLoading}
+              className="px-3 py-2 border border-border text-destructive rounded-sm text-xs font-medium hover:bg-destructive/10 transition-colors disabled:opacity-50"
+            >
+              {deleteCustomerMutation.isLoading ? "Deleting…" : "Delete"}
             </button>
           </div>
         </div>
@@ -227,6 +316,79 @@ export default function AdminCustomers() {
                 <a href={`tel:${c.phone}`} className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                   <Phone className="h-3.5 w-3.5" /> {c.phone}
                 </a>
+              )}
+            </div>
+
+            <div className="dashboard-card">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="font-display font-bold text-sm uppercase flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> Documents
+                </h3>
+                <input
+                  ref={documentInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="hidden"
+                  onChange={handleDocumentFileChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => documentInputRef.current?.click()}
+                  disabled={uploadDocumentMutation.isLoading}
+                  className="text-xs px-2.5 py-1.5 border border-border rounded-sm font-medium hover:bg-secondary transition-colors flex items-center gap-1 disabled:opacity-50"
+                >
+                  {uploadDocumentMutation.isLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Upload className="h-3 w-3" />
+                  )}
+                  Upload
+                </button>
+              </div>
+              {documentsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                </div>
+              ) : customerDocuments.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No documents yet. PDF, Word, or Excel up to the server limit.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {customerDocuments.map((doc) => (
+                    <li
+                      key={doc.id}
+                      className="flex items-start justify-between gap-2 text-sm border border-border rounded-sm px-2 py-1.5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <a
+                          href={resolveBackendUploadUrl(doc.file_url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent hover:underline flex items-center gap-1 font-medium"
+                        >
+                          <span className="truncate">{doc.file_name || doc.file_url}</span>
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                        </a>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {doc.document_type}
+                          {doc.uploaded_by ? ` · ${doc.uploaded_by}` : ""}
+                          {doc.created_at ? ` · ${new Date(doc.created_at).toLocaleString()}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        title="Remove document"
+                        disabled={deleteDocumentMutation.isLoading}
+                        onClick={() => {
+                          if (!confirm("Remove this document from the customer record?")) return;
+                          deleteDocumentMutation.mutate({ documentId: doc.id, customerId: c.id });
+                        }}
+                        className="p-1 text-destructive hover:bg-destructive/10 rounded-sm disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </div>
@@ -325,13 +487,38 @@ export default function AdminCustomers() {
         <div>
           <h2 className="font-display font-bold text-lg md:text-xl">Customer Management</h2>
           {pagination && <p className="text-sm text-muted-foreground">{pagination.total} total customers</p>}
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+            Bulk import: CSV or JSON (max 5MB). Rows need <code className="text-[10px] bg-secondary px-1 rounded">company_name</code> and <code className="text-[10px] bg-secondary px-1 rounded">email</code> (see API).
+          </p>
         </div>
-        <button 
-          onClick={() => setShowCreateModal(true)} 
-          className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 self-start"
-        >
-          <Plus className="h-4 w-4" /> Add Customer
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,.json,application/json,text/csv"
+            className="hidden"
+            onChange={handleImportCustomersChange}
+          />
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importCustomersMutation.isLoading}
+            className="px-4 py-2 border border-border rounded-sm text-sm font-medium flex items-center gap-2 hover:bg-secondary transition-colors disabled:opacity-50"
+          >
+            {importCustomersMutation.isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            Import file
+          </button>
+          <button 
+            onClick={() => setShowCreateModal(true)} 
+            className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> Add Customer
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-card">

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Plus, Search, Edit, Trash2, Check, X, Mail, Shield, Clock, Loader2, AlertCircle } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Plus, Search, Edit, Trash2, Check, X, Mail, Shield, Clock, Loader2, AlertCircle, Upload } from "lucide-react";
 import { useUsers, useApiMutation } from "@/hooks/useApi";
-import { api, User } from "@/lib/api";
+import { api, unwrapApiList, unwrapPagination, User } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 type UserRole = "admin" | "manager" | "user";
 type UserStatus = "active" | "inactive" | "suspended";
@@ -32,6 +33,7 @@ export default function AdminUsers() {
     role: "user" as UserRole 
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
 
@@ -72,9 +74,25 @@ export default function AdminUsers() {
     }
   );
 
-  // Get users array from response
-  const users = usersResponse?.data || [];
-  const pagination = usersResponse?.pagination;
+  const importUsersMutation = useApiMutation((file: File) => api.importUsersFile(file), {
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      const d = res.data as { imported?: number; errors?: string[] } | undefined;
+      const n = d?.imported ?? 0;
+      const errs = d?.errors?.length ?? 0;
+      showSuccessToast(res.message || `Imported ${n} user(s).`);
+      if (errs > 0) {
+        showErrorToast(`${errs} row(s) skipped (duplicate email or validation).`);
+        if (d?.errors?.length) console.warn('User import row errors:', d.errors);
+      }
+    },
+    onError: (e: unknown) => {
+      showErrorToast(e instanceof Error ? e.message : 'Import failed');
+    },
+  });
+
+  const users = unwrapApiList<User>(usersResponse, []);
+  const pagination = unwrapPagination(usersResponse);
 
   // Filter users locally (in case server-side filtering isn't available)
   const filtered = users.filter((u: User) => {
@@ -132,6 +150,13 @@ export default function AdminUsers() {
     });
   };
 
+  const handleImportUsersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    importUsersMutation.mutate(file);
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -170,18 +195,43 @@ export default function AdminUsers() {
           <p className="text-sm text-muted-foreground mt-1">
             Create and manage admin users. {pagination && `${pagination.total} total users.`}
           </p>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+            Bulk import: CSV or JSON (max 5MB). JSON file: array of rows, or POST body shape with a <code className="text-[10px] bg-secondary px-1 rounded">users</code> array (email, full_name, optional role, phone).
+          </p>
         </div>
-        <button
-          onClick={() => { 
-            setFormData({ full_name: "", email: "", password: "", role: "user" }); 
-            setEditingId(null); 
-            setShowForm(!showForm); 
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add User</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,.json,application/json,text/csv"
+            className="hidden"
+            onChange={handleImportUsersChange}
+          />
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importUsersMutation.isLoading}
+            className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
+          >
+            {importUsersMutation.isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            <span>Import file</span>
+          </button>
+          <button
+            onClick={() => { 
+              setFormData({ full_name: "", email: "", password: "", role: "user" }); 
+              setEditingId(null); 
+              setShowForm(!showForm); 
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add User</span>
+          </button>
+        </div>
       </div>
 
       {/* Form */}

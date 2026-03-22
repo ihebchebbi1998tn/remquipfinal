@@ -4,7 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
-import { api, ApiResponse, PaginatedResponse } from '@/lib/api';
+import { api, ApiResponse, PaginatedResponse, type StorefrontRates } from '@/lib/api';
 
 // ==================== GENERIC HOOKS ====================
 
@@ -32,12 +32,9 @@ export function useApiMutation<TData = any, TError = any, TVariables = any>(
   mutationFn: (variables: TVariables) => Promise<ApiResponse<TData>>,
   options?: Omit<UseMutationOptions<ApiResponse<TData>, TError, TVariables>, 'mutationFn'>
 ) {
-  const queryClient = useQueryClient();
-
   return useMutation(mutationFn, {
     ...options,
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries();
       options?.onSuccess?.(data, variables, context);
     },
   });
@@ -87,7 +84,7 @@ export function useProfile() {
 }
 
 export function useUser(id: string) {
-  return useApiQuery(['user', id], () => api.getUser(id));
+  return useApiQuery(['user', id], () => api.getUser(id), { enabled: !!id });
 }
 
 export function useUsers(page: number = 1, limit: number = 10) {
@@ -132,8 +129,15 @@ export function useDeleteUser(id: string) {
 }
 
 export function useUpdatePassword(id: string) {
-  return useApiMutation((data: any) =>
-    api.updatePassword(id, data.currentPassword, data.newPassword)
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (data: any) => api.updatePassword(id, data.currentPassword, data.newPassword),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['user', id] });
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+      },
+    }
   );
 }
 
@@ -144,7 +148,7 @@ export function useProducts(page: number = 1, limit: number = 12) {
 }
 
 export function useProduct(id: string) {
-  return useApiQuery(['product', id], () => api.getProduct(id));
+  return useApiQuery(['product', id], () => api.getProduct(id), { enabled: !!id });
 }
 
 export function useFeaturedProducts() {
@@ -199,27 +203,31 @@ export function useDeleteProduct(id: string) {
 }
 
 export function useUploadProductImage(productId: string) {
-  return useApiMutation(
-    (file: File) => api.uploadProductImage(productId, file),
-    {
-      onSuccess: () => {
-        const queryClient = useQueryClient();
-        queryClient.invalidateQueries({ queryKey: ['product', productId] });
-      },
-    }
-  );
+  const queryClient = useQueryClient();
+  return useApiMutation((file: File) => api.uploadProductImage(productId, file), {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
 }
 
 // ==================== CATEGORY HOOKS ====================
 
-export function useCategories() {
-  return useApiQuery(['categories'], () => api.getCategories(), {
+export function useCategories(locale: string = 'en') {
+  return useApiQuery(['categories', locale], () => api.getCategories(1, 100, { locale }), {
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }
 
-export function useCategory(id: string) {
-  return useApiQuery(['category', id], () => api.getCategory(id));
+export function useAdminCategoriesList() {
+  return useApiQuery(['categories', 'admin'], () => api.getCategories(1, 200, { admin: true }), {
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useCategory(id: string, locale?: string) {
+  return useApiQuery(['category', id, locale ?? 'en'], () => api.getCategory(id, locale));
 }
 
 export function useCreateCategory() {
@@ -266,7 +274,7 @@ export function useCustomers(page: number = 1, limit: number = 10) {
 }
 
 export function useCustomer(id: string) {
-  return useApiQuery(['customer', id], () => api.getCustomer(id));
+  return useApiQuery(['customer', id], () => api.getCustomer(id), { enabled: !!id });
 }
 
 export function useSearchCustomers(query: string) {
@@ -317,14 +325,27 @@ export function useDeleteCustomer(id: string) {
 }
 
 export function useCustomerOrders(customerId: string) {
-  return useApiQuery(['customer', customerId, 'orders'], () =>
-    api.getCustomerOrders(customerId)
+  return useApiQuery(
+    ['customer', customerId, 'orders'],
+    () => api.getCustomerOrders(customerId),
+    { enabled: !!customerId }
   );
 }
 
 export function useCustomerAddresses(customerId: string) {
-  return useApiQuery(['customer', customerId, 'addresses'], () =>
-    api.getCustomerAddresses(customerId)
+  return useApiQuery(
+    ['customer', customerId, 'addresses'],
+    () => api.getCustomerAddresses(customerId),
+    { enabled: !!customerId }
+  );
+}
+
+/** CRM documents from `GET /uploads/contracts/:customerId` (admin). */
+export function useCustomerDocuments(customerId: string) {
+  return useApiQuery(
+    ['customer', customerId, 'documents'],
+    () => api.getCustomerDocuments(customerId),
+    { enabled: !!customerId }
   );
 }
 
@@ -335,7 +356,7 @@ export function useOrders(page: number = 1, limit: number = 10) {
 }
 
 export function useOrder(id: string) {
-  return useApiQuery(['order', id], () => api.getOrder(id));
+  return useApiQuery(['order', id], () => api.getOrder(id), { enabled: !!id });
 }
 
 export function useSearchOrders(query: string) {
@@ -522,6 +543,86 @@ export function useRevenueStats(startDate: string, endDate: string) {
   );
 }
 
+/** Backend `GET /analytics/sales?period=day|week|month|year` — revenue series for charts. */
+export function useAnalyticsSales(period?: string) {
+  return useApiQuery(['analytics', 'sales', period ?? 'default'], () => api.getAnalyticsSales(period), {
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useAnalyticsEvents(limit = 50, offset = 0, eventType?: string) {
+  return useApiQuery(
+    ['analytics', 'events', limit, offset, eventType ?? ''],
+    () => api.getAnalyticsEvents({ limit, offset, event_type: eventType }),
+    { staleTime: 1000 * 60 }
+  );
+}
+
+export function useAnalyticsEventsSummary(days = 30) {
+  return useApiQuery(['analytics', 'events', 'summary', days], () => api.getAnalyticsEventsSummary(days), {
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+// ==================== SETTINGS & FILE REGISTRY ====================
+
+export function usePublicSettings() {
+  return useApiQuery(['settings', 'public'], () => api.getPublicSettings(), {
+    staleTime: 1000 * 60 * 15,
+    retry: 1,
+  });
+}
+
+export function useStorefrontRates() {
+  return useApiQuery<StorefrontRates>(['settings', 'storefront'], () => api.getStorefrontSettings(), {
+    staleTime: 1000 * 60 * 10,
+    retry: 1,
+  });
+}
+
+export function useAdminSettingsList() {
+  return useApiQuery(['settings', 'admin'], () => api.getAdminSettings(), {
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function usePatchSettingsBulk() {
+  const queryClient = useQueryClient();
+  return useApiMutation((settings: Record<string, string | number | boolean>) => api.patchSettingsBulk(settings), {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+  });
+}
+
+export function useRegistryFiles(limit = 50, offset = 0) {
+  return useApiQuery(['uploads', 'registry', limit, offset], () => api.listRegistryFiles(limit, offset), {
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useUploadRegistryFile() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { file: File; uploadType?: string }) =>
+      api.uploadRegistryFile(vars.file, { uploadType: vars.uploadType ?? 'admin_misc' }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['uploads', 'registry'] });
+      },
+    }
+  );
+}
+
+export function useDeleteRegistryFile() {
+  const queryClient = useQueryClient();
+  return useApiMutation((id: string) => api.deleteRegistryFile(id), {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['uploads', 'registry'] });
+    },
+  });
+}
+
 // ==================== CMS HOOKS ====================
 
 export function useCMSPages(page: number = 1, limit: number = 10) {
@@ -530,8 +631,8 @@ export function useCMSPages(page: number = 1, limit: number = 10) {
   );
 }
 
-export function useCMSPage(slug: string) {
-  return useApiQuery(['cms', 'page', slug], () => api.getCMSPage(slug), {
+export function useCMSPage(slug: string, locale?: string) {
+  return useApiQuery(['cms', 'page', slug, locale ?? 'en'], () => api.getCMSPage(slug, locale), {
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }
