@@ -67,14 +67,6 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      // API call will be connected here: POST /api/auth/register
-      console.log("[v0] Registration attempt:", {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        company: formData.company || undefined,
-        phone: formData.phone || undefined,
-      });
       // const response = await fetch('/api/auth/register', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },

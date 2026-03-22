@@ -33,7 +33,6 @@ export function useSessionManagement(config: SessionConfig = {}) {
   // Update last activity time
   const updateActivity = useCallback(() => {
     lastActivityRef.current = Date.now();
-    console.log('[v0] Session activity updated');
   }, []);
 
   // Listen for user activity
@@ -62,10 +61,7 @@ export function useSessionManagement(config: SessionConfig = {}) {
       const timeSinceLastActivity = now - lastActivityRef.current;
       const timeoutMs = timeoutMinutes * 60 * 1000;
 
-      console.log('[v0] Session check - inactivity:', Math.floor(timeSinceLastActivity / 1000), 'seconds');
-
       if (timeSinceLastActivity > timeoutMs) {
-        console.log('[v0] Session timeout - logging out due to inactivity');
         logout();
         navigate('/login', { state: { message: 'Session expired due to inactivity' } });
       }

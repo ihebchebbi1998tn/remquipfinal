@@ -586,3 +586,31 @@ export function useUserAuditLogs(userId: string, page: number = 1, limit: number
     () => api.getUserAuditLogs(userId, page, limit)
   );
 }
+
+// ==================== ACCESS CONTROL HOOKS ====================
+
+export function useUserPermissions(userId: string) {
+  return useApiQuery(
+    ['permissions', 'user', userId],
+    () => api.getUserPermissions(userId),
+    { enabled: !!userId }
+  );
+}
+
+export function useAllPermissions() {
+  return useApiQuery(['permissions', 'all'], () => api.getAllPermissions());
+}
+
+export function useUpdateUserPermissions() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    ({ userId, permissions }: { userId: string; permissions: any }) =>
+      api.updateUserPermissions(userId, permissions),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['permissions'] });
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+      },
+    }
+  );
+}

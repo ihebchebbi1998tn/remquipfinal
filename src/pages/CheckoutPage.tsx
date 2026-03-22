@@ -102,8 +102,7 @@ export default function CheckoutPage() {
       
       clearCart();
       navigate("/order-confirmed");
-    } catch (error) {
-      console.error("[v0] Order creation failed:", error);
+    } catch {
       toast({
         title: t("checkout.order_error") || "Order failed",
         description: t("checkout.order_error_desc") || "There was an error placing your order. Please try again.",

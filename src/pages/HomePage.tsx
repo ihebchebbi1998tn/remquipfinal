@@ -31,7 +31,6 @@ export default function HomePage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        console.log('[v0] Fetching featured products and categories');
         
         // Try to fetch from API, fallback to hardcoded data if API fails
         try {
@@ -39,8 +38,7 @@ export default function HomePage() {
           if (featuredResponse.data) {
             setFeaturedProducts(featuredResponse.data.slice(0, 4));
           }
-        } catch (err) {
-          console.warn('[v0] Featured products API failed, using fallback');
+        } catch {
           setFeaturedProducts([]);
         }
 
@@ -49,12 +47,11 @@ export default function HomePage() {
           if (categoriesResponse.data) {
             setCategoriesList(categoriesResponse.data);
           }
-        } catch (err) {
-          console.warn('[v0] Categories API failed, using fallback');
+        } catch {
           setCategoriesList(categories);
         }
-      } catch (err) {
-        console.error('[v0] Error fetching homepage data:', err);
+      } catch {
+        // Error handled by individual try blocks
       } finally {
         setIsLoading(false);
       }

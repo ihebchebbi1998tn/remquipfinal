@@ -52,17 +52,15 @@ export default function AdminOverview() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        console.log('[v0] Fetching dashboard data from API');
 
         // Fetch stats
         try {
           const statsResponse = await api.request('GET', '/api/dashboard/stats') as any;
           if (statsResponse.data) {
             setStats(statsResponse.data);
-            console.log('[v0] Dashboard stats loaded');
           }
-        } catch (err) {
-          console.warn('[v0] Dashboard stats API failed, using defaults');
+        } catch {
+          // Use defaults
         }
 
         // Fetch recent orders
@@ -70,10 +68,9 @@ export default function AdminOverview() {
           const ordersResponse = await api.getOrders(1, 5);
           if (ordersResponse.data) {
             setRecentOrders(ordersResponse.data);
-            console.log('[v0] Recent orders loaded');
           }
-        } catch (err) {
-          console.warn('[v0] Orders API failed');
+        } catch {
+          // Orders API failed
         }
 
         // Fetch activity log
@@ -81,10 +78,8 @@ export default function AdminOverview() {
           const activityResponse = await api.request('GET', '/api/dashboard/activity-log') as any;
           if (activityResponse.data) {
             setActivityLog(activityResponse.data);
-            console.log('[v0] Activity log loaded');
           }
-        } catch (err) {
-          console.warn('[v0] Activity log API failed, using fallback');
+        } catch {
           setActivityLog([
             { time: "10:32 AM", user: "System", action: "Dashboard initialized", type: "system" },
           ]);
@@ -96,12 +91,11 @@ export default function AdminOverview() {
           if (lowStockResponse.data) {
             setLowStockProducts(lowStockResponse.data);
           }
-        } catch (err) {
-          console.warn('[v0] Low stock API failed, using fallback');
+        } catch {
           setLowStockProducts(products.filter((p) => p.stock < 50).slice(0, 5));
         }
-      } catch (err) {
-        console.error('[v0] Error fetching dashboard data:', err);
+      } catch {
+        // Error handled by individual try blocks
       } finally {
         setIsLoading(false);
       }

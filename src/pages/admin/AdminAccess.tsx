@@ -1,17 +1,11 @@
-import React, { useState } from "react";
-import { Plus, Search, Grid3x3, User, CheckCircle, XCircle, AlertCircle, Eye, Edit, Trash2, Copy } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Search, Grid3x3, User, AlertCircle, Eye, Edit, Trash2, Copy, Loader2 } from "lucide-react";
 import { AdminUser, AdminPage, AccessRecord } from "@/types/admin";
+import { useUsers, useAllPermissions, useUpdateUserPermissions } from "@/hooks/useApi";
+import { toast } from "@/hooks/use-toast";
 
-// Mock data
-const mockUsers: AdminUser[] = [
-  { id: "user-1", name: "Marc Dupont", email: "marc@remquip.ca", role: "admin", status: "active", created: "2024-01-15" },
-  { id: "user-2", name: "Julie Martin", email: "julie@remquip.ca", role: "manager", status: "active", created: "2024-02-20" },
-  { id: "user-3", name: "Pierre Gagnon", email: "pierre@remquip.ca", role: "manager", status: "active", created: "2024-03-10" },
-  { id: "user-4", name: "Sarah Johnson", email: "sarah@remquip.ca", role: "user", status: "active", created: "2024-06-05" },
-  { id: "user-5", name: "David Chen", email: "david@remquip.ca", role: "user", status: "inactive", created: "2024-08-12" },
-];
-
-const mockPages: AdminPage[] = [
+// Static admin pages definition (these are routes, not CMS pages)
+const adminPages: AdminPage[] = [
   { id: "page-1", name: "Dashboard", slug: "dashboard", description: "Admin dashboard overview", order: 1, isPublic: false },
   { id: "page-2", name: "Products", slug: "products", description: "Product management", order: 2, isPublic: false },
   { id: "page-3", name: "Inventory", slug: "inventory", description: "Inventory management", order: 3, isPublic: false },
@@ -20,51 +14,71 @@ const mockPages: AdminPage[] = [
   { id: "page-6", name: "Analytics", slug: "analytics", description: "Analytics & reporting", order: 6, isPublic: false },
 ];
 
-const mockAccess: AccessRecord[] = [
-  { userId: "user-1", pageId: "page-1", canView: true, canEdit: true, canDelete: true, assigned: "2024-01-15" },
-  { userId: "user-1", pageId: "page-2", canView: true, canEdit: true, canDelete: true, assigned: "2024-01-15" },
-  { userId: "user-1", pageId: "page-3", canView: true, canEdit: true, canDelete: true, assigned: "2024-01-15" },
-  { userId: "user-1", pageId: "page-4", canView: true, canEdit: true, canDelete: true, assigned: "2024-01-15" },
-  { userId: "user-1", pageId: "page-5", canView: true, canEdit: true, canDelete: true, assigned: "2024-01-15" },
-  { userId: "user-1", pageId: "page-6", canView: true, canEdit: true, canDelete: true, assigned: "2024-01-15" },
-  { userId: "user-2", pageId: "page-1", canView: true, canEdit: false, canDelete: false, assigned: "2024-02-20" },
-  { userId: "user-2", pageId: "page-2", canView: true, canEdit: true, canDelete: false, assigned: "2024-02-20" },
-  { userId: "user-2", pageId: "page-3", canView: true, canEdit: true, canDelete: false, assigned: "2024-02-20" },
-  { userId: "user-2", pageId: "page-4", canView: true, canEdit: false, canDelete: false, assigned: "2024-02-20" },
-  { userId: "user-3", pageId: "page-1", canView: true, canEdit: false, canDelete: false, assigned: "2024-03-10" },
-  { userId: "user-3", pageId: "page-2", canView: true, canEdit: false, canDelete: false, assigned: "2024-03-10" },
-  { userId: "user-4", pageId: "page-1", canView: true, canEdit: false, canDelete: false, assigned: "2024-06-05" },
-];
-
 type ViewMode = "matrix" | "user" | "page";
 type PermissionLevel = "none" | "view" | "edit" | "admin";
 
 export default function AdminAccess() {
   const [viewMode, setViewMode] = useState<ViewMode>("matrix");
   const [search, setSearch] = useState("");
-  const [accessRecords, setAccessRecords] = useState(mockAccess);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+  const [accessRecords, setAccessRecords] = useState<AccessRecord[]>([]);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [bulkUsers, setBulkUsers] = useState<string[]>([]);
   const [bulkPages, setBulkPages] = useState<string[]>([]);
   const [bulkPerms, setBulkPerms] = useState({ canView: true, canEdit: false, canDelete: false });
 
-  const handleAccessChange = (userId: string, pageId: string, newAccess: { canView: boolean; canEdit: boolean; canDelete: boolean }) => {
+  // Fetch users and permissions from API
+  const { data: usersResponse, isLoading: isLoadingUsers } = useUsers(1, 100);
+  const { data: permissionsResponse, isLoading: isLoadingPermissions } = useAllPermissions();
+  const updatePermissionsMutation = useUpdateUserPermissions();
+
+  // Extract data with proper typing
+  const users: AdminUser[] = usersResponse?.data || [];
+  const isLoading = isLoadingUsers || isLoadingPermissions;
+
+  // Sync permissions from API to local state
+  useEffect(() => {
+    if (permissionsResponse?.data) {
+      setAccessRecords(permissionsResponse.data);
+    }
+  }, [permissionsResponse]);
+
+  const handleAccessChange = async (userId: string, pageId: string, newAccess: { canView: boolean; canEdit: boolean; canDelete: boolean }) => {
     const existing = accessRecords.find((a) => a.userId === userId && a.pageId === pageId);
-    if (existing) {
-      setAccessRecords(accessRecords.map((a) => (a.userId === userId && a.pageId === pageId ? { ...a, ...newAccess } : a)));
-    } else {
-      setAccessRecords([...accessRecords, { userId, pageId, ...newAccess, assigned: new Date().toISOString().split("T")[0] }]);
+    const updatedRecords = existing
+      ? accessRecords.map((a) => (a.userId === userId && a.pageId === pageId ? { ...a, ...newAccess } : a))
+      : [...accessRecords, { userId, pageId, ...newAccess, assigned: new Date().toISOString().split("T")[0] }];
+    
+    // Optimistic update
+    setAccessRecords(updatedRecords);
+    
+    // Persist to API
+    try {
+      const userPermissions = updatedRecords.filter((a) => a.userId === userId);
+      await updatePermissionsMutation.mutateAsync({ userId, permissions: userPermissions });
+      toast({ title: "Access updated", description: "Permission changes saved successfully." });
+    } catch {
+      toast({ title: "Error", description: "Failed to save permission changes.", variant: "destructive" });
     }
   };
 
-  const handleRevokeAccess = (userId: string, pageId: string) => {
-    setAccessRecords(accessRecords.filter((a) => !(a.userId === userId && a.pageId === pageId)));
+  const handleRevokeAccess = async (userId: string, pageId: string) => {
+    const updatedRecords = accessRecords.filter((a) => !(a.userId === userId && a.pageId === pageId));
+    
+    // Optimistic update
+    setAccessRecords(updatedRecords);
+    
+    // Persist to API
+    try {
+      const userPermissions = updatedRecords.filter((a) => a.userId === userId);
+      await updatePermissionsMutation.mutateAsync({ userId, permissions: userPermissions });
+      toast({ title: "Access revoked", description: "Permission removed successfully." });
+    } catch {
+      toast({ title: "Error", description: "Failed to revoke permission.", variant: "destructive" });
+    }
   };
 
-  const handleBulkAssign = () => {
-    const newRecords = [];
+  const handleBulkAssign = async () => {
+    const newRecords: AccessRecord[] = [];
     for (const userId of bulkUsers) {
       for (const pageId of bulkPages) {
         const existing = accessRecords.find((a) => a.userId === userId && a.pageId === pageId);
@@ -78,20 +92,44 @@ export default function AdminAccess() {
         }
       }
     }
-    setAccessRecords([...accessRecords, ...newRecords]);
+    
+    const updatedRecords = [...accessRecords, ...newRecords];
+    setAccessRecords(updatedRecords);
+    
+    // Persist all affected users to API
+    try {
+      for (const userId of bulkUsers) {
+        const userPermissions = updatedRecords.filter((a) => a.userId === userId);
+        await updatePermissionsMutation.mutateAsync({ userId, permissions: userPermissions });
+      }
+      toast({ title: "Bulk assign complete", description: `Assigned permissions to ${bulkUsers.length} users.` });
+    } catch {
+      toast({ title: "Error", description: "Some permissions may not have been saved.", variant: "destructive" });
+    }
+    
     setBulkUsers([]);
     setBulkPages([]);
     setShowBulkForm(false);
   };
 
-  const handleDuplicateUserAccess = (fromUserId: string, toUserId: string) => {
+  const handleDuplicateUserAccess = async (fromUserId: string, toUserId: string) => {
     const userAccess = accessRecords.filter((a) => a.userId === fromUserId);
     const newRecords = userAccess.map((a) => ({
       ...a,
       userId: toUserId,
       assigned: new Date().toISOString().split("T")[0],
     }));
-    setAccessRecords([...accessRecords, ...newRecords]);
+    
+    const updatedRecords = [...accessRecords, ...newRecords];
+    setAccessRecords(updatedRecords);
+    
+    // Persist to API
+    try {
+      await updatePermissionsMutation.mutateAsync({ userId: toUserId, permissions: newRecords });
+      toast({ title: "Access duplicated", description: "Permissions copied successfully." });
+    } catch {
+      toast({ title: "Error", description: "Failed to duplicate permissions.", variant: "destructive" });
+    }
   };
 
   const getPermissionCount = (userId: string) => {
@@ -146,15 +184,22 @@ export default function AdminAccess() {
         ))}
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
       {/* Bulk Assign Form */}
-      {showBulkForm && (
+      {!isLoading && showBulkForm && (
         <div className="dashboard-card border-accent/50">
           <h3 className="font-display font-bold mb-4">Bulk Assign Access</h3>
           <div className="grid md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="text-sm font-medium block mb-2">Select Users</label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
-                {mockUsers.map((u) => (
+                {users.map((u) => (
                   <label key={u.id} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
                       type="checkbox"
@@ -173,7 +218,7 @@ export default function AdminAccess() {
             <div>
               <label className="text-sm font-medium block mb-2">Select Pages</label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
-                {mockPages.map((p) => (
+                {adminPages.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
                       type="checkbox"
@@ -242,22 +287,22 @@ export default function AdminAccess() {
       )}
 
       {/* MATRIX VIEW */}
-      {viewMode === "matrix" && (
+      {!isLoading && viewMode === "matrix" && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-secondary border-b border-border">
                 <th className="p-3 text-left font-medium sticky left-0 bg-secondary">User</th>
-                {mockPages.map((page) => (
+                {adminPages.map((page) => (
                   <th key={page.id} className="p-2 text-center font-medium text-xs whitespace-nowrap">{page.name}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {mockUsers.map((user) => (
+              {users.map((user) => (
                 <tr key={user.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
                   <td className="p-3 font-medium sticky left-0 bg-background hover:bg-secondary/50 truncate max-w-[150px]">{user.name}</td>
-                  {mockPages.map((page) => {
+                  {adminPages.map((page) => {
                     const access = accessRecords.find((a) => a.userId === user.id && a.pageId === page.id);
                     return (
                       <td key={`${user.id}-${page.id}`} className="p-2 text-center">
@@ -292,7 +337,7 @@ export default function AdminAccess() {
       )}
 
       {/* USER VIEW */}
-      {viewMode === "user" && (
+      {!isLoading && viewMode === "user" && (
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -306,7 +351,7 @@ export default function AdminAccess() {
           </div>
 
           <div className="grid gap-4">
-            {mockUsers
+            {users
               .filter((u) => !search || u.name.toLowerCase().includes(search.toLowerCase()))
               .map((user) => (
                 <div key={user.id} className="dashboard-card">
@@ -317,7 +362,7 @@ export default function AdminAccess() {
                     </div>
                     <button
                       onClick={() => {
-                        const fromUser = mockUsers[0];
+                        const fromUser = users[0];
                         handleDuplicateUserAccess(fromUser.id, user.id);
                       }}
                       className="px-2 py-1.5 text-xs rounded border border-border hover:bg-secondary transition-colors flex items-center gap-1"
@@ -329,7 +374,7 @@ export default function AdminAccess() {
 
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground font-medium">Access: {getPermissionCount(user.id)} pages</p>
-                    {mockPages.map((page) => {
+                    {adminPages.map((page) => {
                       const access = accessRecords.find((a) => a.userId === user.id && a.pageId === page.id);
                       return (
                         <div key={page.id} className="flex items-center justify-between p-2 border border-border rounded text-sm">
@@ -368,7 +413,7 @@ export default function AdminAccess() {
       )}
 
       {/* PAGE VIEW */}
-      {viewMode === "page" && (
+      {!isLoading && viewMode === "page" && (
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -382,10 +427,10 @@ export default function AdminAccess() {
           </div>
 
           <div className="grid gap-4">
-            {mockPages
+            {adminPages
               .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()))
               .map((page) => {
-                const pageUsers = mockUsers.filter((u) => accessRecords.some((a) => a.userId === u.id && a.pageId === page.id));
+                const pageUsers = users.filter((u) => accessRecords.some((a) => a.userId === u.id && a.pageId === page.id));
                 return (
                   <div key={page.id} className="dashboard-card">
                     <div className="mb-4">
@@ -395,7 +440,7 @@ export default function AdminAccess() {
 
                     <div className="space-y-2">
                       <p className="text-xs text-muted-foreground font-medium">Access: {pageUsers.length} users</p>
-                      {mockUsers.map((user) => {
+                      {users.map((user) => {
                         const access = accessRecords.find((a) => a.userId === user.id && a.pageId === page.id);
                         return (
                           <div key={user.id} className="flex items-center justify-between p-2 border border-border rounded text-sm">
