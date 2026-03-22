@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Building, Landmark } from "lucide-react";
+import { CreditCard, Building, Landmark, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
+import { useCreateOrder } from "@/hooks/useApi";
+import { toast } from "@/hooks/use-toast";
 
 export default function CheckoutPage() {
   const { t } = useLanguage();
@@ -11,6 +13,36 @@ export default function CheckoutPage() {
   const { items, subtotal, tax, shipping, total, clearCart } = useCart();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  
+  // Form data state to collect across steps
+  const [billingData, setBillingData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    company: "",
+    taxId: "",
+    address: "",
+    city: "",
+    province: "",
+    postal: "",
+    country: "",
+  });
+  
+  const [shippingData, setShippingData] = useState({
+    company: "",
+    address: "",
+    city: "",
+    province: "",
+    postal: "",
+    country: "",
+  });
+  
+  const [paymentMethod, setPaymentMethod] = useState("stripe");
+  
+  const createOrderMutation = useCreateOrder();
 
   useEffect(() => {
     if (items.length === 0) {
@@ -18,9 +50,105 @@ export default function CheckoutPage() {
     }
   }, [items.length, navigate]);
 
-  const handlePlaceOrder = () => {
-    clearCart();
-    navigate("/order-confirmed");
+  const handlePlaceOrder = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Prepare order data for API
+      const orderData = {
+        customer_email: billingData.email,
+        billing_address: {
+          first_name: billingData.firstName,
+          last_name: billingData.lastName,
+          company: billingData.company,
+          phone: billingData.phone,
+          address_line1: billingData.address,
+          city: billingData.city,
+          state: billingData.province,
+          postal_code: billingData.postal,
+          country: billingData.country,
+        },
+        shipping_address: {
+          company: shippingData.company || billingData.company,
+          address_line1: shippingData.address || billingData.address,
+          city: shippingData.city || billingData.city,
+          state: shippingData.province || billingData.province,
+          postal_code: shippingData.postal || billingData.postal,
+          country: shippingData.country || billingData.country,
+        },
+        items: items.map(({ product, quantity }) => ({
+          product_id: product.id,
+          product_name: product.name,
+          quantity,
+          unit_price: product.price,
+          subtotal: product.price * quantity,
+        })),
+        subtotal,
+        tax_amount: tax,
+        shipping_amount: shipping,
+        total_amount: total,
+        payment_method: paymentMethod,
+        status: "pending" as const,
+        payment_status: "pending" as const,
+        notes: billingData.taxId ? `Tax ID: ${billingData.taxId}` : undefined,
+      };
+
+      await createOrderMutation.mutateAsync(orderData);
+      
+      toast({
+        title: t("checkout.order_success") || "Order placed successfully!",
+        description: t("checkout.order_confirmation_sent") || "A confirmation email has been sent.",
+      });
+      
+      clearCart();
+      navigate("/order-confirmed");
+    } catch {
+      toast({
+        title: t("checkout.order_error") || "Order failed",
+        description: t("checkout.order_error_desc") || "There was an error placing your order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Handlers to save form data when moving between steps
+  const handleBillingSubmit = () => {
+    const form = document.querySelector('input[name="firstName"]')?.closest('div')?.parentElement;
+    if (form) {
+      const getValue = (name: string) => (form.querySelector(`input[name="${name}"]`) as HTMLInputElement)?.value || "";
+      setBillingData({
+        firstName: getValue("firstName"),
+        lastName: getValue("lastName"),
+        email: getValue("email"),
+        phone: getValue("phone"),
+        company: getValue("company"),
+        taxId: getValue("taxId"),
+        address: getValue("address"),
+        city: getValue("city"),
+        province: getValue("province"),
+        postal: getValue("postal"),
+        country: getValue("country"),
+      });
+    }
+    setStep(2);
+  };
+  
+  const handleShippingSubmit = () => {
+    const form = document.querySelector('input[name="shipCompany"]')?.closest('div')?.parentElement;
+    if (form) {
+      const getValue = (name: string) => (form.querySelector(`input[name="${name}"]`) as HTMLInputElement)?.value || "";
+      setShippingData({
+        company: getValue("shipCompany"),
+        address: getValue("shipAddress"),
+        city: getValue("shipCity"),
+        province: getValue("shipProvince"),
+        postal: getValue("shipPostal"),
+        country: getValue("shipCountry"),
+      });
+    }
+    setStep(3);
   };
 
   if (items.length === 0) return null;
@@ -69,7 +197,7 @@ export default function CheckoutPage() {
                 <InputField label={t("checkout.postal")} name="postal" />
                 <InputField label={t("checkout.country")} name="country" />
               </div>
-              <button onClick={() => setStep(2)} className="mt-6 btn-accent px-8 py-2.5 rounded-sm font-semibold uppercase tracking-wide">
+              <button onClick={handleBillingSubmit} className="mt-6 btn-accent px-8 py-2.5 rounded-sm font-semibold uppercase tracking-wide">
                 {t("checkout.continue")}
               </button>
             </div>
@@ -88,7 +216,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setStep(1)} className="px-6 py-2.5 rounded-sm border border-border text-sm font-medium hover:bg-secondary transition-colors">{t("checkout.back")}</button>
-                <button onClick={() => setStep(3)} className="btn-accent px-8 py-2.5 rounded-sm font-semibold uppercase tracking-wide">{t("checkout.continue")}</button>
+                <button onClick={handleShippingSubmit} className="btn-accent px-8 py-2.5 rounded-sm font-semibold uppercase tracking-wide">{t("checkout.continue")}</button>
               </div>
             </div>
           )}
@@ -98,15 +226,22 @@ export default function CheckoutPage() {
               <h2 className="font-display font-bold text-lg mb-4">{t("checkout.payment")}</h2>
               <div className="space-y-3">
                 {[
-                  { key: "checkout.payment_stripe", icon: CreditCard },
-                  { key: "checkout.payment_paypal", icon: Building },
-                  { key: "checkout.payment_bank", icon: Landmark },
-                ].map(({ key, icon: Icon }) => (
+                  { key: "checkout.payment_stripe", value: "stripe", icon: CreditCard },
+                  { key: "checkout.payment_paypal", value: "paypal", icon: Building },
+                  { key: "checkout.payment_bank", value: "bank", icon: Landmark },
+                ].map(({ key, value, icon: Icon }) => (
                   <label key={key} className="flex items-center gap-3 border border-border rounded-sm p-4 cursor-pointer hover:bg-secondary/50 transition-colors">
-                    <input type="radio" name="payment" className="accent-accent" defaultChecked={key === "checkout.payment_stripe"} />
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value={value}
+                      checked={paymentMethod === value}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="accent-accent" 
+                    />
                     <Icon className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium">{t(key)}</span>
-                    {key !== "checkout.payment_stripe" && <span className="text-xs text-muted-foreground ml-auto">({t("checkout.payment_coming")})</span>}
+                    {value !== "stripe" && <span className="text-xs text-muted-foreground ml-auto">({t("checkout.payment_coming")})</span>}
                   </label>
                 ))}
               </div>
@@ -129,9 +264,20 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setStep(3)} className="px-6 py-2.5 rounded-sm border border-border text-sm font-medium hover:bg-secondary transition-colors">{t("checkout.back")}</button>
-                <button onClick={handlePlaceOrder} className="btn-accent px-8 py-2.5 rounded-sm font-semibold uppercase tracking-wide">
-                  {t("checkout.place_order")}
+                <button 
+                  onClick={() => setStep(3)} 
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 rounded-sm border border-border text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50"
+                >
+                  {t("checkout.back")}
+                </button>
+                <button 
+                  onClick={handlePlaceOrder} 
+                  disabled={isSubmitting}
+                  className="btn-accent px-8 py-2.5 rounded-sm font-semibold uppercase tracking-wide flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isSubmitting ? t("checkout.processing") || "Processing..." : t("checkout.place_order")}
                 </button>
               </div>
             </div>

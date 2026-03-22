@@ -29,14 +29,11 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      console.log("[v0] Login attempt:", { email: formData.email });
       await login(formData.email, formData.password);
-      console.log("[v0] Login successful, redirecting to account");
       navigate("/account");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
-      console.error("[v0] Login error:", errorMessage);
     } finally {
       setIsLoading(false);
     }

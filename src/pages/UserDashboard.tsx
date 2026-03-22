@@ -53,14 +53,12 @@ export default function UserDashboard() {
     const fetchOrders = async () => {
       try {
         setOrdersLoading(true);
-        console.log('[v0] Fetching user orders');
         const response = await api.request('GET', `/api/user/dashboard/orders`);
         if (response.data) {
           setOrders(response.data);
-          console.log('[v0] Loaded', response.data.length, 'orders');
         }
-      } catch (err) {
-        console.warn('[v0] Failed to load orders:', err);
+      } catch {
+        // Failed to load orders
       } finally {
         setOrdersLoading(false);
       }
@@ -74,14 +72,12 @@ export default function UserDashboard() {
     const fetchContacts = async () => {
       try {
         setContactsLoading(true);
-        console.log('[v0] Fetching admin contacts');
         const response = await api.request('GET', `/api/admin-contacts/available`);
         if (response.data) {
           setAdminContacts(response.data);
-          console.log('[v0] Loaded', response.data.length, 'admin contacts');
         }
-      } catch (err) {
-        console.warn('[v0] Failed to load admin contacts:', err);
+      } catch {
+        // Failed to load admin contacts
       } finally {
         setContactsLoading(false);
       }

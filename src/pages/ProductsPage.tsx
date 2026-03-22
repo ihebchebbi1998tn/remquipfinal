@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { SlidersHorizontal, X, Search } from "lucide-react";
+import { SlidersHorizontal, X, Search, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
 import { categories, products } from "@/config/products";
-import { api, Product, ProductCategory } from "@/lib/api";
+import { useProducts, useCategories } from "@/hooks/useApi";
+import type { Product, ProductCategory } from "@/lib/api";
 
 type SortOption = "featured" | "price_low" | "price_high" | "newest";
 
@@ -30,45 +31,15 @@ export default function ProductsPage() {
   const [stockOnly, setStockOnly] = useState(false);
   const [mobileFilters, setMobileFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
-  const [apiProducts, setApiProducts] = useState<Product[]>([]);
-  const [categoriesList, setCategoriesList] = useState<ProductCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch products from API on component mount
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        console.log('[v0] Fetching products from API');
-        const response = await api.getProducts(1, 100);
-        if (response.data) {
-          setApiProducts(response.data);
-          console.log('[v0] Fetched', response.data.length, 'products');
-        }
-      } catch (err) {
-        console.warn('[v0] Products API failed, using fallback', err);
-        setApiProducts(products);
-      }
-    };
-
-    const fetchCategories = async () => {
-      try {
-        const response = await api.getCategories();
-        if (response.data) {
-          setCategoriesList(response.data);
-        }
-      } catch (err) {
-        console.warn('[v0] Categories API failed, using fallback');
-        setCategoriesList(categories);
-      }
-    };
-
-    const load = async () => {
-      await Promise.all([fetchProducts(), fetchCategories()]);
-      setIsLoading(false);
-    };
-
-    load();
-  }, []);
+  // Fetch products and categories using React Query hooks
+  const { data: productsResponse, isLoading: isLoadingProducts } = useProducts(1, 100);
+  const { data: categoriesResponse, isLoading: isLoadingCategories } = useCategories();
+  
+  // Extract data with fallbacks to static data
+  const apiProducts: Product[] = productsResponse?.data || products;
+  const categoriesList: ProductCategory[] = categoriesResponse?.data || categories;
+  const isLoading = isLoadingProducts || isLoadingCategories;
 
   const category = categorySlug ? categoriesList.find((c) => c.slug === categorySlug) || categories.find((c) => c.slug === categorySlug) : null;
   const pageTitle = category ? (category.name || (category as any).translationKey) : searchFromUrl ? `Search: "${searchFromUrl}"` : t("cat.shop_all");
@@ -246,6 +217,11 @@ export default function ProductsPage() {
             </div>
           </div>
 
+          {isLoading ? (
+            <div className="col-span-full flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
             {filtered.map((product) => {
               const primaryImage = product.images?.find(img => img.is_primary)?.image_url || product.images?.[0]?.image_url || (product as any).image;
@@ -283,8 +259,9 @@ export default function ProductsPage() {
               );
             })}
           </div>
+          )}
 
-          {filtered.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <div className="text-center py-16 text-muted-foreground">
               <p>{t("products.not_found")}</p>
               {hasActiveFilters && (
