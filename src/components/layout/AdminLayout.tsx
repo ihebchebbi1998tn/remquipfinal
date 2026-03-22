@@ -36,10 +36,17 @@ export default function AdminLayout() {
     return <RemquipLoadingScreen variant="fullscreen" message="Verifying admin access" />;
   }
 
-  // Redirect to login if not authenticated
+  // Staff routes — send to login with return path (LoginPage honors state.from and ?redirect=)
   if (!isAuthenticated || !user) {
     console.warn('[AdminLayout] Access denied: Not authenticated');
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const returnTo = `${location.pathname}${location.search}`;
+    return (
+      <Navigate
+        to={`/login?redirect=${encodeURIComponent(returnTo)}`}
+        state={{ from: location }}
+        replace
+      />
+    );
   }
 
   // Redirect to home if user doesn't have admin role

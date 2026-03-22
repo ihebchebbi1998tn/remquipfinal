@@ -1,12 +1,28 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import type { User } from "@/lib/api";
 import { LogIn, AlertCircle, Loader2 } from "lucide-react";
+
+/** Same rules as AdminLayout — only these roles may open /admin. */
+function isStaffRole(role: User["role"]): boolean {
+  return role === "admin" || role === "super_admin" || role === "manager";
+}
+
+/** Avoid open redirects — only same-app paths. */
+function safeInternalPath(raw: string | null | undefined): string | null {
+  if (!raw || typeof raw !== "string") return null;
+  const p = raw.trim();
+  if (!p.startsWith("/") || p.startsWith("//")) return null;
+  return p;
+}
 
 export default function LoginPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -29,8 +45,35 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      await login(formData.email, formData.password);
-      navigate("/account");
+      const user = await login(formData.email, formData.password);
+
+      const fromState = (location.state as { from?: { pathname: string; search?: string } } | null)?.from;
+      const fromPath = fromState ? `${fromState.pathname}${fromState.search ?? ""}` : null;
+      const redirectParam =
+        safeInternalPath(searchParams.get("redirect")) ?? safeInternalPath(searchParams.get("returnUrl"));
+
+      // After visiting /admin while logged out, AdminLayout sends state.from — return staff to admin
+      if (fromPath?.startsWith("/admin") || redirectParam?.startsWith("/admin")) {
+        if (isStaffRole(user.role)) {
+          const dest = fromPath?.startsWith("/admin") ? fromPath : redirectParam!;
+          navigate(dest, { replace: true });
+          return;
+        }
+        navigate("/account", { replace: true });
+        return;
+      }
+
+      if (fromPath) {
+        navigate(fromPath, { replace: true });
+        return;
+      }
+
+      if (redirectParam) {
+        navigate(redirectParam, { replace: true });
+        return;
+      }
+
+      navigate("/account", { replace: true });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
