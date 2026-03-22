@@ -12,8 +12,9 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
+import HomeLandingRoute from "@/pages/HomeLandingRoute";
+
 // Lazy-loaded routes
-const HomePage = lazy(() => import("@/pages/HomePage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const ProductDetailPage = lazy(() => import("@/pages/ProductDetailPage"));
@@ -66,7 +67,7 @@ const App = () => (
                   <Routes>
                     {/* Public */}
                     <Route element={<PublicLayout />}>
-                      <Route path="/" element={<HomePage />} />
+                      <Route path="/" element={<HomeLandingRoute />} />
                       <Route path="/products" element={<ProductsPage />} />
                       <Route path="/products/:categorySlug" element={<ProductsPage />} />
                       <Route path="/product/:slug" element={<ProductDetailPage />} />

@@ -504,4 +504,39 @@
     font-size: var(--landing-size-wholesale_body);
     line-height: 1.6;
   }
+
+  /* Industrial landing — UX layout system (light theme; tokens from theme / landing-theme API) */
+  @keyframes landing-marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+  .landing-theme-scope .landing-marquee-track {
+    animation: landing-marquee 28s linear infinite;
+  }
+  .landing-theme-scope .landing-machined-cta {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.82) 100%);
+    color: hsl(var(--accent-foreground));
+    transition:
+      transform 0.2s ease,
+      filter 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .landing-theme-scope .landing-machined-cta:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 0 28px hsl(var(--accent) / 0.35);
+  }
+  .landing-theme-scope .landing-hero-title-industrial {
+    font-size: clamp(2.5rem, 6vw, 4.75rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+  .landing-theme-scope .landing-section-title-xl {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
 }

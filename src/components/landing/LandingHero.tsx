@@ -1,7 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Truck,
+  Package,
+  Wrench,
+  CheckCircle,
+  Shield,
+  Users,
+  BarChart3,
+} from "lucide-react";
 import { resolveUploadImageUrl } from "@/lib/api";
 import heroImage from "@/assets/images/hero-truck.jpg";
 
@@ -20,6 +31,18 @@ export type HeroCtaContent = {
 };
 
 type ResolvedSlide = { src: string; alt: string; caption: string };
+
+const HERO_SECONDARY_ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+  Truck,
+  Package,
+  Wrench,
+  CheckCircle,
+  Shield,
+  Users,
+  BarChart3,
+  local_shipping: Truck,
+  inventory_2: Package,
+};
 
 function buildSlides(
   heroImageUrl: string | undefined,
@@ -77,9 +100,12 @@ type HeroSection = {
 export default function LandingHero({
   hero,
   heroCta,
+  heroSecondary = [],
 }: {
   hero: HeroSection;
   heroCta: HeroCtaContent;
+  /** Optional row under hero CTAs (e.g. shipping / bulk); icon keys match lucide or aliases */
+  heroSecondary?: { icon: string; text: string }[];
 }) {
   const fallbackAlt = heroCta.hero_image_alt?.trim() || "Industrial truck parts";
   const slides = useMemo(
@@ -105,6 +131,10 @@ export default function LandingHero({
   }, [layout, slides.length, intervalMs]);
 
   const title = hero.title?.trim() || "Industrial-Grade Parts For North American Fleets";
+  const titleLines = title.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const titlePrimary = titleLines[0] ?? title;
+  const titleAccentLine = titleLines.length > 1 ? titleLines.slice(1).join(" ") : null;
+
   const description =
     hero.description?.trim() ||
     "500+ SKUs in stock. 48-hour delivery. Trusted by fleet operators across North America for 15+ years.";
@@ -123,54 +153,86 @@ export default function LandingHero({
     setIndex((i) => (i + dir + slides.length) % slides.length);
   };
 
+  const secondaryRow =
+    heroSecondary.length > 0
+      ? heroSecondary
+      : [
+          { icon: "Truck", text: "Fast fulfillment on fleet orders" },
+          { icon: "Package", text: "Bulk pricing for authorized partners" },
+        ];
+
   if (layout === "spotlight") {
     const bg = slides[0];
     return (
-      <section className="relative min-h-[520px] sm:min-h-[600px] md:min-h-[700px] flex items-center overflow-hidden bg-tertiary">
-        <img
-          src={bg.src}
-          alt={bg.alt}
-          className="absolute inset-0 w-full h-full object-cover opacity-[0.22]"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-tertiary/96 via-tertiary/78 to-tertiary/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-tertiary/50 via-transparent to-transparent pointer-events-none" />
+      <section className="relative min-h-[min(820px,92vh)] flex items-center overflow-hidden bg-background">
+        <div className="absolute inset-0 z-0 opacity-[0.38]">
+          <img
+            src={bg.src}
+            alt={bg.alt}
+            className="w-full h-full object-cover grayscale"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/40" />
+        </div>
 
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 max-w-7xl">
+        <div className="absolute bottom-0 right-0 w-1/2 h-[min(420px,50vh)] z-0 pointer-events-none hidden md:block">
+          <div className="absolute bottom-0 right-0 w-full h-full bg-gradient-to-tl from-accent/10 to-transparent opacity-40 -skew-x-12 origin-bottom-right" />
+          <div className="absolute bottom-10 right-10 w-24 h-[min(320px,40vh)] bg-accent/5 -rotate-12 border-r border-accent/20" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="max-w-3xl">
             <motion.div
-              initial={{ opacity: 0, y: 28 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease: "easeOut" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             >
               {eyebrow && (
-                <p className="text-primary-foreground/75 text-xs font-semibold uppercase tracking-[0.2em] mb-4">
+                <span className="font-display text-accent uppercase tracking-[0.28em] text-xs sm:text-sm font-bold block mb-5">
                   {eyebrow}
-                </p>
+                </span>
               )}
-              <h1
-                className="font-display landing-hero-title font-bold text-primary-foreground mb-6 md:mb-8 tracking-tight"
-                style={{ letterSpacing: "-0.02em" }}
-              >
-                {title}
+              <h1 className="font-display landing-hero-title-industrial font-black text-foreground uppercase tracking-tighter mb-7 md:mb-8">
+                {titleAccentLine ? (
+                  <>
+                    <span className="block">{titlePrimary}</span>
+                    <span className="block text-muted-foreground mt-1">{titleAccentLine}</span>
+                  </>
+                ) : (
+                  titlePrimary
+                )}
               </h1>
-              <p className="landing-hero-subtitle text-primary-foreground/85 mb-10 md:mb-12 max-w-2xl font-light leading-relaxed">
+              <p className="landing-hero-subtitle text-muted-foreground max-w-xl mb-9 md:mb-10 leading-relaxed font-normal">
                 {description}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+              <div className="flex flex-wrap gap-3 md:gap-4 mb-8">
                 <Link
                   to={primary.href}
-                  className="inline-flex items-center justify-center gap-2 btn-gradient text-accent-foreground px-9 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  className="landing-machined-cta inline-flex items-center justify-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-sm font-display font-bold uppercase tracking-widest text-xs sm:text-sm shadow-sm hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {primary.label}
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4 shrink-0" strokeWidth={2.5} />
                 </Link>
                 <Link
                   to={secondary.href}
-                  className="inline-flex items-center justify-center gap-2 border border-primary-foreground/30 text-primary-foreground px-9 py-4 rounded-lg font-semibold text-sm uppercase tracking-wider hover:border-primary-foreground/55 hover:bg-primary-foreground/5 transition-all"
+                  className="inline-flex items-center justify-center gap-2 border border-border bg-card/80 backdrop-blur-sm px-8 py-4 md:px-10 md:py-5 rounded-sm font-display font-bold uppercase tracking-widest text-xs sm:text-sm text-foreground hover:bg-muted/80 transition-colors"
                 >
                   {secondary.label}
                 </Link>
+              </div>
+
+              <div className="flex flex-wrap gap-x-8 gap-y-4 border-t border-border/80 pt-7">
+                {secondaryRow.map(({ icon: key, text }) => {
+                  const Icon = HERO_SECONDARY_ICONS[key] ?? Package;
+                  return (
+                    <div key={text} className="flex items-center gap-3">
+                      <Icon className="h-5 w-5 text-accent shrink-0" strokeWidth={2} />
+                      <span className="font-display text-[10px] sm:text-xs font-bold uppercase tracking-widest text-foreground">
+                        {text}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
@@ -181,43 +243,43 @@ export default function LandingHero({
 
   /* Split layout — copy left, gallery / carousel right */
   return (
-    <section className="relative overflow-hidden bg-tertiary min-h-[520px] md:min-h-[640px]">
-      <div className="absolute inset-0 bg-gradient-to-br from-tertiary via-tertiary to-tertiary/90" />
-      <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent via-transparent to-transparent" />
+    <section className="relative overflow-hidden bg-muted/30 min-h-[520px] md:min-h-[640px]">
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/40" />
+      <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent via-transparent to-transparent" />
 
-      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20 lg:py-24 max-w-7xl">
+      <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20 lg:py-24">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          <div className="lg:col-span-5 text-primary-foreground">
+          <div className="lg:col-span-5 text-foreground">
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             >
               {eyebrow && (
-                <p className="text-primary-foreground/70 text-xs font-semibold uppercase tracking-[0.2em] mb-4">
-                  {eyebrow}
-                </p>
+                <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.2em] mb-4">{eyebrow}</p>
               )}
-              <h1
-                className="font-display landing-hero-title font-bold mb-5 md:mb-7 tracking-tight"
-                style={{ letterSpacing: "-0.02em" }}
-              >
-                {title}
+              <h1 className="font-display landing-hero-title font-bold mb-5 md:mb-7 tracking-tight" style={{ letterSpacing: "-0.02em" }}>
+                {titleAccentLine ? (
+                  <>
+                    <span className="block">{titlePrimary}</span>
+                    <span className="block text-muted-foreground mt-1">{titleAccentLine}</span>
+                  </>
+                ) : (
+                  titlePrimary
+                )}
               </h1>
-              <p className="landing-hero-subtitle text-primary-foreground/82 mb-9 md:mb-10 font-light leading-relaxed">
-                {description}
-              </p>
+              <p className="landing-hero-subtitle text-muted-foreground mb-9 md:mb-10 font-normal leading-relaxed">{description}</p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Link
                   to={primary.href}
-                  className="inline-flex items-center justify-center gap-2 btn-gradient text-accent-foreground px-8 py-3.5 rounded-lg font-semibold text-sm uppercase tracking-wider shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                  className="landing-machined-cta inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-sm font-display font-semibold text-sm uppercase tracking-wider shadow-md hover:scale-[1.02] active:scale-[0.98] transition-transform"
                 >
                   {primary.label}
                   <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link
                   to={secondary.href}
-                  className="inline-flex items-center justify-center gap-2 border border-primary-foreground/28 text-primary-foreground px-8 py-3.5 rounded-lg font-semibold text-sm uppercase tracking-wider hover:bg-primary-foreground/6 transition-all"
+                  className="inline-flex items-center justify-center gap-2 border border-border bg-card px-8 py-3.5 rounded-sm font-display font-semibold text-sm uppercase tracking-wider hover:bg-muted/80 transition-colors"
                 >
                   {secondary.label}
                 </Link>
@@ -227,7 +289,7 @@ export default function LandingHero({
 
           <div className="lg:col-span-7">
             <div className="relative mx-auto max-w-xl lg:max-w-none">
-              <div className="relative aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-primary-foreground/10 bg-black/20">
+              <div className="relative aspect-[4/3] sm:aspect-[16/10] rounded-xl overflow-hidden shadow-2xl ring-1 ring-border bg-muted">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={safeIndex}
@@ -243,9 +305,9 @@ export default function LandingHero({
                       className="w-full h-full object-cover"
                       loading={safeIndex === 0 ? "eager" : "lazy"}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 via-transparent to-transparent pointer-events-none" />
                     {slides[safeIndex].caption && (
-                      <p className="absolute bottom-4 left-4 right-4 text-sm text-white/95 font-medium drop-shadow-md">
+                      <p className="absolute bottom-4 left-4 right-4 text-sm text-background font-medium drop-shadow-md">
                         {slides[safeIndex].caption}
                       </p>
                     )}
@@ -257,7 +319,7 @@ export default function LandingHero({
                     <button
                       type="button"
                       onClick={() => go(-1)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 hover:bg-black/55 text-white p-2 backdrop-blur-sm transition-colors"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-foreground/30 hover:bg-foreground/45 text-background p-2 backdrop-blur-sm transition-colors"
                       aria-label="Previous slide"
                     >
                       <ChevronLeft className="h-5 w-5" />
@@ -265,7 +327,7 @@ export default function LandingHero({
                     <button
                       type="button"
                       onClick={() => go(1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 hover:bg-black/55 text-white p-2 backdrop-blur-sm transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-foreground/30 hover:bg-foreground/45 text-background p-2 backdrop-blur-sm transition-colors"
                       aria-label="Next slide"
                     >
                       <ChevronRight className="h-5 w-5" />
@@ -277,7 +339,7 @@ export default function LandingHero({
                           type="button"
                           onClick={() => setIndex(i)}
                           className={`h-1.5 rounded-full transition-all ${
-                            i === safeIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
+                            i === safeIndex ? "w-6 bg-background" : "w-1.5 bg-background/40 hover:bg-background/60"
                           }`}
                           aria-label={`Go to slide ${i + 1}`}
                         />
@@ -287,7 +349,6 @@ export default function LandingHero({
                 )}
               </div>
 
-              {/* Decorative secondary frames — static thumbnails for depth (ecommerce look) */}
               {slides.length > 1 && (
                 <div className="hidden sm:flex gap-3 mt-4 justify-end pr-1">
                   {slides.slice(0, 3).map((s, i) => (

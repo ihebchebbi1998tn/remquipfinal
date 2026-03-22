@@ -19,13 +19,15 @@ import AdminLandingTheme from "./AdminLandingTheme";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 const SECTION_LABELS: Record<string, string> = {
-  site_header: "Site header (announcement bar, logo, trust chips)",
-  hero: "Hero (headline, gallery, layout & CTAs)",
-  value_props: "Value propositions",
-  categories_intro: "Categories section intro & “View all” label",
+  site_header:
+    "Site header + landing strips (JSON: urgency_text, urgency_cta_label, urgency_cta_href, marquee_items[], announcement, trust_chips)",
+  hero: "Hero (title — use a line break for two-line headline; description; CTAs; slides / layout)",
+  value_props:
+    "Trust bar & hero chips (JSON object: hero_secondary[], trust_bar{headline,logos[]}, or legacy [] array)",
+  categories_intro: "Categories section intro & “View all” label (bento grid uses live categories)",
   featured_intro: "Featured products intro & “View all” label",
-  why_remquip: "Why REMQUIP cards",
-  wholesale_cta: "Wholesale CTA (copy & banner image)",
+  why_remquip: "Testimonials (cards with title, desc, role) or feature cards (icon, title, desc)",
+  wholesale_cta: "Wholesale CTA (JSON: bullets[{title,text}], badge_label; copy & banner image)",
 };
 
 function parseJson<T>(raw: string, fallback: T): T {
