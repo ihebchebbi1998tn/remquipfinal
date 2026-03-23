@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 type AdminPageHeaderProps = {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   icon?: React.ElementType;
   actions?: React.ReactNode;
 };

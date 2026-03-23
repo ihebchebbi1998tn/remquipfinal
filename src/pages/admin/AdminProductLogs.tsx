@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Package, Search, Filter, Calendar, ChevronDown, ChevronUp, TrendingUp, TrendingDown, RotateCcw } from "lucide-react";
 import { products } from "@/config/products";
+import { AdminPageError } from "@/components/admin/AdminPageState";
 
 type LogType = "in" | "out" | "transfer" | "adjustment" | "return";
 
@@ -97,11 +98,14 @@ export default function AdminProductLogs() {
 
   if (!product) {
     return (
-      <div className="text-center py-16">
-        <Package className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-        <p className="text-muted-foreground">Product not found</p>
-        <Link to="/admin/products" className="text-accent text-sm hover:underline mt-2 inline-block">← Back to Products</Link>
-      </div>
+      <AdminPageError
+        message="Product not found."
+        extra={
+          <Link to="/admin/products" className="text-accent hover:underline text-sm">
+            ← Back to Products
+          </Link>
+        }
+      />
     );
   }
 

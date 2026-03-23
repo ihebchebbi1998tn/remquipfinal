@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Package, ShoppingBag, Users, DollarSign, TrendingUp, AlertTriangle, ArrowRight, Tag, Truck, FileText, Clock, BarChart3 } from "lucide-react";
 import { api, Order, unwrapApiList } from "@/lib/api";
 import { products } from "@/config/products";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageLoading } from "@/components/admin/AdminPageState";
 
 interface DashboardStats {
   totalProducts: number;
@@ -111,6 +113,10 @@ export default function AdminOverview() {
     fetchDashboardData();
   }, []);
 
+  if (isLoading) {
+    return <AdminPageLoading message="Loading dashboard" />;
+  }
+
   const statsArray = [
     { label: "Total Products", value: stats.totalProducts.toString(), icon: Package, change: "+3 this month", color: "text-accent" },
     { label: "Total Orders", value: stats.totalOrders.toString(), icon: ShoppingBag, change: "+12 this week", color: "text-blue-500" },
@@ -120,6 +126,10 @@ export default function AdminOverview() {
 
   return (
     <div className="space-y-6">
+      <AdminPageHeader
+        title="Overview"
+        subtitle="Operational snapshot of your store"
+      />
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {statsArray.map((stat) => (

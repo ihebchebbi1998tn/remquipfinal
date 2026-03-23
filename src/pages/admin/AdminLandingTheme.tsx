@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, Palette, Save } from "lucide-react";
-import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { useLandingTheme, useUpdateLandingTheme } from "@/hooks/useApi";
 import type { LandingThemePayload } from "@/lib/api";
 import { LANDING_COLOR_PRESETS, LANDING_FONT_SIZE_KEYS } from "@/lib/landingTheme";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageLoading } from "@/components/admin/AdminPageState";
 
 const PRESET_VAR_NAMES = new Set(LANDING_COLOR_PRESETS.map((p) => p.varName));
 
@@ -133,23 +134,17 @@ export default function AdminLandingTheme() {
     "w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent";
 
   if (isLoading) {
-    return (
-      <div className="dashboard-card flex items-center justify-center py-10">
-        <RemquipLoadingScreen variant="panel" message="Loading theme" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading theme" />;
   }
 
   return (
     <div className="dashboard-card space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="rounded-md bg-accent/10 p-2 text-accent">
-          <Palette className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="font-display font-bold text-sm uppercase tracking-wide">Landing page theme</h3>
-          <p className="text-xs text-muted-foreground mt-1 max-w-3xl">
-            Colors use the same HSL triples as the rest of the site (no <code className="text-[11px]">hsl()</code> wrapper),
+      <AdminPageHeader
+        title="Landing page theme"
+        icon={Palette}
+        subtitle={
+          <>
+            Colors use the same HSL triples as the rest of the site (no <code className="text-[11px]">hsl()</code> wrapper),{" "}
             e.g. <code className="text-[11px]">28 90% 55%</code> for accent. Only the public homepage is wrapped in{" "}
             <code className="text-[11px]">.landing-theme-scope</code>. Custom CSS should target that class. Optional:{" "}
             <a
@@ -161,9 +156,9 @@ export default function AdminLandingTheme() {
               Google Fonts
             </a>{" "}
             stylesheet URL.
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-3 rounded-md border border-border bg-muted/15 p-4">

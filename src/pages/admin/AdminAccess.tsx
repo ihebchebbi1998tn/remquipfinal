@@ -4,7 +4,8 @@ import { AdminUser, AdminPage, AccessRecord } from "@/types/admin";
 import { useUsers, useAllPermissions, useUpdateUserPermissions } from "@/hooks/useApi";
 import { api, unwrapApiList, type User } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
-import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageLoading } from "@/components/admin/AdminPageState";
 
 // Fallback when /admin/permissions has no `pages` yet (UI-only; persist uses DB page ids when API provides them)
 const fallbackAdminPages: AdminPage[] = [
@@ -211,19 +212,19 @@ export default function AdminAccess() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Access Control</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage which pages each user can access and what actions they can perform.</p>
-        </div>
-        <button
-          onClick={() => setShowBulkForm(!showBulkForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Bulk Assign</span>
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Access Control"
+        subtitle="Manage which pages each user can access and what actions they can perform."
+        actions={
+          <button
+            onClick={() => setShowBulkForm(!showBulkForm)}
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Bulk Assign</span>
+          </button>
+        }
+      />
 
       {/* View Mode Tabs */}
       <div className="flex gap-2 border-b border-border">
@@ -249,9 +250,7 @@ export default function AdminAccess() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex items-center justify-center py-16 min-h-[280px]">
-          <RemquipLoadingScreen variant="embedded" message="Loading access" />
-        </div>
+        <AdminPageLoading message="Loading access" />
       )}
 
       {/* Bulk Assign Form */}
