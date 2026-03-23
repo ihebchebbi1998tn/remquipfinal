@@ -36,6 +36,12 @@ type ApiImageRow = {
   is_primary?: number | boolean;
 };
 
+type SpecRow = {
+  id: string;
+  key: string;
+  value: string;
+};
+
 function emptyForm(categories: ProductCategory[]): ProductEditForm {
   const first = categories[0];
   return {
@@ -101,6 +107,25 @@ function mapApiToForm(p: Record<string, unknown>, categories: ProductCategory[])
   };
 }
 
+function specsObjectToRows(specs: Record<string, unknown>): SpecRow[] {
+  const rows = Object.entries(specs || {}).map(([k, v], i) => ({
+    id: `spec-${i}-${k}`,
+    key: String(k),
+    value: Array.isArray(v) ? v.map(String).join(", ") : String(v ?? ""),
+  }));
+  return rows.length > 0 ? rows : [{ id: "spec-empty-0", key: "", value: "" }];
+}
+
+function specsRowsToObject(rows: SpecRow[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const row of rows) {
+    const key = row.key.trim();
+    if (!key) continue;
+    out[key] = row.value.trim();
+  }
+  return out;
+}
+
 export default function AdminProductEdit() {
   const { productId } = useParams<{ productId?: string }>();
   const navigate = useNavigate();
@@ -117,9 +142,8 @@ export default function AdminProductEdit() {
   const raw = productResponse?.data as Record<string, unknown> | undefined;
 
   const [form, setForm] = useState<ProductEditForm>(() => emptyForm([]));
-  const [specsJson, setSpecsJson] = useState("{}");
-  const [specsError, setSpecsError] = useState("");
-  const [compatText, setCompatText] = useState("");
+  const [specRows, setSpecRows] = useState<SpecRow[]>([{ id: "spec-empty-0", key: "", value: "" }]);
+  const [compatInput, setCompatInput] = useState("");
   const initRef = useRef(false);
 
   useEffect(() => {
@@ -139,8 +163,7 @@ export default function AdminProductEdit() {
     if (isNew || !raw || initRef.current) return;
     const next = mapApiToForm(raw, categories);
     setForm(next);
-    setSpecsJson(JSON.stringify(next.specifications || {}, null, 2));
-    setCompatText((next.compatibility || []).join(", "));
+    setSpecRows(specsObjectToRows(next.specifications || {}));
     initRef.current = true;
   }, [isNew, raw, categories]);
 
@@ -160,30 +183,33 @@ export default function AdminProductEdit() {
     }
   }
 
-  function handleSpecsChange(value: string) {
-    setSpecsJson(value);
-    try {
-      const parsed = JSON.parse(value) as unknown;
-      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
-        setForm((prev) => ({ ...prev, specifications: parsed as Record<string, unknown> }));
-        setSpecsError("");
-      } else {
-        setSpecsError("Specifications must be a JSON object");
-      }
-    } catch {
-      setSpecsError("Invalid JSON");
-    }
+  function handleSpecRowChange(id: string, patch: Partial<SpecRow>) {
+    setSpecRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   }
 
-  function handleCompatChange(value: string) {
-    setCompatText(value);
-    setForm((prev) => ({
-      ...prev,
-      compatibility: value
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    }));
+  function addSpecRow() {
+    setSpecRows((prev) => [...prev, { id: `spec-${Date.now()}-${Math.random()}`, key: "", value: "" }]);
+  }
+
+  function removeSpecRow(id: string) {
+    setSpecRows((prev) => {
+      const next = prev.filter((row) => row.id !== id);
+      return next.length > 0 ? next : [{ id: "spec-empty-0", key: "", value: "" }];
+    });
+  }
+
+  function addCompatibilityChip() {
+    const value = compatInput.trim();
+    if (!value) return;
+    setForm((prev) => {
+      if (prev.compatibility.includes(value)) return prev;
+      return { ...prev, compatibility: [...prev.compatibility, value] };
+    });
+    setCompatInput("");
+  }
+
+  function removeCompatibilityChip(value: string) {
+    setForm((prev) => ({ ...prev, compatibility: prev.compatibility.filter((v) => v !== value) }));
   }
 
   const detailsPayload = () => ({
@@ -196,7 +222,6 @@ export default function AdminProductEdit() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (specsError) throw new Error("Fix specifications JSON before saving.");
       if (!form.sku.trim()) throw new Error("SKU is required.");
       if (!form.name.trim()) throw new Error("Product name is required.");
       if (!form.categoryId) throw new Error("Category is required.");
@@ -208,7 +233,7 @@ export default function AdminProductEdit() {
         basePrice: form.price,
         costPrice: form.wholesalePrice,
         description: form.description,
-        details: detailsPayload(),
+        details: { ...detailsPayload(), specifications: specsRowsToObject(specRows) },
         status: form.status,
         stock: form.stock,
         stock_quantity: form.stock,
@@ -321,7 +346,7 @@ export default function AdminProductEdit() {
     saveMutation.isPending || deleteMutation.isPending || uploadMutation.isPending || deleteImageMutation.isPending;
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 w-full max-w-7xl">
       <input
         ref={fileInputRef}
         type="file"
@@ -367,7 +392,7 @@ export default function AdminProductEdit() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={busy || !!specsError}
+            disabled={busy}
             className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50"
           >
             {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -376,8 +401,8 @@ export default function AdminProductEdit() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid xl:grid-cols-4 gap-6">
+        <div className="xl:col-span-3 space-y-6">
           <div className="dashboard-card space-y-4">
             <h3 className="font-display font-bold text-sm uppercase text-muted-foreground">Basic Information</h3>
             <div>
@@ -426,38 +451,96 @@ export default function AdminProductEdit() {
 
           <div className="dashboard-card space-y-4">
             <h3 className="font-display font-bold text-sm uppercase text-muted-foreground">Vehicle Compatibility</h3>
-            <div>
-              <label className="block text-sm font-medium mb-1">Compatible Vehicles (comma-separated)</label>
-              <textarea
-                value={compatText}
-                onChange={(e) => handleCompatChange(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent resize-y"
-                placeholder="e.g. Freightliner Cascadia, Kenworth T680, Volvo VNL"
+            <div className="flex gap-2">
+              <input
+                value={compatInput}
+                onChange={(e) => setCompatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCompatibilityChip();
+                  }
+                }}
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                placeholder="Type vehicle model and press Enter"
               />
+              <button
+                type="button"
+                onClick={addCompatibilityChip}
+                className="px-3 py-2 rounded-sm border border-border text-sm hover:bg-secondary transition-colors"
+              >
+                Add
+              </button>
             </div>
             {(form.compatibility || []).length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {(form.compatibility || []).map((v, i) => (
-                  <span key={i} className="badge-info text-xs">
-                    {v}
-                  </span>
+                  <button
+                    type="button"
+                    key={i}
+                    onClick={() => removeCompatibilityChip(v)}
+                    className="badge-info text-xs hover:opacity-80 transition-opacity"
+                    title="Remove"
+                  >
+                    {v} ×
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
           <div className="dashboard-card space-y-4">
-            <h3 className="font-display font-bold text-sm uppercase text-muted-foreground">Specifications (JSON)</h3>
-            <textarea
-              value={specsJson}
-              onChange={(e) => handleSpecsChange(e.target.value)}
-              rows={8}
-              className={`w-full px-3 py-2 border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent font-mono ${
-                specsError ? "border-destructive" : "border-border"
-              }`}
-            />
-            {specsError && <p className="text-xs text-destructive">{specsError}</p>}
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-display font-bold text-sm uppercase text-muted-foreground">Specifications</h3>
+              <button
+                type="button"
+                onClick={addSpecRow}
+                className="px-2.5 py-1.5 rounded-sm border border-border text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add row
+              </button>
+            </div>
+            <div className="border border-border rounded-sm overflow-hidden">
+              <div className="grid grid-cols-[1fr_1fr_auto] bg-secondary/40 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="px-3 py-2 border-r border-border">Specification</div>
+                <div className="px-3 py-2 border-r border-border">Value</div>
+                <div className="px-3 py-2">Actions</div>
+              </div>
+              <div className="divide-y divide-border">
+                {specRows.map((row) => (
+                  <div key={row.id} className="grid grid-cols-[1fr_1fr_auto]">
+                    <div className="p-2 border-r border-border">
+                      <input
+                        value={row.key}
+                        onChange={(e) => handleSpecRowChange(row.id, { key: e.target.value })}
+                        className="w-full px-2.5 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                        placeholder="e.g. Part Number"
+                      />
+                    </div>
+                    <div className="p-2 border-r border-border">
+                      <input
+                        value={row.value}
+                        onChange={(e) => handleSpecRowChange(row.id, { value: e.target.value })}
+                        className="w-full px-2.5 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                        placeholder="e.g. W01-358 9781"
+                      />
+                    </div>
+                    <div className="p-2 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => removeSpecRow(row.id)}
+                        className="p-2 rounded-sm border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors"
+                        title="Remove row"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">This table is converted to JSON automatically when you save.</p>
           </div>
 
           <div className="dashboard-card space-y-4">
@@ -618,7 +701,7 @@ export default function AdminProductEdit() {
         <button
           type="button"
           onClick={handleSave}
-          disabled={busy || !!specsError}
+          disabled={busy}
           className="flex-1 btn-accent py-3 rounded-sm text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

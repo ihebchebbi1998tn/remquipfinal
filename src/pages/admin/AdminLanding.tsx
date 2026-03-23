@@ -22,7 +22,7 @@ import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageSt
 
 const SECTION_LABELS: Record<string, string> = {
   site_header:
-    "Site header + landing strips (JSON: urgency_text, urgency_cta_label, urgency_cta_href, marquee_items[], announcement, trust_chips)",
+    "Site header & announcement bar (logo, announcement, trust chips, urgency banner, marquee — all configurable per locale)",
   hero: "Hero (title — use a line break for two-line headline; description; CTAs; slides / layout)",
   value_props:
     "Trust bar & hero chips (JSON object: hero_secondary[], trust_bar{headline,logos[]}, or legacy [] array)",
@@ -392,6 +392,17 @@ function normalizeHeroSlides(raw: unknown): HeroSlideRow[] {
   return rows;
 }
 
+type HeaderCmsShape = {
+  announcement?: string;
+  announcement_link_url?: string;
+  announcement_link_label?: string;
+  trust_chips?: string[];
+  urgency_text?: string;
+  urgency_cta_label?: string;
+  urgency_cta_href?: string;
+  marquee_items?: string[];
+};
+
 function HeaderSectionForm({
   section,
   onSave,
@@ -401,30 +412,28 @@ function HeaderSectionForm({
   onSave: (d: { title?: string; description?: string; content?: string; image_url?: string }) => void;
   loading: boolean;
 }) {
-  const c = parseJson<{
-    announcement?: string;
-    announcement_link_url?: string;
-    announcement_link_label?: string;
-    trust_chips?: string[];
-  }>(section.content, {});
+  const c = parseJson<HeaderCmsShape>(section.content, {});
   const [announcement, setAnnouncement] = useState(c.announcement ?? "");
   const [linkUrl, setLinkUrl] = useState(c.announcement_link_url ?? "");
   const [linkLabel, setLinkLabel] = useState(c.announcement_link_label ?? "");
   const [chipsLines, setChipsLines] = useState(() => (c.trust_chips?.length ? c.trust_chips.join("\n") : ""));
   const [logoUrl, setLogoUrl] = useState(section.image_url ?? "");
+  const [urgencyText, setUrgencyText] = useState(c.urgency_text ?? "");
+  const [urgencyCtaLabel, setUrgencyCtaLabel] = useState(c.urgency_cta_label ?? "");
+  const [urgencyCtaHref, setUrgencyCtaHref] = useState(c.urgency_cta_href ?? "/products");
+  const [marqueeLines, setMarqueeLines] = useState(() => (c.marquee_items?.length ? c.marquee_items.join("\n") : ""));
 
   useEffect(() => {
-    const n = parseJson<{
-      announcement?: string;
-      announcement_link_url?: string;
-      announcement_link_label?: string;
-      trust_chips?: string[];
-    }>(section.content, {});
+    const n = parseJson<HeaderCmsShape>(section.content, {});
     setAnnouncement(n.announcement ?? "");
     setLinkUrl(n.announcement_link_url ?? "");
     setLinkLabel(n.announcement_link_label ?? "");
     setChipsLines(n.trust_chips?.length ? n.trust_chips.join("\n") : "");
     setLogoUrl(section.image_url ?? "");
+    setUrgencyText(n.urgency_text ?? "");
+    setUrgencyCtaLabel(n.urgency_cta_label ?? "");
+    setUrgencyCtaHref(n.urgency_cta_href ?? "/products");
+    setMarqueeLines(n.marquee_items?.length ? n.marquee_items.join("\n") : "");
   }, [section.content, section.image_url]);
 
   const save = () => {
@@ -433,6 +442,10 @@ function HeaderSectionForm({
       .map((s) => s.trim())
       .filter(Boolean)
       .slice(0, 4);
+    const marquee_items = marqueeLines
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
     onSave({
       image_url: logoUrl.trim(),
       content: JSON.stringify({
@@ -440,36 +453,70 @@ function HeaderSectionForm({
         announcement_link_url: linkUrl.trim() || undefined,
         announcement_link_label: linkLabel.trim() || undefined,
         trust_chips: trust_chips.length ? trust_chips : undefined,
+        urgency_text: urgencyText.trim() || undefined,
+        urgency_cta_label: urgencyCtaLabel.trim() || undefined,
+        urgency_cta_href: urgencyCtaHref.trim() || undefined,
+        marquee_items: marquee_items.length ? marquee_items : undefined,
       }),
     });
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <p className="text-xs text-muted-foreground">
-        Applies to the storefront header on every page. Leave the announcement empty to hide the top bar.
+        Header and announcement content. Use the locale selector above to edit per language. Leave announcement empty to hide the top bar.
       </p>
-      <Field
-        label="Logo image URL (optional)"
-        value={logoUrl}
-        onChange={setLogoUrl}
-        placeholder="/Backend/uploads/... — shown next to store name"
-      />
-      <Field label="Announcement line" value={announcement} onChange={setAnnouncement} placeholder="Free shipping on..." />
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Field label="Announcement link (path)" value={linkUrl} onChange={setLinkUrl} placeholder="/products" />
-        <Field label="Link label" value={linkLabel} onChange={setLinkLabel} placeholder="Shop catalog" />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Trust chips (desktop, max 4 — one per line)</label>
-        <textarea
-          value={chipsLines}
-          onChange={(e) => setChipsLines(e.target.value)}
-          rows={4}
-          placeholder={"Secure checkout\nCAD & USD"}
-          className={fieldClass}
+
+      <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+        <h4 className="text-sm font-semibold">Logo</h4>
+        <Field
+          label="Logo image URL (optional)"
+          value={logoUrl}
+          onChange={setLogoUrl}
+          placeholder="/Backend/uploads/... — shown next to store name"
         />
       </div>
+
+      <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+        <h4 className="text-sm font-semibold">Announcement bar</h4>
+        <p className="text-xs text-muted-foreground">Top strip on every page. Content is per locale.</p>
+        <Field label="Announcement line" value={announcement} onChange={setAnnouncement} placeholder="Free shipping on orders over C$500" />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Link path" value={linkUrl} onChange={setLinkUrl} placeholder="/products" />
+          <Field label="Link label" value={linkLabel} onChange={setLinkLabel} placeholder="Shop catalog" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Trust chips (desktop, max 4 — one per line)</label>
+          <textarea
+            value={chipsLines}
+            onChange={(e) => setChipsLines(e.target.value)}
+            rows={3}
+            placeholder={"Secure checkout\nCAD & USD"}
+            className={fieldClass}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+        <h4 className="text-sm font-semibold">Landing page strips (homepage only)</h4>
+        <p className="text-xs text-muted-foreground">Urgency banner and marquee below the main nav, on the homepage.</p>
+        <Field label="Urgency text (red banner)" value={urgencyText} onChange={setUrgencyText} placeholder="Limited stock — order before Friday" />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Urgency CTA label" value={urgencyCtaLabel} onChange={setUrgencyCtaLabel} placeholder="Shop now" />
+          <Field label="Urgency CTA link" value={urgencyCtaHref} onChange={setUrgencyCtaHref} placeholder="/products" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Marquee items (scrolling text — one per line)</label>
+          <textarea
+            value={marqueeLines}
+            onChange={(e) => setMarqueeLines(e.target.value)}
+            rows={4}
+            placeholder={"FREE SHIPPING OVER C$500 • 500+ SKUS IN STOCK • WHOLESALE PRICING AVAILABLE"}
+            className={fieldClass}
+          />
+        </div>
+      </div>
+
       <button
         type="button"
         onClick={save}

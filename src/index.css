@@ -239,10 +239,11 @@
   .site-header-announcement {
     background: linear-gradient(
       90deg,
-      hsl(var(--nav-bg) / 0.99) 0%,
-      hsl(var(--nav-bg) / 0.94) 50%,
-      hsl(var(--nav-bg) / 0.99) 100%
+      hsl(var(--nav-bg) / 0.98) 0%,
+      hsl(var(--accent) / 0.08) 50%,
+      hsl(var(--nav-bg) / 0.98) 100%
     );
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
   .site-header-shell {
     @apply sticky top-0 z-50 border-b border-white/10;

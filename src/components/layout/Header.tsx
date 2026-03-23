@@ -241,7 +241,7 @@ export default function Header() {
           }}
           className="w-full border-t border-border/60 bg-muted/25 px-4 py-3 text-center text-sm font-semibold text-accent transition-colors hover:bg-muted/45"
         >
-          View all results →
+          {t("nav.search.view_all")} →
         </button>
       )}
     </div>
@@ -265,28 +265,29 @@ export default function Header() {
     <Link
       to="/admin/landing#section-site_header"
       className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/[0.06] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-nav-foreground/85 hover:bg-white/[0.11] hover:text-nav-foreground transition-colors shrink-0"
-      title="Edit site header in Admin → Landing"
+      title={t("header.edit")}
     >
       <Pencil className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
-      Edit header
+      {t("header.edit")}
     </Link>
   ) : null;
 
   return (
-    <header className="site-header-shell">
+    <header className="site-header-shell" role="banner">
       {showAnnouncement && (
-        <div className="site-header-announcement border-b border-white/10">
+        <div className="site-header-announcement" role="region" aria-label={t("nav.announcement")}>
           <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 py-2">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-[11px] sm:text-xs text-nav-foreground/90 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 py-2.5 sm:py-2">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-[11px] sm:text-xs text-nav-foreground/95 text-center sm:text-left">
                 <Truck className="h-3.5 w-3.5 text-accent shrink-0 hidden sm:inline" aria-hidden />
                 <span className="font-medium tracking-wide">{announcement}</span>
                 {announcementHref && announcementLinkLabel && (
                   <Link
                     to={announcementHref}
-                    className="text-accent font-semibold hover:underline underline-offset-2 sm:ml-1"
+                    className="text-accent font-semibold hover:underline underline-offset-2 sm:ml-1 inline-flex items-center gap-1"
                   >
                     {announcementLinkLabel}
+                    <span aria-hidden>→</span>
                   </Link>
                 )}
               </div>
@@ -509,7 +510,7 @@ export default function Header() {
               type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
               className="rounded-md p-2 text-nav-foreground transition-colors hover:bg-white/[0.08] md:hidden"
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-label={mobileOpen ? t("nav.menu.close") : t("nav.menu.open")}
               aria-expanded={mobileOpen}
             >
               {mobileOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
@@ -565,7 +566,7 @@ export default function Header() {
                 className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-md border border-border bg-secondary text-sm font-medium text-foreground hover:bg-muted transition-colors"
               >
                 <Pencil className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                Edit header
+                {t("header.edit")}
               </Link>
             )}
             {/* Mobile search */}
