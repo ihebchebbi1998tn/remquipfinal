@@ -92,7 +92,7 @@ function remquip_dispatch(array $segments): void
      * Without this, some fatal errors can produce HTTP 500 with an empty body,
      * which makes debugging impossible from the frontend.
      */
-    $safeRequire = function (string $file) use ($resource) {
+    $safeRequire = function (string $file) use ($resource, &$conn, &$method, &$routeSegments, &$id, &$action) {
         try {
             require_once $file;
         } catch (Throwable $e) {
@@ -108,6 +108,8 @@ function remquip_dispatch(array $segments): void
             ResponseHelper::sendError('API dispatch failed', 500, [
                 'resource' => $resource,
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
         }
     };

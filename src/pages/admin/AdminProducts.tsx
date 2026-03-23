@@ -20,6 +20,14 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function AdminProducts() {
+  // Backend sometimes returns numeric fields as strings.
+  // Convert safely so `.toFixed()` never crashes.
+  function toNumber(v: unknown): number {
+    if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -241,14 +249,17 @@ export default function AdminProducts() {
                       <span className="text-xs text-muted-foreground font-mono">{product.sku}</span>
                       <span className={statusStyles[product.status]}>{product.status}</span>
                     </div>
-                    <p className="text-sm font-bold mt-0.5">C${product.price.toFixed(2)}</p>
+                    <p className="text-sm font-bold mt-0.5">C${toNumber(product.price).toFixed(2)}</p>
                   </div>
                   {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 </button>
                 {isExpanded && (
                   <div className="px-3 pb-3 border-t border-border pt-3 bg-secondary/30 space-y-2">
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Category</span><span>{product.category || "Uncategorized"}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Wholesale</span><span>C${(product.wholesale_price || product.price).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Wholesale</span>
+                      <span>C${toNumber(product.wholesale_price ?? product.price).toFixed(2)}</span>
+                    </div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Stock</span><span className={product.stock_quantity < 50 ? "text-warning font-medium" : ""}>{product.stock_quantity}</span></div>
                     <div className="flex gap-2 pt-2">
                       <Link to={publicProductUrl} className="flex-1 text-xs py-1.5 border border-border rounded-sm hover:bg-secondary transition-colors flex items-center justify-center gap-1"><Eye className="h-3 w-3" /> View</Link>
@@ -308,8 +319,8 @@ export default function AdminProducts() {
                     </td>
                     <td className="px-3 py-3 text-muted-foreground font-mono text-xs">{product.sku}</td>
                     <td className="px-3 py-3">{product.category || "Uncategorized"}</td>
-                    <td className="px-3 py-3 text-right font-medium">C${product.price.toFixed(2)}</td>
-                    <td className="px-3 py-3 text-right text-muted-foreground">C${(product.wholesale_price || product.price).toFixed(2)}</td>
+                    <td className="px-3 py-3 text-right font-medium">C${toNumber(product.price).toFixed(2)}</td>
+                    <td className="px-3 py-3 text-right text-muted-foreground">C${toNumber(product.wholesale_price ?? product.price).toFixed(2)}</td>
                     <td className={`px-3 py-3 text-right font-medium ${product.stock_quantity < 50 ? "text-warning" : ""}`}>{product.stock_quantity}</td>
                     <td className="px-3 py-3"><span className={statusStyles[product.status]}>{product.status}</span></td>
                     <td className="px-3 py-3">
