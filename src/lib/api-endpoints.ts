@@ -112,6 +112,16 @@ export const API_ENDPOINTS = {
     ADDRESSES: '/customers/:id/addresses',
     /** POST: multipart `file` (csv/json) or JSON `{ customers: [...] }` (admin). */
     IMPORT: '/customers/import',
+    /** POST: public contact form lead capture */
+    CONTACT_LEAD: '/customers/contact-leads',
+    TASKS: {
+      LIST: '/customers/:id/tasks',
+      UPDATE: '/customers/tasks/:taskId',
+      OVERDUE: '/customers/tasks/overdue',
+    },
+    NOTES: {
+      ADD: '/customers/:id/notes',
+    },
   },
 
   // ==================== ORDERS ENDPOINTS ====================
@@ -232,5 +242,6 @@ export const API_ENDPOINTS = {
     SETTINGS: '/user/dashboard/settings',
     UPDATE_SETTINGS: '/user/dashboard/settings',
     CONTACT_US: '/user/dashboard/contacts',
+    NOTES: '/user/dashboard/notes',
   },
 } as const;

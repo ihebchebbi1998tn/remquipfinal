@@ -245,6 +245,7 @@ CREATE TABLE IF NOT EXISTS remquip_customers (
   credit_limit DECIMAL(12,2) NULL,
   primary_contact_name VARCHAR(255) NULL,
   primary_contact_phone VARCHAR(20) NULL,
+  assigned_contact_id CHAR(36) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   deleted_at TIMESTAMP NULL,
@@ -279,6 +280,26 @@ CREATE TABLE IF NOT EXISTS remquip_customer_documents (
   KEY idx_cd_customer (customer_id),
   CONSTRAINT fk_cd_customer FOREIGN KEY (customer_id) REFERENCES remquip_customers(id) ON DELETE CASCADE,
   CONSTRAINT fk_cd_user FOREIGN KEY (uploaded_by) REFERENCES remquip_users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- CRM tasks / follow-ups (SLA)
+CREATE TABLE IF NOT EXISTS remquip_crm_tasks (
+  id CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()),
+  customer_id CHAR(36) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  due_at TIMESTAMP NULL,
+  status ENUM('open','done','cancelled') NOT NULL DEFAULT 'open',
+  assigned_to CHAR(36) NULL,
+  created_by CHAR(36) NULL,
+  notes TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_tasks_customer (customer_id),
+  KEY idx_tasks_status (status),
+  KEY idx_tasks_due (due_at),
+  KEY idx_tasks_assigned (assigned_to),
+  CONSTRAINT fk_tasks_customer FOREIGN KEY (customer_id) REFERENCES remquip_customers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------- 6. ORDERS

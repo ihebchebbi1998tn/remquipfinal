@@ -125,9 +125,52 @@ try {
                  WHERE is_available = 1
                  ORDER BY display_order ASC, name ASC"
             );
+
+            // If this customer has an assigned owner, show them first in the portal list.
+            $assignedId = $customer['assigned_contact_id'] ?? null;
+            if ($assignedId) {
+                usort($rows, function ($a, $b) use ($assignedId) {
+                    if (($a['id'] ?? null) === $assignedId) return -1;
+                    if (($b['id'] ?? null) === $assignedId) return 1;
+                    return 0;
+                });
+            }
             ResponseHelper::sendSuccess(['items' => $rows], 'Contacts');
         } catch (Exception $e) {
             ResponseHelper::sendSuccess(['items' => []], 'Contacts');
+        }
+    }
+
+    // GET /user/dashboard/notes — public (is_internal = 0) customer notes
+    if ($method === 'GET' && ($rs[0] ?? '') === 'dashboard' && ($rs[1] ?? '') === 'notes' && !isset($rs[2])) {
+        if (!$customer) {
+            ResponseHelper::sendSuccess(['items' => []], 'Notes');
+        }
+        try {
+            $limit = min((int)($_GET['limit'] ?? 20), 100);
+            $offset = (int)($_GET['offset'] ?? 0);
+            if (isset($_GET['page'])) {
+                $offset = (max(1, (int)$_GET['page']) - 1) * $limit;
+            }
+
+            $total = (int)($conn->fetch(
+                "SELECT COUNT(*) as t FROM remquip_customer_notes WHERE customer_id = :cid AND is_internal = 0",
+                ['cid' => $customer['id']]
+            )['t'] ?? 0);
+
+            $rows = $conn->fetchAll(
+                "SELECT id, note, is_internal, created_at
+                 FROM remquip_customer_notes
+                 WHERE customer_id = :cid AND is_internal = 0
+                 ORDER BY created_at DESC
+                 LIMIT :limit OFFSET :offset",
+                ['cid' => $customer['id'], 'limit' => $limit, 'offset' => $offset]
+            );
+
+            ResponseHelper::sendPaginated($rows, $total, $limit, $offset, 'Notes');
+        } catch (Exception $e) {
+            Logger::error('User dashboard notes error', ['error' => $e->getMessage()]);
+            ResponseHelper::sendError('Failed to retrieve notes', 500);
         }
     }
 } catch (Exception $e) {

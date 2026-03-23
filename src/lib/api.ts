@@ -196,12 +196,37 @@ export interface Customer {
   phone?: string;
   company_name?: string;
   avatar_url?: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'suspended';
   created_at: string;
   updated_at: string;
   last_order_date?: string;
   total_orders?: number;
   total_spent?: number;
+  assigned_contact_id?: string | null;
+  notes?: CustomerNote[];
+}
+
+export interface CustomerNote {
+  id: string;
+  note: string;
+  is_internal: boolean;
+  created_at: string;
+  updated_at?: string;
+  // Present because backend joins `remquip_users u` as `u.full_name AS user`
+  user?: string | null;
+}
+
+export interface CustomerTask {
+  id: string;
+  customer_id?: string;
+  title: string;
+  due_at: string | null;
+  status: 'open' | 'done' | 'cancelled';
+  assigned_to: string | null;
+  assigned_contact_name?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CustomerAddress {
@@ -1067,6 +1092,8 @@ class APIService {
       postalCode: d.postalCode ?? d.postal_code,
       country: d.country,
       taxNumber: d.taxNumber ?? d.tax_number,
+      assignedContactId:
+        (d.assigned_contact_id as string | undefined) ?? (d.assignedContactId as string | undefined) ?? null,
     };
     return this.request('POST', API_ENDPOINTS.CUSTOMERS.CREATE, body);
   }
@@ -1081,7 +1108,67 @@ class APIService {
     if (d.tax_number != null && d.taxNumber == null) body.taxNumber = d.tax_number;
     if (d.customer_type != null && d.customerType == null) body.customerType = d.customer_type;
     if (d.state != null && d.province == null) body.province = d.state;
+    if (d.assigned_contact_id != null && d.assignedContactId == null) body.assignedContactId = d.assigned_contact_id;
+    if (d.assignedContactId != null) body.assignedContactId = d.assignedContactId;
     return this.request('PUT', API_ENDPOINTS.CUSTOMERS.UPDATE.replace(':id', id), body);
+  }
+
+  // ==================== CUSTOMER NOTES ====================
+  async addCustomerNote(customerId: string, payload: { note: string; isInternal?: boolean }): Promise<ApiResponse> {
+    return this.request(
+      'POST',
+      API_ENDPOINTS.CUSTOMERS.NOTES.ADD.replace(':id', encodeURIComponent(customerId)),
+      { note: payload.note, isInternal: payload.isInternal ?? true }
+    );
+  }
+
+  // ==================== CUSTOMER TASKS ====================
+  async getCustomerTasks(customerId: string): Promise<ApiResponse<CustomerTask[]>> {
+    return this.request('GET', API_ENDPOINTS.CUSTOMERS.TASKS.LIST.replace(':id', encodeURIComponent(customerId)));
+  }
+
+  async createCustomerTask(
+    customerId: string,
+    payload: { title: string; due_at?: string | null; status?: CustomerTask['status']; assigned_to?: string | null; notes?: string | null }
+  ): Promise<ApiResponse<{ id: string }>> {
+    return this.request(
+      'POST',
+      API_ENDPOINTS.CUSTOMERS.TASKS.LIST.replace(':id', encodeURIComponent(customerId)),
+      {
+        title: payload.title,
+        dueAt: payload.due_at ?? null,
+        status: payload.status ?? 'open',
+        assignedTo: payload.assigned_to ?? null,
+        notes: payload.notes ?? null,
+      }
+    );
+  }
+
+  async updateCustomerTask(taskId: string, payload: Partial<CustomerTask>): Promise<ApiResponse<{ id: string }>> {
+    // Backend expects PATCH/PUT /customers/tasks/:taskId with body keys title/status/due_at/assigned_to/notes.
+    return this.request(
+      'PATCH',
+      API_ENDPOINTS.CUSTOMERS.TASKS.UPDATE.replace(':taskId', encodeURIComponent(taskId)),
+      {
+        title: payload.title,
+        status: payload.status,
+        due_at: payload.due_at,
+        assigned_to: payload.assigned_to,
+        notes: payload.notes,
+      }
+    );
+  }
+
+  async deleteCustomerTask(taskId: string): Promise<ApiResponse> {
+    return this.request(
+      'DELETE',
+      API_ENDPOINTS.CUSTOMERS.TASKS.UPDATE.replace(':taskId', encodeURIComponent(taskId))
+    );
+  }
+
+  // ==================== CONTACT LEAD CAPTURE ====================
+  async submitContactLead(payload: { name: string; email: string; subject: string; message: string; phone?: string }): Promise<ApiResponse> {
+    return this.request('POST', API_ENDPOINTS.CUSTOMERS.CONTACT_LEAD, payload);
   }
 
   async deleteCustomer(id: string): Promise<ApiResponse> {
@@ -1489,6 +1576,12 @@ class APIService {
 
   async getAdminContacts(): Promise<ApiResponse> {
     return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.CONTACT_US);
+  }
+
+  async getUserNotes(page: number = 1, limit: number = 20): Promise<PaginatedResponse<CustomerNote>> {
+    return normalizePaginated<CustomerNote>(
+      await this.request('GET', `${API_ENDPOINTS.USER_DASHBOARD.NOTES}?page=${page}&limit=${limit}`)
+    );
   }
 
   // ==================== ADMIN CONTACTS METHODS ====================

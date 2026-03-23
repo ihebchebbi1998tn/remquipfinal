@@ -4,7 +4,11 @@
  */
 
 $method = $_SERVER['REQUEST_METHOD'];
-Auth::requireAuth('admin');
+// Some CRM endpoints must remain public (e.g. contact form lead capture).
+$needsAdminAuth = !($method === 'POST' && $id === 'contact-leads');
+if ($needsAdminAuth) {
+    Auth::requireAuth('admin');
+}
 
 // GET /customers — list (also /customers/search?q=)
 if ($method === 'GET' && (!$id || $id === 'search')) {
@@ -52,6 +56,7 @@ if ($method === 'GET' && (!$id || $id === 'search')) {
         $customers = $conn->fetchAll(
             "SELECT c.id, c.company_name, c.contact_person, c.contact_person AS full_name,
                     c.email, c.phone, c.customer_type, c.status, c.total_orders, c.total_spent, c.created_at, c.updated_at
+                    , c.assigned_contact_id
              FROM remquip_customers c
              WHERE $whereClause
              ORDER BY c.created_at DESC
@@ -64,6 +69,108 @@ if ($method === 'GET' && (!$id || $id === 'search')) {
     } catch (Exception $e) {
         Logger::error('Get customers error', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Failed to retrieve customers', 500);
+    }
+}
+
+// POST /customers/contact-leads — public (Contact page lead capture)
+if ($method === 'POST' && $id === 'contact-leads') {
+    try {
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $name = trim((string)($data['name'] ?? ''));
+        $email = trim((string)($data['email'] ?? ''));
+        $subject = trim((string)($data['subject'] ?? ''));
+        $message = trim((string)($data['message'] ?? ''));
+        $phone = trim((string)($data['phone'] ?? ''));
+
+        if ($name === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $message === '') {
+            ResponseHelper::sendError('Name, valid email, and message are required', 400);
+        }
+
+        // Pick an owner from admin-contacts based on subject/department-ish routing.
+        $desired = $subject !== '' ? $subject : ($message !== '' ? substr($message, 0, 60) : '');
+        $assignedId = null;
+        if ($desired !== '') {
+            $row = $conn->fetch(
+                'SELECT id FROM remquip_admin_contacts
+                 WHERE is_available = 1 AND (department = :d OR specialization = :d)
+                 ORDER BY display_order ASC, name ASC
+                 LIMIT 1',
+                ['d' => $desired]
+            );
+            $assignedId = $row['id'] ?? null;
+
+            if (!$assignedId) {
+                $row = $conn->fetch(
+                    'SELECT id FROM remquip_admin_contacts
+                     WHERE is_available = 1 AND (department LIKE :d OR specialization LIKE :d)
+                     ORDER BY display_order ASC, name ASC
+                     LIMIT 1',
+                    ['d' => '%' . $desired . '%']
+                );
+                $assignedId = $row['id'] ?? null;
+            }
+        }
+        if (!$assignedId) {
+            $row = $conn->fetch(
+                'SELECT id FROM remquip_admin_contacts WHERE is_available = 1 ORDER BY display_order ASC, name ASC LIMIT 1'
+            );
+            $assignedId = $row['id'] ?? null;
+        }
+
+        // Create a lead as an inactive customer.
+        $customerId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $companyName = trim((string)($data['companyName'] ?? ''));
+        if ($companyName === '') {
+            $companyName = $subject !== '' ? $subject : ('Lead - ' . $name);
+        }
+
+        $conn->execute(
+            "INSERT INTO remquip_customers
+              (id, company_name, contact_person, email, phone, customer_type, status, address, city, province, postal_code, country, tax_number, assigned_contact_id)
+             VALUES
+              (:id, :companyName, :contactPerson, :email, :phone, :type, 'inactive', :address, :city, :province, :postalCode, :country, :taxNumber, :assignedContactId)",
+            [
+                'id' => $customerId,
+                'companyName' => $companyName,
+                'contactPerson' => $name,
+                'email' => $email,
+                'phone' => $phone,
+                'type' => $data['customerType'] ?? 'Wholesale',
+                'address' => $data['address'] ?? '',
+                'city' => $data['city'] ?? '',
+                'province' => $data['province'] ?? ($data['state'] ?? ''),
+                'postalCode' => $data['postalCode'] ?? ($data['postal_code'] ?? ''),
+                'country' => $data['country'] ?? '',
+                'taxNumber' => $data['taxNumber'] ?? ($data['tax_number'] ?? ''),
+                'assignedContactId' => $assignedId,
+            ]
+        );
+
+        // Internal note so the owner sees context immediately.
+        $noteId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $noteText = "Public lead captured via Contact page.\n\nSubject: " . ($subject !== '' ? $subject : '(none)') .
+            "\nFrom: " . $name . " <" . $email . ">" .
+            ($phone !== '' ? "\nPhone: " . $phone : '') .
+            "\n\nMessage:\n" . $message;
+
+        $conn->execute(
+            "INSERT INTO remquip_customer_notes (id, customer_id, user_id, note, is_internal)
+             VALUES (:nid, :customerId, NULL, :note, 1)",
+            [
+                'nid' => $noteId,
+                'customerId' => $customerId,
+                'note' => $noteText,
+            ]
+        );
+
+        ResponseHelper::sendSuccess(
+            ['id' => $customerId, 'assigned_contact_id' => $assignedId],
+            'Lead captured successfully',
+            201
+        );
+    } catch (Exception $e) {
+        Logger::error('Contact lead capture error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to capture lead', 500);
     }
 }
 
@@ -174,9 +281,15 @@ if ($method === 'POST' && !$id) {
         }
 
         $customerId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $assignedContactId = $data['assigned_contact_id'] ?? $data['assignedContactId'] ?? null;
+        if ($assignedContactId !== null && trim((string)$assignedContactId) === '') {
+            $assignedContactId = null;
+        }
         $conn->execute(
-            "INSERT INTO remquip_customers (id, company_name, contact_person, email, phone, customer_type, address, city, province, postal_code, country, tax_number)
-             VALUES (:id, :companyName, :contactPerson, :email, :phone, :type, :address, :city, :province, :postalCode, :country, :taxNumber)",
+            "INSERT INTO remquip_customers
+              (id, company_name, contact_person, email, phone, customer_type, address, city, province, postal_code, country, tax_number, assigned_contact_id)
+             VALUES
+              (:id, :companyName, :contactPerson, :email, :phone, :type, :address, :city, :province, :postalCode, :country, :taxNumber, :assignedContactId)",
             [
                 'id' => $customerId,
                 'companyName' => $companyName,
@@ -189,7 +302,8 @@ if ($method === 'POST' && !$id) {
                 'province' => $data['province'] ?? '',
                 'postalCode' => $data['postalCode'] ?? '',
                 'country' => $data['country'] ?? '',
-                'taxNumber' => $data['taxNumber'] ?? ''
+                'taxNumber' => $data['taxNumber'] ?? '',
+                'assignedContactId' => $assignedContactId,
             ]
         );
 
@@ -265,6 +379,13 @@ if (($method === 'PATCH' || $method === 'PUT') && $id && !$action) {
             $updates[] = 'tax_number = :tax_number';
             $params['tax_number'] = $tax;
         }
+
+        $assigned = $data['assigned_contact_id'] ?? $data['assignedContactId'] ?? null;
+        if (array_key_exists('assigned_contact_id', $data) || array_key_exists('assignedContactId', $data)) {
+            $updates[] = 'assigned_contact_id = :assigned_contact_id';
+            $params['assigned_contact_id'] = $assigned !== null && trim((string)$assigned) !== '' ? $assigned : null;
+        }
+
         if (isset($data['paymentTerms'])) {
             $updates[] = 'payment_terms = :paymentTerms';
             $params['paymentTerms'] = $data['paymentTerms'];
@@ -331,6 +452,178 @@ if ($method === 'POST' && $id && $action === 'notes') {
     } catch (Exception $e) {
         Logger::error('Add customer note error', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Failed to add note', 500);
+    }
+}
+
+// =====================================================================
+// CRM TASKS (follow-ups / SLA)
+// =====================================================================
+
+// GET /customers/:id/tasks — list tasks for customer (Admin)
+if ($method === 'GET' && $id && $action === 'tasks') {
+    Auth::requireAuth('admin');
+    try {
+        $tasks = $conn->fetchAll(
+            "SELECT
+                t.id,
+                t.title,
+                t.due_at,
+                t.status,
+                t.assigned_to,
+                ac.name AS assigned_contact_name,
+                t.notes,
+                t.created_at,
+                t.updated_at
+             FROM remquip_crm_tasks t
+             LEFT JOIN remquip_admin_contacts ac ON ac.id = t.assigned_to
+             WHERE t.customer_id = :customerId
+             ORDER BY (t.due_at IS NULL) ASC, t.due_at ASC, t.created_at DESC",
+            ['customerId' => $id]
+        );
+        ResponseHelper::sendSuccess($tasks, 'Customer tasks');
+    } catch (Exception $e) {
+        Logger::error('Get customer tasks error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to retrieve customer tasks', 500);
+    }
+}
+
+// POST /customers/:id/tasks — create task (Admin)
+if ($method === 'POST' && $id && $action === 'tasks') {
+    Auth::requireAuth('admin');
+    try {
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $title = trim((string)($data['title'] ?? ''));
+        if ($title === '') {
+            ResponseHelper::sendError('Task title is required', 400);
+        }
+
+        $dueAt = null;
+        if (isset($data['due_at']) || isset($data['dueAt'])) {
+            $raw = $data['due_at'] ?? $data['dueAt'];
+            if ($raw !== null && trim((string)$raw) !== '') {
+                // Let MySQL parse ISO-8601 / datetime strings.
+                $dueAt = (string)$raw;
+            }
+        }
+
+        $status = trim((string)($data['status'] ?? 'open'));
+        if (!in_array($status, ['open', 'done', 'cancelled'], true)) {
+            $status = 'open';
+        }
+
+        $assignedTo = $data['assigned_to'] ?? $data['assignedTo'] ?? null;
+        if ($assignedTo !== null && trim((string)$assignedTo) === '') {
+            $assignedTo = null;
+        }
+
+        $notes = isset($data['notes']) ? (string)$data['notes'] : null;
+
+        $tok = Auth::getToken();
+        $payload = $tok ? Auth::verifyToken($tok) : null;
+        $createdBy = $payload['user_id'] ?? null;
+        if (!is_string($createdBy) || trim((string)$createdBy) === '') {
+            $createdBy = null;
+        }
+
+        $taskId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $conn->execute(
+            "INSERT INTO remquip_crm_tasks
+              (id, customer_id, title, due_at, status, assigned_to, created_by, notes)
+             VALUES
+              (:id, :customerId, :title, :dueAt, :status, :assignedTo, :createdBy, :notes)",
+            [
+                'id' => $taskId,
+                'customerId' => $id,
+                'title' => $title,
+                'dueAt' => $dueAt,
+                'status' => $status,
+                'assignedTo' => $assignedTo,
+                'createdBy' => $createdBy,
+                'notes' => $notes,
+            ]
+        );
+
+        ResponseHelper::sendSuccess(['id' => $taskId], 'Task created', 201);
+    } catch (Exception $e) {
+        Logger::error('Create customer task error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to create task', 500);
+    }
+}
+
+// PATCH/PUT /customers/tasks/:taskId — update task (Admin)
+if (($method === 'PATCH' || $method === 'PUT') && $id === 'tasks' && $action) {
+    Auth::requireAuth('admin');
+    $taskId = (string)$action;
+    try {
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $updates = [];
+        $params = ['taskId' => $taskId];
+
+        if (isset($data['title'])) {
+            $title = trim((string)$data['title']);
+            if ($title !== '') {
+                $updates[] = 'title = :title';
+                $params['title'] = $title;
+            }
+        }
+
+        if (array_key_exists('status', $data)) {
+            $status = trim((string)$data['status']);
+            if (in_array($status, ['open', 'done', 'cancelled'], true)) {
+                $updates[] = 'status = :status';
+                $params['status'] = $status;
+            }
+        }
+
+        if (array_key_exists('due_at', $data) || array_key_exists('dueAt', $data)) {
+            $raw = $data['due_at'] ?? $data['dueAt'];
+            if ($raw === null || trim((string)$raw) === '') {
+                $updates[] = 'due_at = NULL';
+            } else {
+                $updates[] = 'due_at = :dueAt';
+                $params['dueAt'] = (string)$raw;
+            }
+        }
+
+        if (array_key_exists('assigned_to', $data) || array_key_exists('assignedTo', $data)) {
+            $assignedTo = $data['assigned_to'] ?? $data['assignedTo'];
+            if ($assignedTo === null || trim((string)$assignedTo) === '') {
+                $updates[] = 'assigned_to = NULL';
+            } else {
+                $updates[] = 'assigned_to = :assignedTo';
+                $params['assignedTo'] = $assignedTo;
+            }
+        }
+
+        if (array_key_exists('notes', $data)) {
+            $updates[] = 'notes = :notes';
+            $params['notes'] = $data['notes'] !== null ? (string)$data['notes'] : null;
+        }
+
+        if (!$updates) {
+            ResponseHelper::sendError('No fields to update', 400);
+        }
+
+        $updates[] = 'updated_at = NOW()';
+
+        $conn->execute('UPDATE remquip_crm_tasks SET ' . implode(', ', $updates) . ' WHERE id = :taskId', $params);
+        ResponseHelper::sendSuccess(['id' => $taskId], 'Task updated');
+    } catch (Exception $e) {
+        Logger::error('Update task error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to update task', 500);
+    }
+}
+
+// DELETE /customers/tasks/:taskId — delete task (Admin)
+if ($method === 'DELETE' && $id === 'tasks' && $action) {
+    Auth::requireAuth('admin');
+    $taskId = (string)$action;
+    try {
+        $conn->execute('DELETE FROM remquip_crm_tasks WHERE id = :taskId', ['taskId' => $taskId]);
+        ResponseHelper::sendSuccess(null, 'Task deleted');
+    } catch (Exception $e) {
+        Logger::error('Delete task error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to delete task', 500);
     }
 }
 

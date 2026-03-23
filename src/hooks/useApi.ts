@@ -352,6 +352,63 @@ export function useCustomerDocuments(customerId: string) {
   );
 }
 
+// ==================== CUSTOMER CRM TASKS ====================
+export function useCustomerTasks(customerId: string) {
+  return useApiQuery(
+    ['customer', customerId, 'tasks'],
+    () => api.getCustomerTasks(customerId),
+    { enabled: !!customerId }
+  );
+}
+
+export function useCreateCustomerTask() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { customerId: string; payload: Parameters<typeof api.createCustomerTask>[1] }) =>
+      api.createCustomerTask(vars.customerId, vars.payload),
+    {
+      onSuccess: (_res, vars) => {
+        queryClient.invalidateQueries({ queryKey: ['customer', vars.customerId, 'tasks'] });
+      },
+    }
+  );
+}
+
+export function useUpdateCustomerTask() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { taskId: string; payload: Partial<Parameters<typeof api.updateCustomerTask>[1]> }) =>
+      api.updateCustomerTask(vars.taskId, vars.payload as any),
+    {
+      onSuccess: (_res, vars) => {
+        // Customer tasks queries are keyed by `['customer', customerId, 'tasks']`,
+        // and we don't have customerId here. Invalidate the customer group.
+        queryClient.invalidateQueries({ queryKey: ['customer'] });
+      },
+    }
+  );
+}
+
+export function useDeleteCustomerTask() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (taskId: string) => api.deleteCustomerTask(taskId),
+    {
+      onSuccess: () => {
+        // Caller will re-fetch by invalidating customer tasks queries.
+        queryClient.invalidateQueries({ queryKey: ['customer'] });
+      },
+    }
+  );
+}
+
+// ==================== ADMIN CONTACTS (owner assignment) ====================
+export function useAvailableAdminContacts() {
+  return useApiQuery(['admin-contacts', 'available'], () => api.getAvailableAdminContacts(), {
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
 // ==================== ORDER HOOKS ====================
 
 export function useOrders(page: number = 1, limit: number = 10) {

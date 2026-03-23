@@ -307,7 +307,7 @@ class Auth {
             $t = trim((string) $_SERVER['HTTP_X_AUTH_TOKEN']);
             return $t !== '' ? $t : null;
         }
-
+        
         if (!isset($headers['Authorization'])) {
             return null;
         }
@@ -353,7 +353,7 @@ class Auth {
             $role = $payload['role'] ?? '';
             $deny = $role !== 'admin' && $role !== 'super_admin' && $role !== $requiredRole;
             if ($deny) {
-                ResponseHelper::sendError('Forbidden: Insufficient permissions', 403);
+            ResponseHelper::sendError('Forbidden: Insufficient permissions', 403);
             }
         }
         

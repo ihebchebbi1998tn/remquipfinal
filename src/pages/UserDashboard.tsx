@@ -6,7 +6,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { Navigate } from 'react-router-dom';
 import {
   Package, TrendingUp, MapPin, Clock, Phone, Mail, LogOut,
-  Settings, User, ShoppingBag, Download, AlertCircle, CheckCircle,
+  Settings, User, ShoppingBag, Download, AlertCircle, CheckCircle, MessageSquareText,
   Loader, ChevronRight, Archive
 } from 'lucide-react';
 
@@ -33,6 +33,13 @@ interface AdminContact {
   available: boolean;
 }
 
+interface CustomerNoteRow {
+  id: string;
+  note: string;
+  is_internal: boolean;
+  created_at: string;
+}
+
 export default function UserDashboard() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { t } = useLanguage();
@@ -40,9 +47,11 @@ export default function UserDashboard() {
 
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const [adminContacts, setAdminContacts] = useState<AdminContact[]>([]);
+  const [notes, setNotes] = useState<CustomerNoteRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [contactsLoading, setContactsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'contacts' | 'settings'>('orders');
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'orders' | 'contacts' | 'notes' | 'settings'>('orders');
 
   // Redirect if not authenticated
   if (!isAuthenticated || !user) {
@@ -109,6 +118,28 @@ export default function UserDashboard() {
     fetchContacts();
   }, []);
 
+  // Load portal-visible notes (is_internal = 0)
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        setNotesLoading(true);
+        const response = await api.getUserNotes(1, 50);
+        const items = unwrapApiList<CustomerNoteRow>(response as any, []);
+        setNotes(items.map((n) => ({
+          id: String(n.id ?? ''),
+          note: String(n.note ?? ''),
+          is_internal: Boolean(n.is_internal ?? false),
+          created_at: String(n.created_at ?? ''),
+        })));
+      } catch {
+        // Failed to load notes
+      } finally {
+        setNotesLoading(false);
+      }
+    };
+    fetchNotes();
+  }, []);
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -164,7 +195,7 @@ export default function UserDashboard() {
 
         {/* Tab Navigation */}
         <div className="flex gap-4 mb-8 border-b border-border">
-          {['orders', 'contacts', 'settings'].map((tab) => (
+          {['orders', 'contacts', 'notes', 'settings'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -176,6 +207,7 @@ export default function UserDashboard() {
             >
               {tab === 'orders' && <ShoppingBag className="inline mr-2 h-4 w-4" />}
               {tab === 'contacts' && <Phone className="inline mr-2 h-4 w-4" />}
+              {tab === 'notes' && <MessageSquareText className="inline mr-2 h-4 w-4" />}
               {tab === 'settings' && <Settings className="inline mr-2 h-4 w-4" />}
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -265,6 +297,36 @@ export default function UserDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Notes Tab */}
+        {activeTab === 'notes' && (
+          <div className="space-y-6">
+            <div className="dashboard-card">
+              <h3 className="font-display font-bold text-sm uppercase mb-3 flex items-center gap-2">
+                <MessageSquareText className="h-4 w-4 text-accent" /> Notes
+              </h3>
+
+              {notesLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+                  <Loader className="h-8 w-8 animate-spin" /> Loading...
+                </div>
+              ) : notes.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6">No notes yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {notes.map((n) => (
+                    <div key={n.id} className="border border-border rounded-lg p-4 bg-surface-container-lowest">
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {n.created_at ? new Date(n.created_at).toLocaleString() : ''}
+                      </div>
+                      <div className="text-sm whitespace-pre-wrap">{n.note}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
