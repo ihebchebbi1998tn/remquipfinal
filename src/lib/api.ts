@@ -458,6 +458,8 @@ class TokenManager {
     if (!token) return {};
     return {
       [TOKEN_CONFIG.HEADER_NAME]: `${TOKEN_CONFIG.HEADER_PREFIX} ${token}`,
+      // Also send token in a custom header in case the host honors it.
+      'X-Auth-Token': token,
     };
   }
 }
@@ -487,6 +489,12 @@ class APIService {
     }
     const params = new URLSearchParams();
     params.set("path", pathOnly);
+    // Some hosts/proxies strip Authorization headers to PHP.
+    // Passing the token in the query keeps auth working consistently.
+    const token = TokenManager.getToken();
+    if (token) {
+      params.set("token", token);
+    }
     if (qIdx >= 0) {
       const extra = new URLSearchParams(raw.slice(qIdx + 1));
       extra.forEach((v, k) => params.append(k, v));
@@ -517,6 +525,12 @@ class APIService {
       ...TokenManager.getAuthHeader(),
       ...(options?.headers as Record<string, string> | undefined),
     };
+    const authHeaderVal = headers['Authorization'];
+    if (typeof authHeaderVal === 'string') {
+      console.log('[API][AUTH]', { hasAuthorization: true, bearer: authHeaderVal.startsWith('Bearer '), tokenLen: authHeaderVal.length });
+    } else {
+      console.log('[API][AUTH]', { hasAuthorization: false });
+    }
     if (!isFormData) {
       headers['Content-Type'] = 'application/json';
     }

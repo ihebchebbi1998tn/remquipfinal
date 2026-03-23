@@ -23,7 +23,7 @@ if (!function_exists('remquip_apply_cors_headers')) {
             header('Access-Control-Allow-Headers: ' . $req, true);
         } else {
             header(
-                'Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma, X-CSRF-Token, X-Request-ID',
+                'Access-Control-Allow-Headers: Content-Type, Authorization, X-Auth-Token, X-Requested-With, Accept, Origin, Cache-Control, Pragma, X-CSRF-Token, X-Request-ID',
                 true
             );
         }

@@ -276,6 +276,16 @@ class Auth {
      * @return string|null
      */
     public static function getToken() {
+        // Robust auth: token can be passed via query-string for hosts
+        // that strip Authorization headers to PHP.
+        $queryToken = $_GET['token'] ?? $_POST['token'] ?? null;
+        if (is_string($queryToken)) {
+            $queryToken = trim($queryToken);
+            if ($queryToken !== '') {
+                return $queryToken;
+            }
+        }
+
         $headers = getallheaders();
         if (!is_array($headers)) {
             $headers = [];
@@ -285,6 +295,17 @@ class Auth {
         }
         if (!isset($headers['Authorization']) && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
             $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+
+        // Some hosts/proxies strip the `Authorization` header before it reaches PHP.
+        // Support a custom header sent by the frontend.
+        if (!isset($headers['Authorization']) && isset($headers['X-Auth-Token'])) {
+            $t = trim((string) $headers['X-Auth-Token']);
+            return $t !== '' ? $t : null;
+        }
+        if (!isset($headers['Authorization']) && isset($_SERVER['HTTP_X_AUTH_TOKEN'])) {
+            $t = trim((string) $_SERVER['HTTP_X_AUTH_TOKEN']);
+            return $t !== '' ? $t : null;
         }
 
         if (!isset($headers['Authorization'])) {
