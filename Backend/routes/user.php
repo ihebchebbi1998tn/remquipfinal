@@ -67,6 +67,63 @@ try {
         ], 'Order summary');
     }
 
+    // GET /user/dashboard/orders/:id/receipt
+    if ($method === 'GET' && ($rs[0] ?? '') === 'dashboard' && ($rs[1] ?? '') === 'orders' && isset($rs[2]) && ($rs[3] ?? '') === 'receipt') {
+        if (!$customer) {
+            ResponseHelper::sendError('No linked customer record for your email', 404);
+        }
+
+        $orderId = String($rs[2]);
+        try {
+            $order = $conn->fetch(
+                "SELECT
+                    o.id,
+                    o.order_number,
+                    o.status,
+                    o.payment_status,
+                    o.created_at as order_date,
+                    o.subtotal as subtotal,
+                    o.tax as tax_amount,
+                    o.shipping as shipping_amount,
+                    o.discount as discount_amount,
+                    o.total as total_amount,
+                    o.shipping_address,
+                    o.notes
+                 FROM remquip_orders o
+                 WHERE o.customer_id = :cid AND o.id = :id AND o.deleted_at IS NULL",
+                ['cid' => $customer['id'], 'id' => $orderId]
+            );
+
+            if (!$order) {
+                ResponseHelper::sendError('Order not found', 404);
+            }
+
+            $items = $conn->fetchAll(
+                "SELECT
+                    oi.id,
+                    oi.order_id,
+                    oi.product_id,
+                    p.name as product_name,
+                    p.sku as product_sku,
+                    oi.quantity,
+                    oi.unit_price,
+                    oi.line_total as subtotal,
+                    oi.created_at
+                 FROM remquip_order_items oi
+                 LEFT JOIN remquip_products p ON oi.product_id = p.id
+                 WHERE oi.order_id = :id
+                 ORDER BY oi.created_at ASC",
+                ['id' => $orderId]
+            );
+
+            $order['items'] = $items;
+            ResponseHelper::sendSuccess($order, 'Order receipt retrieved');
+        } catch (Exception $e) {
+            Logger::error('User order receipt error', ['error' => $e->getMessage()]);
+            ResponseHelper::sendError('Failed to retrieve order receipt', 500);
+        }
+    }
+
     // GET /user/dashboard/addresses
     if ($method === 'GET' && ($rs[0] ?? '') === 'dashboard' && ($rs[1] ?? '') === 'addresses' && !isset($rs[2])) {
         if (!$customer) {

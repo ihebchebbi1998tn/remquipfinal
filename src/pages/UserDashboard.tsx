@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { api, unwrapApiList } from '@/lib/api';
+import { api, unwrapApiList, type Order } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Navigate } from 'react-router-dom';
 import {
   Package, TrendingUp, MapPin, Clock, Phone, Mail, LogOut,
-  Settings, User, ShoppingBag, Download, AlertCircle, CheckCircle, MessageSquareText,
+  Settings, User, ShoppingBag, Download, Printer, AlertCircle, CheckCircle, MessageSquareText,
   Loader, ChevronRight, Archive
 } from 'lucide-react';
 
@@ -52,6 +52,11 @@ export default function UserDashboard() {
   const [contactsLoading, setContactsLoading] = useState(true);
   const [notesLoading, setNotesLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'contacts' | 'notes' | 'settings'>('orders');
+
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptLoading, setReceiptLoading] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<Order | null>(null);
 
   const shouldRedirect = !isAuthenticated || !user;
 
@@ -157,6 +162,167 @@ export default function UserDashboard() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  function toNumber(v: unknown): number {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function escapeHtml(v: unknown): string {
+    return String(v ?? '').replace(/[&<>"']/g, (ch) => {
+      switch (ch) {
+        case '&':
+          return '&amp;';
+        case '<':
+          return '&lt;';
+        case '>':
+          return '&gt;';
+        case '"':
+          return '&quot;';
+        case "'":
+          return '&#39;';
+        default:
+          return ch;
+      }
+    });
+  }
+
+  async function openReceipt(orderId: string) {
+    setReceiptOpen(true);
+    setReceiptLoading(true);
+    setReceiptError(null);
+    setReceipt(null);
+    try {
+      const res = await api.getUserOrderReceipt(orderId);
+      setReceipt(res.data as Order);
+    } catch (e) {
+      setReceiptError(e instanceof Error ? e.message : 'Failed to load receipt');
+    } finally {
+      setReceiptLoading(false);
+    }
+  }
+
+  function buildReceiptHtml(order: Order): string {
+    const items = (order.items ?? []).map((it: any) => {
+      const productName = it.product_name ?? it.productName ?? it.name ?? 'Item';
+      const displaySku = it.product_sku ?? it.sku ?? '';
+      const qty = toNumber(it.quantity);
+      const unitPrice = toNumber(it.unit_price ?? it.unitPrice);
+      const lineSubtotal = toNumber(it.subtotal ?? it.line_total ?? (qty * unitPrice));
+      return {
+        productName: escapeHtml(productName),
+        displaySku: escapeHtml(displaySku),
+        qty,
+        unitPrice,
+        lineSubtotal,
+      };
+    });
+
+    const subtotal = toNumber((order as any).subtotal);
+    const taxAmount = toNumber((order as any).tax_amount);
+    const shippingAmount = toNumber((order as any).shipping_amount);
+    const discountAmount = toNumber((order as any).discount_amount);
+    const totalAmount = toNumber((order as any).total_amount);
+
+    const notes = (order as any).notes ? escapeHtml((order as any).notes) : '';
+    const shippingAddress = (order as any).shipping_address ? escapeHtml((order as any).shipping_address) : '';
+    const paymentStatus = (order as any).payment_status ?? '';
+
+    const rowsHtml = items
+      .map((i) => {
+        const skuLine = i.displaySku ? `<div style="font-size:12px;color:#6b7280;">${i.displaySku}</div>` : '';
+        return `
+          <tr>
+            <td style="padding:10px 8px;">
+              <div style="font-weight:600;">${i.productName}</div>
+              ${skuLine}
+            </td>
+            <td style="padding:10px 8px; text-align:right;">${i.qty}</td>
+            <td style="padding:10px 8px; text-align:right;">${i.unitPrice.toFixed(2)}</td>
+            <td style="padding:10px 8px; text-align:right;">${i.lineSubtotal.toFixed(2)}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    return `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Order Receipt</title>
+          <style>
+            body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#0f172a; padding:24px; }
+            .header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+            .muted { color:#6b7280; }
+            h1 { margin:0; font-size:20px; }
+            .box { border:1px solid #e5e7eb; border-radius:10px; padding:14px; }
+            table { width:100%; border-collapse:collapse; margin-top:12px; }
+            th { text-align:left; font-size:12px; color:#6b7280; font-weight:700; border-bottom:1px solid #e5e7eb; padding:8px; }
+            td { border-bottom:1px solid #eef2f7; }
+            .totals { margin-top:14px; display:flex; justify-content:flex-end; }
+            .totals .inner { width:320px; }
+            .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+            .row strong { font-size:15px; }
+            @media print { body { padding:0.5in; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>Remquip — Order Receipt</h1>
+              <div class="muted" style="margin-top:6px;">Order: <strong>${escapeHtml(order.order_number)}</strong></div>
+              <div class="muted" style="margin-top:4px;">Date: <strong>${escapeHtml((order as any).order_date ?? '')}</strong></div>
+              <div class="muted" style="margin-top:4px;">Status: <strong>${escapeHtml((order as any).status ?? '')}</strong></div>
+              <div class="muted" style="margin-top:4px;">Payment: <strong>${escapeHtml(paymentStatus)}</strong></div>
+            </div>
+            <div class="box">
+              <div style="font-weight:700; font-size:13px;">Totals</div>
+              <div class="muted" style="margin-top:6px; font-size:12px;">All amounts shown in CAD</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th style="text-align:right;">Qty</th>
+                <th style="text-align:right;">Unit</th>
+                <th style="text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml || `<tr><td colspan="4" style="padding:12px 8px;" class="muted">No items</td></tr>`}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="inner">
+              <div class="row"><span class="muted">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+              <div class="row"><span class="muted">Tax</span><span>${taxAmount.toFixed(2)}</span></div>
+              <div class="row"><span class="muted">Shipping</span><span>${shippingAmount.toFixed(2)}</span></div>
+              <div class="row"><span class="muted">Discount</span><span>${discountAmount > 0 ? '-' : ''}${discountAmount.toFixed(2)}</span></div>
+              <div class="row"><strong>Total</strong><strong>${totalAmount.toFixed(2)}</strong></div>
+            </div>
+          </div>
+
+          ${shippingAddress ? `<div style="margin-top:16px;" class="box"><div style="font-weight:700; font-size:13px;">Shipping address</div><div style="margin-top:6px; font-size:13px; white-space:pre-wrap;" class="muted">${shippingAddress}</div></div>` : ''}
+          ${notes ? `<div style="margin-top:14px;" class="box"><div style="font-weight:700; font-size:13px;">Order notes</div><div style="margin-top:6px; font-size:13px; white-space:pre-wrap;" class="muted">${notes}</div></div>` : ''}
+        </body>
+      </html>`;
+  }
+
+  function printReceipt() {
+    if (!receipt) return;
+    const html = buildReceiptHtml(receipt);
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+  }
 
   const handleLogout = async () => {
     await logout();
@@ -293,9 +459,12 @@ export default function UserDashboard() {
                     )}
 
                     <div className="flex gap-2">
-                      <button className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors text-sm font-medium">
+                      <button
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-surface-container-lowest hover:bg-surface-container transition-colors text-sm font-medium"
+                        onClick={() => openReceipt(order.id)}
+                      >
                         <Download className="h-4 w-4" />
-                        View Details
+                        Receipt
                       </button>
                     </div>
                   </div>
@@ -438,6 +607,183 @@ export default function UserDashboard() {
           </div>
         )}
       </div>
+
+      {/* Receipt Modal */}
+      {receiptOpen && (
+        <div className="fixed inset-0 z-50 bg-foreground/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl bg-background border border-border rounded-lg shadow-lg overflow-hidden max-h-[90vh]">
+            <div className="flex items-start justify-between gap-3 p-4 border-b border-border">
+              <div>
+                <h3 className="font-display font-bold text-lg">Order Receipt</h3>
+                <p className="text-muted-foreground text-sm mt-1">
+                  {receipt?.order_number ? `#${receipt.order_number}` : receiptLoading ? 'Loading...' : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReceiptOpen(false)}
+                className="p-1.5 rounded-sm hover:bg-secondary transition-colors"
+                aria-label="Close receipt"
+              >
+                <span className="text-lg leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="p-4 overflow-auto">
+              {receiptLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader className="h-8 w-8 text-accent animate-spin mr-3" />
+                  <p className="text-sm text-muted-foreground">Loading receipt...</p>
+                </div>
+              ) : receiptError ? (
+                <div className="dashboard-card text-center py-10">
+                  <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-3" />
+                  <h4 className="font-display font-bold text-lg mb-2">Failed to load receipt</h4>
+                  <p className="text-muted-foreground text-sm mb-4 px-4">{receiptError}</p>
+                  <button
+                    type="button"
+                    onClick={() => receipt?.id && openReceipt(receipt.id)}
+                    disabled={!receipt?.id}
+                    className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : receipt ? (
+                <div className="space-y-5">
+                  <div className="dashboard-card">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Order date</p>
+                        <p className="font-medium mt-1">
+                          {receipt.order_date ? new Date(receipt.order_date).toLocaleDateString() : ''}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Status</p>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mt-1 ${getStatusBadgeColor(receipt.status)}`}>
+                          {receipt.status}
+                        </span>
+                        <div className="text-xs text-muted-foreground mt-2">
+                          Payment: {(receipt as any).payment_status ?? '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="dashboard-card">
+                    <h4 className="font-display font-bold text-sm uppercase text-muted-foreground mb-3">Items</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-2 pr-2">Item</th>
+                            <th className="text-right py-2 px-2">Qty</th>
+                            <th className="text-right py-2 px-2">Unit</th>
+                            <th className="text-right py-2 pl-2">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(receipt.items ?? []).map((it: any) => {
+                            const productName = it.product_name ?? it.productName ?? it.name ?? 'Item';
+                            const productSku = it.product_sku ?? it.sku ?? '';
+                            const qty = toNumber(it.quantity);
+                            const unitPrice = toNumber(it.unit_price ?? it.unitPrice);
+                            const lineSubtotal = toNumber(it.subtotal ?? it.line_total ?? (qty * unitPrice));
+                            return (
+                              <tr key={it.id ?? `${productName}-${qty}-${unitPrice}`}>
+                                <td className="py-2 pr-2">
+                                  <div className="font-medium">{productName}</div>
+                                  {productSku ? <div className="text-xs text-muted-foreground mt-0.5 font-mono">{productSku}</div> : null}
+                                </td>
+                                <td className="py-2 px-2 text-right">{qty}</td>
+                                <td className="py-2 px-2 text-right">{formatPrice(unitPrice)}</td>
+                                <td className="py-2 pl-2 text-right">{formatPrice(lineSubtotal)}</td>
+                              </tr>
+                            );
+                          })}
+                          {(receipt.items ?? []).length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="py-6 text-center text-muted-foreground">No items found</td>
+                            </tr>
+                          ) : null}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="dashboard-card">
+                    <h4 className="font-display font-bold text-sm uppercase text-muted-foreground mb-3">Totals</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="font-medium">{formatPrice(toNumber((receipt as any).subtotal))}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Tax</span>
+                        <span className="font-medium">{formatPrice(toNumber((receipt as any).tax_amount))}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Shipping</span>
+                        <span className="font-medium">{formatPrice(toNumber((receipt as any).shipping_amount))}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Discount</span>
+                        <span className="font-medium">
+                          {toNumber((receipt as any).discount_amount) > 0
+                            ? `-${formatPrice(toNumber((receipt as any).discount_amount))}`
+                            : formatPrice(0)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <span className="font-display font-bold">Total</span>
+                        <span className="font-display font-bold text-accent">{formatPrice(toNumber((receipt as any).total_amount))}</span>
+                      </div>
+                    </div>
+
+                    {(receipt as any).shipping_address ? (
+                      <div className="mt-4">
+                        <p className="text-xs text-muted-foreground">Shipping address</p>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{(receipt as any).shipping_address}</p>
+                      </div>
+                    ) : null}
+
+                    {(receipt as any).notes ? (
+                      <div className="mt-4">
+                        <p className="text-xs text-muted-foreground">Notes</p>
+                        <p className="text-sm mt-1 whitespace-pre-wrap">{(receipt as any).notes}</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">No receipt loaded.</div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-border flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={printReceipt}
+                disabled={!receipt}
+                className="btn-accent px-4 py-2 rounded-sm text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Print
+              </button>
+              <button
+                type="button"
+                onClick={printReceipt}
+                disabled={!receipt}
+                className="px-4 py-2 border border-border rounded-sm text-sm font-medium hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Save as PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

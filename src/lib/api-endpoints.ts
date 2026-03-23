@@ -238,6 +238,7 @@ export const API_ENDPOINTS = {
     PROFILE: '/user/dashboard/profile',
     ORDERS: '/user/dashboard/orders',
     ORDER_SUMMARY: '/user/dashboard/orders/summary',
+    ORDER_RECEIPT: '/user/dashboard/orders/:id/receipt',
     ADDRESSES: '/user/dashboard/addresses',
     SETTINGS: '/user/dashboard/settings',
     UPDATE_SETTINGS: '/user/dashboard/settings',

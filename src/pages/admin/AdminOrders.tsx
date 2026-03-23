@@ -36,6 +36,132 @@ export default function AdminOrders() {
     return Number.isFinite(n) ? n : 0;
   }
 
+  function escapeHtml(v: unknown): string {
+    return String(v ?? '').replace(/[&<>"']/g, (ch) => {
+      switch (ch) {
+        case '&':
+          return '&amp;';
+        case '<':
+          return '&lt;';
+        case '>':
+          return '&gt;';
+        case '"':
+          return '&quot;';
+        case "'":
+          return '&#39;';
+        default:
+          return ch;
+      }
+    });
+  }
+
+  function buildReceiptHtml(order: Order): string {
+    const items = (order.items ?? []).map((it: any) => {
+      const productName = it.product_name ?? it.name ?? it.productName ?? 'Item';
+      const productId = it.product_id ?? it.productId ?? it.sku ?? '';
+      const qty = toNumber(it.quantity);
+      const unitPrice = toNumber(it.unit_price ?? it.unitPrice);
+      const lineSubtotal = toNumber(it.subtotal ?? it.line_total ?? (qty * unitPrice));
+      const displayName = escapeHtml(productName);
+      const displayId = productId ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;">${escapeHtml(productId)}</div>` : '';
+      return {
+        displayName,
+        displayId,
+        qty,
+        unitPrice,
+        lineSubtotal,
+      };
+    });
+
+    const subtotal = toNumber((order as any).subtotal ?? (order as any).subtotal_amount);
+    const taxAmount = toNumber((order as any).tax_amount ?? (order as any).tax);
+    const shippingAmount = toNumber((order as any).shipping_amount ?? (order as any).shipping);
+    const discountAmount = toNumber((order as any).discount_amount ?? (order as any).discount);
+    const totalAmount = toNumber((order as any).total_amount ?? (order as any).total);
+    const notes = (order as any).notes ? escapeHtml((order as any).notes) : '';
+
+    const rowsHtml =
+      items.length === 0
+        ? `<tr><td colspan="4" style="padding:12px 8px;color:#6b7280;">No items</td></tr>`
+        : items
+            .map((i) => {
+              return `
+                <tr>
+                  <td style="padding:10px 8px;">
+                    <div style="font-weight:600;">${i.displayName}</div>
+                    ${i.displayId}
+                  </td>
+                  <td style="padding:10px 8px;text-align:right;">${i.qty}</td>
+                  <td style="padding:10px 8px;text-align:right;">${i.unitPrice.toFixed(2)}</td>
+                  <td style="padding:10px 8px;text-align:right;">${i.lineSubtotal.toFixed(2)}</td>
+                </tr>
+              `;
+            })
+            .join('');
+
+    return `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Order Receipt</title>
+          <style>
+            body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#0f172a; padding:24px; }
+            .muted { color:#6b7280; }
+            h1 { margin:0; font-size:20px; }
+            .box { border:1px solid #e5e7eb; border-radius:10px; padding:14px; margin-top:16px; }
+            table { width:100%; border-collapse:collapse; margin-top:12px; }
+            th { text-align:left; font-size:12px; color:#6b7280; border-bottom:1px solid #e5e7eb; padding:8px; }
+            td { border-bottom:1px solid #eef2f7; }
+            .totals { margin-top:14px; width:320px; margin-left:auto; }
+            .row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+            @media print { body { padding:0.5in; } }
+          </style>
+        </head>
+        <body>
+          <h1>Remquip — Order Receipt</h1>
+          <div class="muted" style="margin-top:6px;">Order: <strong>${escapeHtml(order.order_number)}</strong></div>
+          <div class="muted" style="margin-top:4px;">Date: <strong>${escapeHtml((order as any).order_date ?? '')}</strong></div>
+          <div class="muted" style="margin-top:4px;">Status: <strong>${escapeHtml((order as any).status ?? '')}</strong></div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th style="text-align:right;">Qty</th>
+                <th style="text-align:right;">Unit</th>
+                <th style="text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="row"><span class="muted">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+            <div class="row"><span class="muted">Tax</span><span>${taxAmount.toFixed(2)}</span></div>
+            <div class="row"><span class="muted">Shipping</span><span>${shippingAmount.toFixed(2)}</span></div>
+            <div class="row"><span class="muted">Discount</span><span>${discountAmount > 0 ? '-' : ''}${discountAmount.toFixed(2)}</span></div>
+            <div class="row" style="font-weight:700;"><span>Total</span><span>${totalAmount.toFixed(2)}</span></div>
+          </div>
+
+          ${notes ? `<div class="box"><div style="font-weight:700;">Notes</div><div style="margin-top:6px; white-space:pre-wrap;" class="muted">${notes}</div></div>` : ''}
+        </body>
+      </html>`;
+  }
+
+  function printSelectedReceipt() {
+    if (!selectedOrder) return;
+    const html = buildReceiptHtml(selectedOrder);
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+  }
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -181,10 +307,16 @@ export default function AdminOrders() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">
+            <button
+              onClick={printSelectedReceipt}
+              className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
+            >
               <Printer className="h-3.5 w-3.5" /> Print Invoice
             </button>
-            <button className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">
+            <button
+              onClick={printSelectedReceipt}
+              className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
+            >
               <Download className="h-3.5 w-3.5" /> Export PDF
             </button>
             <button className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">

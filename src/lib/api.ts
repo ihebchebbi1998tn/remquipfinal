@@ -1562,6 +1562,10 @@ class APIService {
     return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.ORDER_SUMMARY);
   }
 
+  async getUserOrderReceipt(orderId: string): Promise<ApiResponse<Order>> {
+    return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.ORDER_RECEIPT.replace(':id', orderId));
+  }
+
   async getUserAddresses(): Promise<ApiResponse> {
     return this.request('GET', API_ENDPOINTS.USER_DASHBOARD.ADDRESSES);
   }
