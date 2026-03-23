@@ -783,9 +783,3 @@ if ($method === 'DELETE' && ($rs[0] ?? '') === 'banners' && isset($rs[1]) && !is
 }
 
 ResponseHelper::sendError('CMS endpoint not found', 404);
-
-</think>
-Simplifying the POST /cms/pages create block in `cms.php` (fix messy insert logic).
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-StrReplace

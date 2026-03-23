@@ -60,7 +60,7 @@ export function RemquipLoadingScreen({
 
         <p
           className={cn(
-            "mt-4 text-muted-foreground font-medium uppercase tracking-[0.28em]",
+            "mt-4 text-muted-foreground font-medium tracking-[0.18em]",
             variant === "panel" ? "text-[9px]" : "text-[10px] sm:text-[11px]"
           )}
         >
@@ -76,7 +76,6 @@ export function RemquipLoadingScreen({
           <div className="remquip-loader-shimmer h-full w-[45%] rounded-full" />
         </div>
 
-        {variant !== "panel" ? <div className="remquip-loader-orbit mt-7" aria-hidden /> : null}
       </div>
     </div>
   );

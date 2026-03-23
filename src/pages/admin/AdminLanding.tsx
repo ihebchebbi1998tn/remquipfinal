@@ -678,24 +678,66 @@ function ValuePropsSectionForm({
   onSave: (d: { content?: string }) => void;
   loading: boolean;
 }) {
-  const items = parseJson<{ icon: string; text: string }[]>(section.content, [
+  type ValuePropItem = { icon: string; text: string };
+  type TrustBar = { headline?: string; logos?: string[] };
+
+  const DEFAULT_VALUE_PROPS: ValuePropItem[] = [
     { icon: "Shield", text: "Certified & Tested" },
     { icon: "Truck", text: "Fast Delivery" },
     { icon: "Wrench", text: "Expert Support" },
     { icon: "CheckCircle", text: "In Stock" },
-  ]);
-  const [props, setProps] = useState(items);
+  ];
+
+  const DEFAULT_TRUST: { headline: string; logos: string[] } = {
+    headline: "Trusted by operators in mining, construction & transportation",
+    logos: ["TERRA-CON", "NORSE MARITIME", "ORE-CORP", "HEAVY-CO", "GLOBAL-MIN"],
+  };
+
+  function parseValueProps(raw: string): { props: ValuePropItem[]; trustBar: TrustBar } {
+    const trimmed = raw?.trim() ?? "";
+    if (!trimmed) return { props: DEFAULT_VALUE_PROPS, trustBar: DEFAULT_TRUST };
+
+    try {
+      const j = JSON.parse(trimmed) as unknown;
+      if (Array.isArray(j)) {
+        return { props: j as ValuePropItem[], trustBar: DEFAULT_TRUST };
+      }
+      if (j && typeof j === "object") {
+        const o = j as Record<string, unknown>;
+        const parsedProps = Array.isArray(o.props)
+          ? (o.props as ValuePropItem[])
+          : Array.isArray(o.value_props)
+            ? (o.value_props as ValuePropItem[])
+            : DEFAULT_VALUE_PROPS;
+        const tb = o.trust_bar as TrustBar | undefined;
+        return {
+          props: parsedProps?.length ? parsedProps : DEFAULT_VALUE_PROPS,
+          trustBar: {
+            headline: typeof tb?.headline === "string" ? tb.headline : DEFAULT_TRUST.headline,
+            logos: Array.isArray(tb?.logos) ? tb.logos.map(String) : DEFAULT_TRUST.logos,
+          },
+        };
+      }
+    } catch {
+      // ignore parsing errors; fall back to defaults
+    }
+
+    return { props: DEFAULT_VALUE_PROPS, trustBar: DEFAULT_TRUST };
+  }
+
+  const parsedInitial = parseValueProps(section.content);
+  const [props, setProps] = useState<ValuePropItem[]>(parsedInitial.props);
+  const [trustHeadline, setTrustHeadline] = useState<string>(String(parsedInitial.trustBar.headline ?? DEFAULT_TRUST.headline));
+  const [trustLogosLines, setTrustLogosLines] = useState<string>(
+    (parsedInitial.trustBar.logos ?? DEFAULT_TRUST.logos).join("\n")
+  );
   const icons = ["Shield", "Truck", "Wrench", "CheckCircle", "Package", "Users", "BarChart3"];
 
   useEffect(() => {
-    setProps(
-      parseJson<{ icon: string; text: string }[]>(section.content, [
-        { icon: "Shield", text: "Certified & Tested" },
-        { icon: "Truck", text: "Fast Delivery" },
-        { icon: "Wrench", text: "Expert Support" },
-        { icon: "CheckCircle", text: "In Stock" },
-      ])
-    );
+    const next = parseValueProps(section.content);
+    setProps(next.props);
+    setTrustHeadline(String(next.trustBar.headline ?? DEFAULT_TRUST.headline));
+    setTrustLogosLines((next.trustBar.logos ?? DEFAULT_TRUST.logos).join("\n"));
   }, [section.content]);
 
   const update = (i: number, key: "icon" | "text", v: string) => {
@@ -704,10 +746,40 @@ function ValuePropsSectionForm({
     setProps(next);
   };
 
-  const save = () => onSave({ content: JSON.stringify(props) });
+  const save = () => {
+    const trustLogos = trustLogosLines
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 12);
+
+    onSave({
+      content: JSON.stringify({
+        props,
+        trust_bar: {
+          headline: trustHeadline.trim() || undefined,
+          logos: trustLogos.length ? trustLogos : undefined,
+        },
+      }),
+    });
+  };
 
   return (
     <div className="space-y-4">
+      <Field
+        label="Trust bar headline"
+        value={trustHeadline}
+        onChange={setTrustHeadline}
+        placeholder={DEFAULT_TRUST.headline}
+      />
+      <Field
+        label="Trust bar logos (one per line)"
+        value={trustLogosLines}
+        onChange={setTrustLogosLines}
+        rows={4}
+        placeholder={"TERRA-CON\nNORSE MARITIME\nORE-CORP\nHEAVY-CO"}
+      />
+
       {props.map((p, i) => (
         <div key={i} className="flex gap-3 items-center">
           <select

@@ -8,6 +8,27 @@ import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 const PRESET_VAR_NAMES = new Set(LANDING_COLOR_PRESETS.map((p) => p.varName));
 
+const DEFAULT_LANDING_FONT_HEADING_STACK = "'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif";
+const DEFAULT_LANDING_FONT_BODY_STACK = "'Inter', system-ui, sans-serif";
+
+const DEFAULT_LANDING_FONT_SIZES: Record<(typeof LANDING_FONT_SIZE_KEYS)[number]["key"], string> = {
+  hero_title: "clamp(2.25rem, 5vw, 4.5rem)",
+  hero_subtitle: "clamp(1.05rem, 2.5vw, 1.25rem)",
+  stats_value: "clamp(1.75rem, 4vw, 2.25rem)",
+  stats_label: "0.875rem",
+  section_heading: "clamp(1.25rem, 2.5vw, 1.5rem)",
+  section_eyebrow: "0.75rem",
+  value_prop_text: "0.875rem",
+  wholesale_heading: "clamp(1.25rem, 2.5vw, 1.875rem)",
+  wholesale_body: "clamp(0.875rem, 1.5vw, 1rem)",
+};
+
+function readRootCssVar(varName: string): string {
+  if (typeof window === "undefined") return "";
+  const v = getComputedStyle(document.documentElement).getPropertyValue(varName);
+  return v.trim();
+}
+
 function parseExtraVars(json: string): Record<string, string> {
   if (!json.trim()) return {};
   const j = JSON.parse(json) as unknown;
@@ -46,22 +67,28 @@ export default function AdminLandingTheme() {
     const cv = theme.css_variables ?? {};
     const nextColors: Record<string, string> = {};
     for (const p of LANDING_COLOR_PRESETS) {
-      nextColors[p.varName] = cv[p.varName] ?? "";
+      // If DB theme is empty, show your current design from :root as editor defaults.
+      const fromDb = (cv as Record<string, unknown>)[p.varName];
+      const dbVal = typeof fromDb === "string" ? fromDb.trim() : "";
+      nextColors[p.varName] = dbVal || readRootCssVar(p.varName);
     }
     setColors(nextColors);
-    setRadius(cv["--radius"] ?? "");
+    const fromDbRadius = typeof (cv as Record<string, unknown>)["--radius"] === "string" ? String((cv as Record<string, unknown>)["--radius"]).trim() : "";
+    setRadius(fromDbRadius || readRootCssVar("--radius"));
     const extra: Record<string, string> = {};
     for (const [k, v] of Object.entries(cv)) {
       if (PRESET_VAR_NAMES.has(k) || k === "--radius") continue;
       if (typeof v === "string" && v) extra[k] = v;
     }
     setExtraVarsJson(Object.keys(extra).length ? JSON.stringify(extra, null, 2) : "{}");
-    setFontHeading(theme.font_heading_stack ?? "");
-    setFontBody(theme.font_body_stack ?? "");
+    setFontHeading(theme.font_heading_stack?.trim() ? theme.font_heading_stack : DEFAULT_LANDING_FONT_HEADING_STACK);
+    setFontBody(theme.font_body_stack?.trim() ? theme.font_body_stack : DEFAULT_LANDING_FONT_BODY_STACK);
     setGoogleUrl(theme.google_fonts_url ?? "");
     const nextSizes: Record<string, string> = {};
     for (const s of LANDING_FONT_SIZE_KEYS) {
-      nextSizes[s.key] = theme.font_sizes?.[s.key] ?? "";
+      const dbVal = (theme.font_sizes as Record<string, unknown> | undefined)?.[s.key];
+      const dbStr = typeof dbVal === "string" ? dbVal.trim() : "";
+      nextSizes[s.key] = dbStr || DEFAULT_LANDING_FONT_SIZES[s.key] || "";
     }
     setSizes(nextSizes);
     setCustomCss(theme.custom_css ?? "");

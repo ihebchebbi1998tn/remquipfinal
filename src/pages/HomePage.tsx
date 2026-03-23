@@ -140,6 +140,7 @@ export default function HomePage() {
   const hero = sections.hero ?? {};
   const heroCta = useMemo(() => parseJson<HeroCtaContent>(hero.content, {}), [hero.content]);
   const valuePropsParsed = useMemo(() => parseValuePropsContent(sections.value_props?.content), [sections.value_props?.content]);
+  const rawValuePropsContent = sections.value_props?.content?.trim() ?? "";
   const catIntro = sections.categories_intro ?? {};
   const featIntro = sections.featured_intro ?? {};
   const catIntroExtras = parseJson<{ view_all_label?: string }>(catIntro.content, {});
@@ -294,8 +295,9 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-            {/* Legacy value row (optional, when CMS uses array-only props) */}
-            {sections.value_props?.content?.trim()?.startsWith("[") ? (
+            {/* Value row (icons + labels). Works with both legacy array and object CMS formats. */}
+            {rawValuePropsContent ? (
+              valuePropsParsed.row?.length ? (
               <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 mt-10 pt-8 border-t border-border/60">
                 {valuePropsParsed.row.map(({ icon: iconKey, text }) => {
                   const Icon = ICON_MAP[iconKey] ?? CheckCircle;
@@ -307,6 +309,7 @@ export default function HomePage() {
                   );
                 })}
               </div>
+              ) : null
             ) : null}
           </div>
         </section>

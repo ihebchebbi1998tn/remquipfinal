@@ -66,7 +66,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen flex bg-secondary">
+    <div className="min-h-screen flex bg-background">
       {/* Mobile nav overlay */}
       {mobileNav && (
         <div className="fixed inset-0 z-50 md:hidden">
