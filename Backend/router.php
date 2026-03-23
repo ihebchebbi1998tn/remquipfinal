@@ -87,66 +87,91 @@ function remquip_dispatch(array $segments): void
         'routeSegments' => $routeSegments,
     ]);
 
+    /**
+     * Dispatch helper: ensures any uncaught PHP `Throwable` returns JSON.
+     * Without this, some fatal errors can produce HTTP 500 with an empty body,
+     * which makes debugging impossible from the frontend.
+     */
+    $safeRequire = function (string $file) use ($resource) {
+        try {
+            require_once $file;
+        } catch (Throwable $e) {
+            try {
+                Logger::error('API dispatch fatal error', [
+                    'resource' => $resource,
+                    'file' => $file,
+                    'error' => $e->getMessage(),
+                ]);
+            } catch (Throwable $_) {
+                // ignore logger failures
+            }
+            ResponseHelper::sendError('API dispatch failed', 500, [
+                'resource' => $resource,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    };
+
     switch ($resource) {
         case 'auth':
-            require_once __DIR__ . '/routes/auth.php';
+            $safeRequire(__DIR__ . '/routes/auth.php');
             break;
         case 'users':
-            require_once __DIR__ . '/routes/users.php';
+            $safeRequire(__DIR__ . '/routes/users.php');
             break;
         case 'products':
-            require_once __DIR__ . '/routes/products.php';
+            $safeRequire(__DIR__ . '/routes/products.php');
             break;
         case 'categories':
-            require_once __DIR__ . '/routes/categories.php';
+            $safeRequire(__DIR__ . '/routes/categories.php');
             break;
         case 'inventory':
-            require_once __DIR__ . '/routes/inventory.php';
+            $safeRequire(__DIR__ . '/routes/inventory.php');
             break;
         case 'customers':
-            require_once __DIR__ . '/routes/customers.php';
+            $safeRequire(__DIR__ . '/routes/customers.php');
             break;
         case 'orders':
-            require_once __DIR__ . '/routes/orders.php';
+            $safeRequire(__DIR__ . '/routes/orders.php');
             break;
         case 'discounts':
-            require_once __DIR__ . '/routes/discounts.php';
+            $safeRequire(__DIR__ . '/routes/discounts.php');
             break;
         case 'uploads':
-            require_once __DIR__ . '/routes/uploads.php';
+            $safeRequire(__DIR__ . '/routes/uploads.php');
             break;
         case 'analytics':
-            require_once __DIR__ . '/routes/analytics.php';
+            $safeRequire(__DIR__ . '/routes/analytics.php');
             break;
         case 'cms':
-            require_once __DIR__ . '/routes/cms.php';
+            $safeRequire(__DIR__ . '/routes/cms.php');
             break;
         case 'health':
             ResponseHelper::sendSuccess(['status' => 'ok', 'timestamp' => date('Y-m-d H:i:s')], 'API is running');
             break;
         case 'dashboard':
-            require_once __DIR__ . '/routes/dashboard.php';
+            $safeRequire(__DIR__ . '/routes/dashboard.php');
             break;
         case 'audit':
-            require_once __DIR__ . '/routes/audit.php';
+            $safeRequire(__DIR__ . '/routes/audit.php');
             break;
         case 'user':
-            require_once __DIR__ . '/routes/user.php';
+            $safeRequire(__DIR__ . '/routes/user.php');
             break;
         case 'admin':
-            require_once __DIR__ . '/routes/admin.php';
+            $safeRequire(__DIR__ . '/routes/admin.php');
             break;
         case 'admin-contacts':
-            require_once __DIR__ . '/routes/admin-contacts.php';
+            $safeRequire(__DIR__ . '/routes/admin-contacts.php');
             break;
         case 'settings':
-            require_once __DIR__ . '/routes/settings.php';
+            $safeRequire(__DIR__ . '/routes/settings.php');
             break;
         case 'contact-map':
-            require_once __DIR__ . '/routes/contact-map.php';
+            $safeRequire(__DIR__ . '/routes/contact-map.php');
             break;
         case 'landing-theme':
-            require_once __DIR__ . '/routes/landing-theme.php';
+            $safeRequire(__DIR__ . '/routes/landing-theme.php');
             break;
         default:
             ResponseHelper::sendError('Resource not found', 404);

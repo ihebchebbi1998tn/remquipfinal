@@ -476,7 +476,8 @@ class APIService {
 
   /**
    * - Paths whose last segment ends with `.php` are requested directly (e.g. `cms/page-content.php?slug=home`).
-   * - All other logical paths use `api.php?path=...` (no mod_rewrite required).
+   * - All other logical paths use the backend entrypoint `remquip-api.php?path=...`
+   *   (same routing as `api.php`, but some hosts treat `api.php` differently).
    */
   private buildApiUrl(endpoint: string): string {
     const base = this.baseUrl.replace(/\/+$/, "");
@@ -499,7 +500,7 @@ class APIService {
       const extra = new URLSearchParams(raw.slice(qIdx + 1));
       extra.forEach((v, k) => params.append(k, v));
     }
-    return `${base}/api.php?${params.toString()}`;
+    return `${base}/remquip-api.php?${params.toString()}`;
   }
 
   /**

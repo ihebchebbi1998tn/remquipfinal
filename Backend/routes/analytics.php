@@ -233,12 +233,21 @@ if ($method === 'GET' && $id === 'sales' && !$action) {
     try {
         $period = isset($_GET['period']) ? $_GET['period'] : 'month';
         
-        $groupBy = match($period) {
-            'day' => 'DATE(created_at)',
-            'week' => 'WEEK(created_at)',
-            'year' => 'YEAR(created_at)',
-            default => 'DATE_FORMAT(created_at, "%Y-%m")'
-        };
+        // NOTE: Do not use PHP 8 `match()` here because the production host may run PHP < 8.
+        switch ($period) {
+            case 'day':
+                $groupBy = 'DATE(created_at)';
+                break;
+            case 'week':
+                $groupBy = 'WEEK(created_at)';
+                break;
+            case 'year':
+                $groupBy = 'YEAR(created_at)';
+                break;
+            default:
+                $groupBy = 'DATE_FORMAT(created_at, "%Y-%m")';
+                break;
+        }
         
         $sales = $conn->fetchAll(
             "SELECT $groupBy as period, 

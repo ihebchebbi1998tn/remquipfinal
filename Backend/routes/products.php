@@ -84,12 +84,21 @@ if ($method === 'GET' && (!$id || $id === 'search' || ($id === 'category' && $ac
         $total = $conn->fetch($countSql, $params)['total'] ?? 0;
         
         // Get products
-        $orderBy = match($sort) {
-            'price_low' => 'p.base_price ASC',
-            'price_high' => 'p.base_price DESC',
-            'newest' => 'p.created_at DESC',
-            default => 'p.created_at DESC'
-        };
+        // NOTE: Do not use PHP 8 `match()` here because the production host may run PHP < 8.
+        switch ($sort) {
+            case 'price_low':
+                $orderBy = 'p.base_price ASC';
+                break;
+            case 'price_high':
+                $orderBy = 'p.base_price DESC';
+                break;
+            case 'newest':
+                $orderBy = 'p.created_at DESC';
+                break;
+            default:
+                $orderBy = 'p.created_at DESC';
+                break;
+        }
         
         $sql = "SELECT p.id, p.sku, p.name, p.description, p.category_id, p.base_price as price, p.created_at,
                        c.name as category, c.slug as categorySlug,
