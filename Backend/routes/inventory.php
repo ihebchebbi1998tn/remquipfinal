@@ -44,7 +44,8 @@ if ($method === 'POST' && ($rs[0] ?? '') === 'adjust') {
         if ($reorderLevel > 0 && $oldAvail > $reorderLevel && $newAvail <= $reorderLevel) {
             remquip_notify_low_stock($conn, $old['sku'], $old['name'], $newAvail, $reorderLevel);
         }
-        $payload = Auth::verifyToken(Auth::getToken());
+        $tok = Auth::getToken();
+        $payload = $tok ? Auth::verifyToken($tok) : null;
         $conn->execute(
             'INSERT INTO remquip_inventory_logs (product_id, user_id, action, quantity_change, reason, old_quantity, new_quantity)
              VALUES (:pid, :uid, :act, :chg, :reason, :oldq, :newq)',
@@ -210,8 +211,9 @@ if (($method === 'PATCH' || $method === 'PUT') && $id && !$action) {
             ]
         );
         
-        // Log the change
-        $payload = Auth::verifyToken(Auth::getToken());
+        // Log the change (token optional when ADMIN_NO_AUTH is enabled)
+        $tok = Auth::getToken();
+        $payload = $tok ? Auth::verifyToken($tok) : null;
         $conn->execute(
             "INSERT INTO remquip_inventory_logs (product_id, user_id, action, quantity_change, reason, old_quantity, new_quantity)
              VALUES (:productId, :userId, :action, :change, :reason, :oldQty, :newQty)",

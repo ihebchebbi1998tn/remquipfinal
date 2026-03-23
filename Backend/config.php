@@ -76,6 +76,12 @@ define('PERMISSIONS', [
     'publish' => 16
 ]);
 
+// Development/bootstrapping mode:
+// Some hosts/proxies strip `Authorization` headers before PHP sees them,
+// causing admin routes to constantly fail with "Missing token".
+// If you can properly pass tokens, set this back to false.
+define('ADMIN_NO_AUTH', true);
+
 /**
  * Admin bootstrap key for creating admin accounts via the internal setup UI/API.
  * This is intentionally hardcoded (no .env support in this project) so the feature

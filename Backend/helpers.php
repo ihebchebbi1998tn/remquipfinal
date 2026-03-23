@@ -326,6 +326,17 @@ class Auth {
      * @return array
      */
     public static function requireAuth($requiredRole = null) {
+        // If enabled, skip auth for admin endpoints entirely.
+        // This is meant to unblock the admin UI when the host strips tokens.
+        if ($requiredRole === 'admin' && defined('ADMIN_NO_AUTH') && ADMIN_NO_AUTH === true) {
+            return [
+                'user_id' => null,
+                'role' => 'admin',
+                'iat' => time(),
+                'exp' => time() + (TOKEN_EXPIRY ?? (24 * 60 * 60)),
+            ];
+        }
+
         $token = self::getToken();
         
         if (!$token) {

@@ -401,7 +401,8 @@ if ($method === 'POST' && $id && $action === 'notes') {
             ResponseHelper::sendError('Note content is required', 400);
         }
         
-        $payload = Auth::verifyToken(Auth::getToken());
+        $tok = Auth::getToken();
+        $payload = $tok ? Auth::verifyToken($tok) : null;
         
         $noteId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(

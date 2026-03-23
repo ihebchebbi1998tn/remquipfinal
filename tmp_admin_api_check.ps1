@@ -24,7 +24,17 @@ $headers = @{
 }
 
 function Test-Get([string]$path) {
-  $url = "$base/api.php?path=$path"
+  # $path is logical path without leading slash (may include ?page=...).
+  $parts = $path.Split('?', 2)
+  $pathOnly = $parts[0]
+  $qs = if ($parts.Count -gt 1) { $parts[1] } else { "" }
+
+  $tokenEnc = [uri]::EscapeDataString($token)
+  $pathEnc = [uri]::EscapeDataString($pathOnly)
+  $url = "$base/api.php?path=$pathEnc&token=$tokenEnc"
+  if ($qs -ne "") {
+    $url = $url + "&" + $qs
+  }
   try {
     $r = Invoke-RestMethod -Method Get -Uri $url -Headers $headers
     Write-Host ("OK  " + $path)
@@ -50,22 +60,22 @@ function Test-Get([string]$path) {
 Write-Host "==== Protected admin read endpoints ===="
 
 $adminReadPaths = @(
-  "dashboard%2Fstats",
-  "dashboard%2Frecent-orders",
-  "dashboard%2Factivity-log",
-  "dashboard%2Ftop-products",
-  "inventory%2Flow-stock",
-  "inventory%2Flogs%3Fpage%3D1%26limit%3D20",
-  "orders%3Fpage%3D1%26limit%3D5",
-  "customers%3Fpage%3D1%26limit%3D5",
-  "discounts%3Fpage%3D1%26limit%3D5",
-  "analytics%2Fdashboard",
-  "analytics%2Fevents%2Fsummary%3Fdays%3D30",
+  "dashboard/stats",
+  "dashboard/recent-orders",
+  "dashboard/activity-log",
+  "dashboard/top-products",
+  "inventory/low-stock",
+  "inventory/logs?page=1&limit=20",
+  "orders?page=1&limit=5",
+  "customers?page=1&limit=5",
+  "discounts?page=1&limit=5",
+  "analytics/dashboard",
+  "analytics/events/summary?days=30",
   "settings",
-  "users%3Fpage%3D1%26limit%3D10",
-  "admin%2Fpermissions",
-  "cms%2Fpages%3Fpage%3D1%26limit%3D5",
-  "cms%2Fpages%2Fhome%2Fcontent%3Flocale%3Den"
+  "users?page=1&limit=10",
+  "admin/permissions",
+  "cms/pages?page=1&limit=5",
+  "cms/pages/home/content?locale=en"
 )
 
 foreach ($p in $adminReadPaths) {

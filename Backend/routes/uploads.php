@@ -148,7 +148,8 @@ if ($method === 'POST' && $uploadType === 'contract' && !$action) {
         
         // Save to database
         if (!empty($_POST['customerId'])) {
-            $payload = Auth::verifyToken(Auth::getToken());
+            $tok = Auth::getToken();
+            $payload = $tok ? Auth::verifyToken($tok) : null;
             
             $conn->execute(
                 "INSERT INTO remquip_customer_documents (customer_id, document_type, file_url, file_name, uploaded_by)
