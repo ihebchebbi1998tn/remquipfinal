@@ -26,6 +26,14 @@ const statusIcons: Record<string, React.ElementType> = {
 const carriers = ["Purolator", "Canada Post", "UPS", "FedEx", "Day & Ross"];
 
 export default function AdminOrders() {
+  // Backend sometimes returns numeric fields as strings.
+  // Convert safely so `.toFixed()` never crashes.
+  function toNumber(v: unknown): number {
+    if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -268,20 +276,41 @@ export default function AdminOrders() {
                     <p className="text-xs text-muted-foreground font-mono">{item.product_id}</p>
                   </div>
                   <div className="text-right flex-shrink-0 ml-4">
-                    <p className="text-sm font-medium">C${item.subtotal.toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground">{item.quantity} × C${item.unit_price.toFixed(2)}</p>
+                    <p className="text-sm font-medium">C${toNumber(item.subtotal).toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.quantity} × C${toNumber(item.unit_price).toFixed(2)}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
             <div className="mt-4 pt-4 border-t border-border space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>C${selectedOrder.subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>C${selectedOrder.tax_amount.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{selectedOrder.shipping_amount === 0 ? "Free" : `C$${selectedOrder.shipping_amount.toFixed(2)}`}</span></div>
-              {selectedOrder.discount_amount && selectedOrder.discount_amount > 0 && (
-                <div className="flex justify-between text-success"><span>Discount</span><span>-C${selectedOrder.discount_amount.toFixed(2)}</span></div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>C${toNumber(selectedOrder.subtotal).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tax</span>
+                <span>C${toNumber(selectedOrder.tax_amount).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Shipping</span>
+                <span>
+                  {toNumber(selectedOrder.shipping_amount) === 0
+                    ? "Free"
+                    : `C$${toNumber(selectedOrder.shipping_amount).toFixed(2)}`}
+                </span>
+              </div>
+              {toNumber(selectedOrder.discount_amount) > 0 && (
+                <div className="flex justify-between text-success">
+                  <span>Discount</span>
+                  <span>-C${toNumber(selectedOrder.discount_amount).toFixed(2)}</span>
+                </div>
               )}
-              <div className="flex justify-between font-bold text-base pt-2 border-t border-border"><span>Total</span><span>C${selectedOrder.total_amount.toFixed(2)}</span></div>
+              <div className="flex justify-between font-bold text-base pt-2 border-t border-border">
+                <span>Total</span>
+                <span>C${toNumber(selectedOrder.total_amount).toFixed(2)}</span>
+              </div>
             </div>
           </div>
 
@@ -435,7 +464,7 @@ export default function AdminOrders() {
                   <td className="px-3 py-3 font-mono text-xs font-medium">{order.order_number}</td>
                   <td className="px-3 py-3">{order.customer_email}</td>
                   <td className="px-3 py-3 text-muted-foreground">{new Date(order.order_date).toLocaleDateString()}</td>
-                  <td className="px-3 py-3 text-right font-medium">C${order.total_amount.toFixed(2)}</td>
+                  <td className="px-3 py-3 text-right font-medium">C${toNumber(order.total_amount).toFixed(2)}</td>
                   <td className="px-3 py-3"><span className={statusStyles[order.payment_status]}>{order.payment_status}</span></td>
                   <td className="px-3 py-3"><span className={statusStyles[order.status]}>{order.status}</span></td>
                   <td className="px-3 py-3">
@@ -468,7 +497,7 @@ export default function AdminOrders() {
               <p className="text-sm text-muted-foreground">{order.customer_email}</p>
               <div className="flex items-center justify-between mt-2 text-sm">
                 <span className="text-muted-foreground">{new Date(order.order_date).toLocaleDateString()}</span>
-                <span className="font-medium">C${order.total_amount.toFixed(2)}</span>
+                <span className="font-medium">C${toNumber(order.total_amount).toFixed(2)}</span>
               </div>
             </div>
           ))}
