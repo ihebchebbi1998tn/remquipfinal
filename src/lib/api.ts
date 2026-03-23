@@ -553,9 +553,21 @@ class APIService {
 
         // Special handling for 401 (skip for optional public calls e.g. analytics beacon)
         if (response.status === HTTP_STATUS.UNAUTHORIZED && !skipAuthRedirect) {
-          TokenManager.removeToken();
-          const path = typeof window !== 'undefined' ? window.location.pathname || '' : '';
-          window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
+          const tokenBefore = TokenManager.getToken();
+          const message = typeof errorData?.message === 'string' ? errorData.message : '';
+          const isMissingToken = message.toLowerCase().includes('missing token');
+
+          // If we still have a token in localStorage but the backend says "missing token",
+          // avoid nuking the session and bouncing to login (this can happen due to races
+          // during app boot / token initialization).
+          if (!(tokenBefore && isMissingToken)) {
+            TokenManager.removeToken();
+          }
+
+          if (!(tokenBefore && isMissingToken)) {
+            const path = typeof window !== 'undefined' ? window.location.pathname || '' : '';
+            window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
+          }
         }
 
         throw apiError;
@@ -834,8 +846,8 @@ class APIService {
 
   // ==================== USER METHODS ====================
 
-  async getProfile(): Promise<ApiResponse<User>> {
-    return this.request('GET', API_ENDPOINTS.USERS.PROFILE);
+  async getProfile(options?: { skipAuthRedirect?: boolean }): Promise<ApiResponse<User>> {
+    return this.request('GET', API_ENDPOINTS.USERS.PROFILE, undefined, { skipAuthRedirect: options?.skipAuthRedirect });
   }
 
   async getUser(id: string): Promise<ApiResponse<User>> {

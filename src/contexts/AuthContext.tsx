@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Verify token is still valid by fetching current user.
           // If it fails with 401, remove the token; otherwise keep fallback.
           try {
-            const response = await api.getProfile();
+            const response = await api.getProfile({ skipAuthRedirect: true });
             if (response.data) setUser(response.data);
           } catch (err: any) {
             const statusCode = err?.statusCode ?? err?.response?.status;
