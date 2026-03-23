@@ -92,11 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const statusCode = err?.statusCode ?? err?.response?.status;
             const currentToken = localStorage.getItem(TOKEN_KEY);
             // Race protection: only clear token if the token that failed is still current.
-            if ((statusCode === 401 || statusCode === 403) && currentToken === tokenAtStart) {
-              localStorage.removeItem(TOKEN_KEY);
-              setToken(null);
-              setUser(null);
-            }
+            // IMPORTANT: Do NOT clear token here. Keeping the session prevents
+            // "missing token" loops if the profile endpoint is temporarily failing
+            // or if a parallel redirect race occurs. Admin/backend endpoints will
+            // still enforce permissions if the token truly is invalid.
             // For network/5xx issues, keep fallback user + token.
           }
         }

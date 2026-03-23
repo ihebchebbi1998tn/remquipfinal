@@ -428,15 +428,21 @@ export function mapDiscountRow(row: Record<string, unknown>): Discount {
 // ==================== TOKEN MANAGEMENT ====================
 
 class TokenManager {
+  private static tokenCache: string | null = null;
+
   static setToken(token: string): void {
+    this.tokenCache = token;
     localStorage.setItem(TOKEN_CONFIG.LOCAL_STORAGE_KEY, token);
   }
 
   static getToken(): string | null {
-    return localStorage.getItem(TOKEN_CONFIG.LOCAL_STORAGE_KEY);
+    // Prefer localStorage, but fall back to in-memory cache to avoid
+    // "Missing token" issues when localStorage is cleared during app boot.
+    return localStorage.getItem(TOKEN_CONFIG.LOCAL_STORAGE_KEY) ?? this.tokenCache;
   }
 
   static removeToken(): void {
+    this.tokenCache = null;
     localStorage.removeItem(TOKEN_CONFIG.LOCAL_STORAGE_KEY);
   }
 
@@ -554,17 +560,13 @@ class APIService {
         // Special handling for 401 (skip for optional public calls e.g. analytics beacon)
         if (response.status === HTTP_STATUS.UNAUTHORIZED && !skipAuthRedirect) {
           const tokenBefore = TokenManager.getToken();
-          const message = typeof errorData?.message === 'string' ? errorData.message : '';
-          const isMissingToken = message.toLowerCase().includes('missing token');
 
-          // If we still have a token in localStorage but the backend says "missing token",
-          // avoid nuking the session and bouncing to login (this can happen due to races
-          // during app boot / token initialization).
-          if (!(tokenBefore && isMissingToken)) {
+          // If the client still has a token, do not clear it or redirect.
+          // This prevents "Missing token" loops caused by races during auth boot.
+          if (tokenBefore) {
+            // Keep token in storage; let AuthContext / UI decide what to do.
+          } else {
             TokenManager.removeToken();
-          }
-
-          if (!(tokenBefore && isMissingToken)) {
             const path = typeof window !== 'undefined' ? window.location.pathname || '' : '';
             window.location.href = path.startsWith('/admin') ? '/admin/login' : '/login';
           }
