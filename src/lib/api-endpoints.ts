@@ -47,6 +47,7 @@ export const API_ENDPOINTS = {
   // ==================== AUTH ENDPOINTS ====================
   AUTH: {
     LOGIN: '/auth/login',
+    ADMIN_SIGNUP: '/auth/admin-signup',
     REGISTER: '/auth/register',
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',

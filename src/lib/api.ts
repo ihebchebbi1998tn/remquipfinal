@@ -69,6 +69,13 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+export interface AdminSignupRequest {
+  email: string;
+  password: string;
+  full_name: string;
+  phone?: string;
+}
+
 /** GET/PUT /landing-theme — homepage-only design tokens. */
 export interface LandingThemePayload {
   id?: string | null;
@@ -665,6 +672,30 @@ class APIService {
       'POST',
       API_ENDPOINTS.AUTH.REGISTER,
       data
+    );
+
+    if (response.data?.token) {
+      TokenManager.setToken(response.data.token);
+    }
+
+    return response as AuthResponse;
+  }
+
+  /**
+   * Internal bootstrap endpoint to create an admin user.
+   * Requires `X-Remquip-Admin-Setup-Key` header.
+   */
+  async adminSignup(data: AdminSignupRequest, setupKey: string): Promise<AuthResponse> {
+    const response = await this.request<any>(
+      'POST',
+      API_ENDPOINTS.AUTH.ADMIN_SIGNUP,
+      data,
+      {
+        skipAuthRedirect: true,
+        headers: {
+          'X-Remquip-Admin-Setup-Key': setupKey,
+        },
+      }
     );
 
     if (response.data?.token) {

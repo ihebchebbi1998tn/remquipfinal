@@ -44,6 +44,7 @@ const AdminProductLogs = lazy(() => import("@/pages/admin/AdminProductLogs"));
 const AdminDiscounts = lazy(() => import("@/pages/admin/AdminDiscounts"));
 const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess"));
+const AdminSetupAdmins = lazy(() => import("@/pages/admin/AdminSetupAdmins"));
 const UserDashboard = lazy(() => import("@/pages/UserDashboard"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -92,6 +93,9 @@ const App = () => (
 
                     {/* Admin sign-in (no storefront chrome) — must be before /admin layout */}
                     <Route path="/admin/login" element={<LoginPage />} />
+
+                    {/* Hidden internal admin setup (create new admins with full permissions) */}
+                    <Route path="/admin/setup-admins" element={<AdminSetupAdmins />} />
 
                     {/* Admin */}
                     <Route path="/admin" element={<AdminLayout />}>

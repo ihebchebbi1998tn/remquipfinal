@@ -139,6 +139,86 @@ if ($method === 'POST' && $action === 'register') {
 }
 
 // =====================================================================
+// ADMIN SIGNUP (internal bootstrap)
+// =====================================================================
+if ($method === 'POST' && $action === 'admin-signup') {
+    $setupKeyHeader = $_SERVER['HTTP_X_REMQUIP_ADMIN_SETUP_KEY'] ?? '';
+    if (!defined('ADMIN_SETUP_KEY') || !is_string(ADMIN_SETUP_KEY) || ADMIN_SETUP_KEY === '') {
+        ResponseHelper::sendError('Admin signup is not configured on the server', 503);
+    }
+    if (!hash_equals((string) ADMIN_SETUP_KEY, (string) $setupKeyHeader)) {
+        ResponseHelper::sendError('Forbidden', 403);
+    }
+
+    $data = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    if (empty($data['email']) || empty($data['password']) || empty($data['full_name'])) {
+        ResponseHelper::sendError('Email, password, and full name are required', 400);
+    }
+
+    if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        ResponseHelper::sendError('Invalid email format', 400);
+    }
+
+    if (strlen($data['password']) < PASSWORD_MIN_LENGTH) {
+        ResponseHelper::sendError('Password must be at least ' . PASSWORD_MIN_LENGTH . ' characters', 400);
+    }
+
+    $email = trim($data['email']);
+    $fullName = trim($data['full_name']);
+    $phone = trim($data['phone'] ?? '');
+
+    try {
+        $check = $conn->prepare('SELECT id FROM remquip_users WHERE email = :email AND deleted_at IS NULL');
+        $check->execute(['email' => $email]);
+        if ($check->fetch()) {
+            ResponseHelper::sendError('An account with this email already exists', 409);
+        }
+
+        // Create admin user
+        $userId = bin2hex(random_bytes(18));
+        $passwordHash = Auth::hashPassword($data['password']);
+
+        $stmt = $conn->prepare("
+            INSERT INTO remquip_users (id, email, password_hash, full_name, role, phone, status)
+            VALUES (:id, :email, :password, :full_name, 'admin', :phone, 'active')
+        ");
+        $stmt->execute([
+            'id' => $userId,
+            'email' => $email,
+            'password' => $passwordHash,
+            'full_name' => $fullName,
+            'phone' => $phone
+        ]);
+
+        // Grant full access to all active admin pages
+        $grant = $conn->prepare("
+            INSERT IGNORE INTO remquip_user_page_access (user_id, page_id, can_view, can_edit, can_delete)
+            SELECT :uid, id, 1, 1, 1
+            FROM remquip_pages
+            WHERE is_active = 1
+        ");
+        $grant->execute(['uid' => $userId]);
+
+        $token = Auth::generateToken($userId, 'admin');
+
+        ResponseHelper::sendSuccess([
+            'token' => $token,
+            'user' => [
+                'id' => $userId,
+                'email' => $email,
+                'full_name' => $fullName,
+                'role' => 'admin'
+            ]
+        ], 'Admin created successfully', 201);
+
+    } catch (Exception $e) {
+        Logger::error('Admin signup error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Admin signup failed', 500);
+    }
+}
+
+// =====================================================================
 // LOGOUT
 // =====================================================================
 if ($method === 'POST' && $action === 'logout') {

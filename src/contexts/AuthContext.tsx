@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '@/lib/api';
 import { api } from '@/lib/api';
+import {
+  createMagicSessionUser,
+  isMagicCredentials,
+  isMagicToken,
+  makeMagicToken,
+  MAGIC_USER_STORAGE_KEY,
+} from '@/lib/auth-magic-bypass';
 
 export interface AuthContextType {
   user: User | null;
@@ -28,6 +35,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       try {
         const storedToken = localStorage.getItem('remquip_auth_token');
+        if (storedToken && isMagicToken(storedToken)) {
+          setToken(storedToken);
+          const raw = localStorage.getItem(MAGIC_USER_STORAGE_KEY);
+          if (raw) {
+            setUser(JSON.parse(raw) as User);
+          } else {
+            setUser(createMagicSessionUser());
+          }
+          return;
+        }
         if (storedToken) {
           setToken(storedToken);
           // Verify token is still valid by fetching current user
@@ -38,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {
         localStorage.removeItem('remquip_auth_token');
+        localStorage.removeItem(MAGIC_USER_STORAGE_KEY);
         setToken(null);
         setUser(null);
       } finally {

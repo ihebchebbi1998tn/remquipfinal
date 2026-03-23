@@ -76,6 +76,13 @@ define('PERMISSIONS', [
     'publish' => 16
 ]);
 
+/**
+ * Admin bootstrap key for creating admin accounts via the internal setup UI/API.
+ * This is intentionally hardcoded (no .env support in this project) so the feature
+ * works immediately; change it before deploying to public environments.
+ */
+define('ADMIN_SETUP_KEY', 'remquip_admin_setup_default');
+
 // Cache Configuration
 define('CACHE_ENABLED', true);
 define('CACHE_TTL', 3600); // 1 hour
