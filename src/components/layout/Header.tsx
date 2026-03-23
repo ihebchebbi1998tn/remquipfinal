@@ -12,6 +12,7 @@ import { usePublicSettings } from "@/hooks/useApi";
 import { useCMSPageContent } from "@/hooks/useCMS";
 import { apiProductToStorefront, productDetailHref, type StorefrontProduct } from "@/lib/storefront-product";
 import { RemquipSearchPulse } from "@/components/RemquipLoadingScreen";
+import { ADMIN_NO_AUTH } from "@/config/constants";
 
 function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   if (!raw?.trim()) return fallback;
@@ -446,7 +447,16 @@ export default function Header() {
             </div>
 
             {/* Account */}
-            {isAuthenticated && user ? (
+            {ADMIN_NO_AUTH ? (
+              <Link
+                to="/admin"
+                className="hidden items-center gap-1.5 rounded-md px-2 py-2 text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground md:flex"
+                aria-label={t("nav.admin")}
+              >
+                <User className="h-[18px] w-[18px]" strokeWidth={2} />
+                <span className="hidden text-xs font-medium lg:inline">{t("nav.admin")}</span>
+              </Link>
+            ) : isAuthenticated && user ? (
               (user.role === "admin" || user.role === "super_admin" || user.role === "manager") ? (
                 <Link
                   to="/admin"
@@ -628,7 +638,17 @@ export default function Header() {
             <hr className="border-border" />
 
             {/* Account */}
-            {isAuthenticated && user ? (
+            {ADMIN_NO_AUTH ? (
+              <Link
+                to="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2.5 py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md"
+                aria-label={t("nav.admin")}
+              >
+                <User className="h-4 w-4" />
+                {t("nav.admin")}
+              </Link>
+            ) : isAuthenticated && user ? (
               (user.role === "admin" || user.role === "super_admin" || user.role === "manager") ? (
                 <Link
                   to="/admin"

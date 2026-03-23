@@ -7,6 +7,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ADMIN_NO_AUTH } from "@/config/constants";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, path: "/admin" },
@@ -37,26 +38,28 @@ export default function AdminLayout() {
   }
 
   // Staff routes — send to login with return path (LoginPage honors state.from and ?redirect=)
-  if (!isAuthenticated || !user) {
-    console.warn('[AdminLayout] Access denied: Not authenticated');
-    const returnTo = `${location.pathname}${location.search}`;
-    return (
-      <Navigate
-        to={`/admin/login?redirect=${encodeURIComponent(returnTo)}`}
-        state={{ from: location }}
-        replace
-      />
-    );
-  }
+  if (!ADMIN_NO_AUTH) {
+    if (!isAuthenticated || !user) {
+      console.warn('[AdminLayout] Access denied: Not authenticated');
+      const returnTo = `${location.pathname}${location.search}`;
+      return (
+        <Navigate
+          to={`/admin/login?redirect=${encodeURIComponent(returnTo)}`}
+          state={{ from: location }}
+          replace
+        />
+      );
+    }
 
-  // Redirect to home if user doesn't have admin role
-  const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'manager';
-  if (!isAdmin) {
-    console.warn('[AdminLayout] Access denied: User role is', user.role, 'but admin role required');
-    return <Navigate to="/" replace />;
-  }
+    // Redirect to home if user doesn't have admin role
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'manager';
+    if (!isAdmin) {
+      console.warn('[AdminLayout] Access denied: User role is', user.role, 'but admin role required');
+      return <Navigate to="/" replace />;
+    }
 
-  console.log('[AdminLayout] Access granted for:', user.email, 'with role:', user.role);
+    console.log('[AdminLayout] Access granted for:', user.email, 'with role:', user.role);
+  }
 
   const currentPage = navItems.find(
     (item) => location.pathname === item.path || (item.path !== "/admin" && location.pathname.startsWith(item.path))

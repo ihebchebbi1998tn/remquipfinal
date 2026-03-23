@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiQuery } from './useApi';
+import { ADMIN_NO_AUTH } from '@/config/constants';
 
 /**
  * Admin Permissions Interface
@@ -88,6 +89,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, AdminPermissions> = {
  */
 export function usePermissions() {
   const { user, isAuthenticated } = useAuth();
+
+  if (ADMIN_NO_AUTH) {
+    const permissions = DEFAULT_ROLE_PERMISSIONS.admin;
+    return {
+      permissions,
+      canAccess: (_permission: keyof AdminPermissions) => true,
+      hasAnyPermission: (_permissionList: (keyof AdminPermissions)[]) => true,
+      hasAllPermissions: (_permissionList: (keyof AdminPermissions)[]) => true,
+      isLoading: false,
+    };
+  }
 
   // TODO: When backend is ready, uncomment this to fetch custom permissions
   // const { data, isLoading } = useApiQuery(

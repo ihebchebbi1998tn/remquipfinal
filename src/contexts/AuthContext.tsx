@@ -99,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // For network/5xx issues, keep fallback user + token.
           }
         }
+
       } catch {
         const currentToken = localStorage.getItem('remquip_auth_token');
         if (storedToken && currentToken === storedToken) {

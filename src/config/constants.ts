@@ -27,3 +27,7 @@ export const RATE_LIMITS = {
   public: { requests: 100, windowMs: 60_000 },
   admin: { requests: 200, windowMs: 60_000 },
 } as const;
+
+// Admin no-auth mode: admin CRUD endpoints do not require Bearer tokens.
+// This is set to true to match `Backend/config.php` ADMIN_NO_AUTH.
+export const ADMIN_NO_AUTH = true;

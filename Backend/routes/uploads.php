@@ -10,7 +10,7 @@ $uploadType = $id ?? 'image';
 // POST /uploads/image - Upload product/category images
 // =====================================================================
 if ($method === 'POST' && $uploadType === 'image' && !$action) {
-    Auth::requireAuth();
+    Auth::requireAuth('admin');
     try {
         if (empty($_FILES['file'])) {
             ResponseHelper::sendError('No file provided', 400);
@@ -181,7 +181,7 @@ if ($method === 'POST' && $uploadType === 'contract' && !$action) {
 // POST /uploads/file — generic file → disk + `file_uploads` (logged-in user)
 // =====================================================================
 if ($method === 'POST' && $uploadType === 'file' && !$action) {
-    $payload = Auth::requireAuth();
+    $payload = Auth::requireAuth('admin');
 
     try {
         if (empty($_FILES['file'])) {
