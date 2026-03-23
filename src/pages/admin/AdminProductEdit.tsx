@@ -42,6 +42,12 @@ type SpecRow = {
   value: string;
 };
 
+type PendingImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
 function emptyForm(categories: ProductCategory[]): ProductEditForm {
   const first = categories[0];
   return {
@@ -144,7 +150,9 @@ export default function AdminProductEdit() {
   const [form, setForm] = useState<ProductEditForm>(() => emptyForm([]));
   const [specRows, setSpecRows] = useState<SpecRow[]>([{ id: "spec-empty-0", key: "", value: "" }]);
   const [compatInput, setCompatInput] = useState("");
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const initRef = useRef(false);
+  const pendingImagesRef = useRef<PendingImage[]>([]);
 
   useEffect(() => {
     initRef.current = false;
@@ -166,6 +174,18 @@ export default function AdminProductEdit() {
     setSpecRows(specsObjectToRows(next.specifications || {}));
     initRef.current = true;
   }, [isNew, raw, categories]);
+
+  useEffect(() => {
+    pendingImagesRef.current = pendingImages;
+  }, [pendingImages]);
+
+  useEffect(() => {
+    return () => {
+      for (const img of pendingImagesRef.current) {
+        URL.revokeObjectURL(img.previewUrl);
+      }
+    };
+  }, []);
 
   function updateField<K extends keyof ProductEditForm>(field: K, value: ProductEditForm[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -241,7 +261,19 @@ export default function AdminProductEdit() {
       };
 
       if (isNew) {
-        return api.createProduct(base);
+        const created = await api.createProduct(base);
+        const createdId =
+          created?.data && typeof created.data === "object" && created.data !== null && "id" in created.data
+            ? String((created.data as { id: string }).id)
+            : "";
+        if (!createdId) return created;
+
+        if (pendingImages.length > 0) {
+          for (const img of pendingImages) {
+            await api.uploadProductImage(createdId, img.file);
+          }
+        }
+        return created;
       }
       return api.updateProduct(effectiveId, base);
     },
@@ -250,6 +282,10 @@ export default function AdminProductEdit() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       if (isNew && res?.data && typeof res.data === "object" && res.data !== null && "id" in res.data) {
         const newId = String((res.data as { id: string }).id);
+        setPendingImages((prev) => {
+          for (const img of prev) URL.revokeObjectURL(img.previewUrl);
+          return [];
+        });
         navigate(`/admin/products/${newId}`);
         queryClient.invalidateQueries({ queryKey: ["product", newId] });
       } else if (!isNew && effectiveId) {
@@ -305,10 +341,29 @@ export default function AdminProductEdit() {
   }
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file || isNew) return;
-    uploadMutation.mutate(file);
+    if (files.length === 0) return;
+    if (isNew) {
+      setPendingImages((prev) => [
+        ...prev,
+        ...files.map((file) => ({
+          id: `${Date.now()}-${Math.random()}`,
+          file,
+          previewUrl: URL.createObjectURL(file),
+        })),
+      ]);
+      return;
+    }
+    uploadMutation.mutate(files[0]);
+  }
+
+  function handleRemovePendingImage(id: string) {
+    setPendingImages((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
   }
 
   function handleDeleteProduct() {
@@ -351,6 +406,7 @@ export default function AdminProductEdit() {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple={isNew}
         className="hidden"
         onChange={onFileChange}
       />
@@ -546,6 +602,26 @@ export default function AdminProductEdit() {
           <div className="dashboard-card space-y-4">
             <h3 className="font-display font-bold text-sm uppercase text-muted-foreground">Product Images</h3>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {isNew &&
+                pendingImages.map((img) => (
+                  <div key={img.id} className="aspect-square bg-secondary rounded-sm overflow-hidden relative group">
+                    <img src={img.previewUrl} alt={img.file.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePendingImage(img.id)}
+                        disabled={busy}
+                        className="opacity-0 group-hover:opacity-100 p-1 bg-background rounded-sm text-destructive disabled:opacity-50"
+                        title="Remove"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <span className="absolute bottom-1 left-1 text-[10px] bg-muted text-foreground px-1.5 py-0.5 rounded-sm font-medium">
+                      Pending
+                    </span>
+                  </div>
+                ))}
               {images.map((img) => (
                 <div key={img.id} className="aspect-square bg-secondary rounded-sm overflow-hidden relative group">
                   <img
@@ -577,7 +653,7 @@ export default function AdminProductEdit() {
               <button
                 type="button"
                 onClick={handlePickImage}
-                disabled={isNew || busy}
+                disabled={busy}
                 className="aspect-square border-2 border-dashed border-border rounded-sm flex flex-col items-center justify-center text-muted-foreground hover:border-accent hover:text-accent transition-colors disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Plus className="h-6 w-6" />
@@ -585,7 +661,9 @@ export default function AdminProductEdit() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {isNew ? "Save the product first, then you can upload images." : "Upload images (JPG, PNG, WebP). First primary flag is set by the catalog."}
+              {isNew
+                ? "Add images now. They will upload automatically when you save the new product."
+                : "Upload images (JPG, PNG, WebP). First primary flag is set by the catalog."}
             </p>
           </div>
         </div>
