@@ -9,6 +9,23 @@ import {
   MAGIC_USER_STORAGE_KEY,
 } from '@/lib/auth-magic-bypass';
 
+function decodeTokenPayload(token: string): { user_id?: string; role?: string; exp?: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const payloadB64Url = parts[0];
+    const payloadB64 = payloadB64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = payloadB64.length % 4;
+    const padded = pad ? payloadB64 + '='.repeat(4 - pad) : payloadB64;
+    const json = atob(padded);
+    const payload = JSON.parse(json) as { user_id?: string; role?: string; exp?: number };
+    if (!payload || typeof payload !== 'object') return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 export interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -47,10 +64,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         if (storedToken) {
           setToken(storedToken);
-          // Verify token is still valid by fetching current user
-          const response = await api.getProfile();
-          if (response.data) {
-            setUser(response.data);
+
+          // Immediately set a fallback user from token claims so admin access
+          // doesn't disappear if profile fetch fails temporarily.
+          const decoded = decodeTokenPayload(storedToken);
+          if (decoded?.user_id && decoded?.role) {
+            setUser({
+              id: String(decoded.user_id),
+              email: '',
+              full_name: '',
+              role: decoded.role as User['role'],
+              status: 'active',
+              created_at: '',
+              updated_at: '',
+            });
+          }
+
+          // Verify token is still valid by fetching current user.
+          // If it fails with 401, remove the token; otherwise keep fallback.
+          try {
+            const response = await api.getProfile();
+            if (response.data) setUser(response.data);
+          } catch (err: any) {
+            const statusCode = err?.statusCode ?? err?.response?.status;
+            if (statusCode === 401 || statusCode === 403) {
+              localStorage.removeItem('remquip_auth_token');
+              setToken(null);
+              setUser(null);
+            }
+            // For network/5xx issues, keep fallback user + token.
           }
         }
       } catch {
