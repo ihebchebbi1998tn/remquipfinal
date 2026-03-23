@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Save, Trash2, Plus, GripVertical, Eye, Loader2, AlertCircle } from "lucide-react";
-import { useProduct, useCategories } from "@/hooks/useApi";
+import { useProduct, useAdminCategoriesList } from "@/hooks/useApi";
 import { api, unwrapApiList, resolveUploadImageUrl, type ProductCategory } from "@/lib/api";
 import { productDetailHref } from "@/lib/storefront-product";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
@@ -142,7 +142,11 @@ export default function AdminProductEdit() {
   const effectiveId = isNew ? "" : productId!;
 
   const { data: productResponse, isLoading: productLoading, isError: productError } = useProduct(effectiveId);
-  const { data: categoriesResponse } = useCategories();
+  const {
+    data: categoriesResponse,
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+  } = useAdminCategoriesList();
 
   const categories = unwrapApiList<ProductCategory>(categoriesResponse, []);
   const raw = productResponse?.data as Record<string, unknown> | undefined;
@@ -687,15 +691,23 @@ export default function AdminProductEdit() {
             <select
               value={form.categoryId}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none"
+              disabled={categoriesLoading || categories.length === 0}
+              className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none disabled:opacity-60"
             >
-              {categories.length === 0 && <option value="">Loading categories…</option>}
+              {categoriesLoading && <option value="">Loading categories...</option>}
+              {!categoriesLoading && categoriesError && <option value="">Could not load categories</option>}
+              {!categoriesLoading && !categoriesError && categories.length === 0 && (
+                <option value="">No categories found</option>
+              )}
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
+            {categoriesError && (
+              <p className="text-xs text-destructive">Category list failed to load. Please refresh this page.</p>
+            )}
           </div>
 
           <div className="dashboard-card space-y-4">
