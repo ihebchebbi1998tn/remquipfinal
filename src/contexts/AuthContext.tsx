@@ -50,8 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
+      const TOKEN_KEY = 'remquip_auth_token';
+      let storedToken: string | null = null;
       try {
-        const storedToken = localStorage.getItem('remquip_auth_token');
+        storedToken = localStorage.getItem(TOKEN_KEY);
         if (storedToken && isMagicToken(storedToken)) {
           setToken(storedToken);
           const raw = localStorage.getItem(MAGIC_USER_STORAGE_KEY);
@@ -63,11 +65,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         if (storedToken) {
-          setToken(storedToken);
+          const tokenAtStart = storedToken;
+          setToken(tokenAtStart);
 
           // Immediately set a fallback user from token claims so admin access
           // doesn't disappear if profile fetch fails temporarily.
-          const decoded = decodeTokenPayload(storedToken);
+          const decoded = decodeTokenPayload(tokenAtStart);
           if (decoded?.user_id && decoded?.role) {
             setUser({
               id: String(decoded.user_id),
@@ -87,8 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (response.data) setUser(response.data);
           } catch (err: any) {
             const statusCode = err?.statusCode ?? err?.response?.status;
-            if (statusCode === 401 || statusCode === 403) {
-              localStorage.removeItem('remquip_auth_token');
+            const currentToken = localStorage.getItem(TOKEN_KEY);
+            // Race protection: only clear token if the token that failed is still current.
+            if ((statusCode === 401 || statusCode === 403) && currentToken === tokenAtStart) {
+              localStorage.removeItem(TOKEN_KEY);
               setToken(null);
               setUser(null);
             }
@@ -96,10 +101,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch {
-        localStorage.removeItem('remquip_auth_token');
+        const currentToken = localStorage.getItem('remquip_auth_token');
+        if (storedToken && currentToken === storedToken) {
+          localStorage.removeItem('remquip_auth_token');
+        }
         localStorage.removeItem(MAGIC_USER_STORAGE_KEY);
-        setToken(null);
-        setUser(null);
+        // Only clear state if the token we were validating is still the active token.
+        if (storedToken && currentToken === storedToken) {
+          setToken(null);
+          setUser(null);
+        }
       } finally {
         setIsLoading(false);
       }
