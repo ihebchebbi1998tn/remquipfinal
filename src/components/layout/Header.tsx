@@ -27,7 +27,7 @@ export default function Header() {
   const { data: pubRes } = usePublicSettings();
   const pub = (pubRes?.data ?? {}) as Record<string, string>;
   const brandName = pub.store_name || pub.site_name || "REMQUIP";
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const canEditHeader =
     user?.role === "admin" || user?.role === "super_admin" || user?.role === "manager";
   const { t, lang, setLang, supportedLocales } = useLanguage();
@@ -446,14 +446,36 @@ export default function Header() {
             </div>
 
             {/* Account */}
-            <Link
-              to="/login"
-              className="hidden items-center gap-1.5 rounded-md px-2 py-2 text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground md:flex"
-              aria-label={t("nav.signin")}
-            >
-              <User className="h-[18px] w-[18px]" strokeWidth={2} />
-              <span className="hidden text-xs font-medium lg:inline">{t("nav.signin")}</span>
-            </Link>
+            {isAuthenticated && user ? (
+              (user.role === "admin" || user.role === "super_admin" || user.role === "manager") ? (
+                <Link
+                  to="/admin"
+                  className="hidden items-center gap-1.5 rounded-md px-2 py-2 text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground md:flex"
+                  aria-label={t("nav.admin")}
+                >
+                  <User className="h-[18px] w-[18px]" strokeWidth={2} />
+                  <span className="hidden text-xs font-medium lg:inline">{t("nav.admin")}</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/account"
+                  className="hidden items-center gap-1.5 rounded-md px-2 py-2 text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground md:flex"
+                  aria-label={t("nav.account")}
+                >
+                  <User className="h-[18px] w-[18px]" strokeWidth={2} />
+                  <span className="hidden text-xs font-medium lg:inline">{t("nav.account")}</span>
+                </Link>
+              )
+            ) : (
+              <Link
+                to="/login"
+                className="hidden items-center gap-1.5 rounded-md px-2 py-2 text-nav-foreground/90 transition-colors hover:bg-white/[0.08] hover:text-nav-foreground md:flex"
+                aria-label={t("nav.signin")}
+              >
+                <User className="h-[18px] w-[18px]" strokeWidth={2} />
+                <span className="hidden text-xs font-medium lg:inline">{t("nav.signin")}</span>
+              </Link>
+            )}
 
             <Link
               to="/cart"
@@ -606,10 +628,36 @@ export default function Header() {
             <hr className="border-border" />
 
             {/* Account */}
-            <Link to="/login" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md">
-              <User className="h-4 w-4" />
-              {t("nav.signin")}
-            </Link>
+            {isAuthenticated && user ? (
+              (user.role === "admin" || user.role === "super_admin" || user.role === "manager") ? (
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2.5 py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md"
+                >
+                  <User className="h-4 w-4" />
+                  {t("nav.admin")}
+                </Link>
+              ) : (
+                <Link
+                  to="/account"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2.5 py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md"
+                >
+                  <User className="h-4 w-4" />
+                  {t("nav.account")}
+                </Link>
+              )
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2.5 py-2.5 px-3 text-sm font-medium text-foreground hover:bg-secondary rounded-md"
+              >
+                <User className="h-4 w-4" />
+                {t("nav.signin")}
+              </Link>
+            )}
 
             <hr className="border-border" />
 
