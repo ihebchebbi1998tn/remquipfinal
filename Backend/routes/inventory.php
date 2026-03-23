@@ -105,7 +105,7 @@ if ($method === 'GET' && ($rs[0] ?? '') === 'low-stock') {
         ResponseHelper::sendSuccess($rows, 'Low stock products');
     } catch (Exception $e) {
         Logger::error('Low stock error', ['error' => $e->getMessage()]);
-        ResponseHelper::sendError('Failed to load low stock', 500);
+        ResponseHelper::sendError('Failed to load low stock', 500, ['error' => $e->getMessage()]);
     }
 }
 

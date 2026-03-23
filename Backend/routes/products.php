@@ -111,7 +111,7 @@ if ($method === 'GET' && (!$id || $id === 'search' || ($id === 'category' && $ac
         
     } catch (Exception $e) {
         Logger::error('Get products error', ['error' => $e->getMessage()]);
-        ResponseHelper::sendError('Failed to retrieve products', 500);
+        ResponseHelper::sendError('Failed to retrieve products', 500, ['error' => $e->getMessage()]);
     }
 }
 

@@ -201,7 +201,7 @@ if ($method === 'GET' && $id === 'dashboard' && !$action) {
         
     } catch (Exception $e) {
         Logger::error('Dashboard analytics error', ['error' => $e->getMessage()]);
-        ResponseHelper::sendError('Failed to retrieve dashboard data', 500);
+        ResponseHelper::sendError('Failed to retrieve dashboard data', 500, ['error' => $e->getMessage()]);
     }
 }
 

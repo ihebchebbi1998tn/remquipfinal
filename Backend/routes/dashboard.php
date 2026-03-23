@@ -69,7 +69,7 @@ try {
     }
 } catch (Exception $e) {
     Logger::error('Dashboard route error', ['error' => $e->getMessage()]);
-    ResponseHelper::sendError('Dashboard request failed', 500);
+    ResponseHelper::sendError('Dashboard request failed', 500, ['error' => $e->getMessage()]);
 }
 
 ResponseHelper::sendError('Dashboard endpoint not found', 404);
