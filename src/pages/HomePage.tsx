@@ -199,7 +199,31 @@ export default function HomePage() {
           { title: "Account programs", text: "Wholesale tiers and dedicated support for qualified partners." },
         ];
 
-  const cats = categoriesList.length > 0 ? categoriesList : categories;
+  const defaultCatalogCategories: ProductCategory[] = useMemo(() => {
+    return categories.map((c, idx) => {
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description,
+        image_url: c.image,
+        display_order: idx + 1,
+        is_active: true,
+      } as unknown as ProductCategory;
+    });
+  }, []);
+
+  const defaultImageBySlug = useMemo(() => {
+    const map: Record<string, string> = {};
+    defaultCatalogCategories.forEach((c) => {
+      const img = String(c.image_url ?? "").trim();
+      if (c.slug && img) map[c.slug] = img;
+    });
+    return map;
+  }, [defaultCatalogCategories]);
+
+  // If the DB returns empty image_url for seeded categories, fall back to our bundled defaults.
+  const cats = categoriesList.length > 0 ? categoriesList : defaultCatalogCategories;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -223,9 +247,16 @@ export default function HomePage() {
 
         try {
           const categoriesResponse = await api.getCategories(1, 100, { locale: lang });
-          setCategoriesList(unwrapApiList<ProductCategory>(categoriesResponse, categories));
+          const list = unwrapApiList<ProductCategory>(categoriesResponse, defaultCatalogCategories);
+          const merged = list.map((cat) => {
+            const img = String(cat.image_url ?? "").trim();
+            if (img) return cat;
+            const fallback = defaultImageBySlug[cat.slug] ?? "";
+            return { ...cat, image_url: fallback || cat.image_url };
+          });
+          setCategoriesList(merged);
         } catch {
-          setCategoriesList(categories);
+          setCategoriesList(defaultCatalogCategories);
         }
       } catch {
         /* handled above */
@@ -233,7 +264,7 @@ export default function HomePage() {
     };
 
     fetchData();
-  }, [lang]);
+  }, [lang, defaultCatalogCategories, defaultImageBySlug]);
 
   const rawWhyCards = (whyData.cards ?? []).filter((c) => c.desc?.trim());
   const useTestimonialLayout =

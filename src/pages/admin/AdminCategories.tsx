@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { useAdminCategoriesList, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
-import { api, unwrapApiList, unwrapPagination, type ProductCategory } from "@/lib/api";
+import { api, unwrapApiList, unwrapPagination, resolveBackendUploadUrl, type ProductCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { categories as defaultCatalogCategories } from "@/config/products";
 
 type LocForm = { name: string; description: string };
 
@@ -47,6 +48,14 @@ export default function AdminCategories() {
   const queryClient = useQueryClient();
   const { data: catRes, isLoading, isError, error } = useAdminCategoriesList();
 
+  const defaultImageBySlug = useMemo(() => {
+    const map: Record<string, string> = {};
+    defaultCatalogCategories.forEach((c) => {
+      map[c.slug] = c.image;
+    });
+    return map;
+  }, []);
+
   const createMutation = useApiMutation((payload: Record<string, unknown>) => api.createCategory(payload as any), {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -70,17 +79,25 @@ export default function AdminCategories() {
 
   const rows = unwrapApiList<ProductCategory>(catRes, []);
   const pagination = unwrapPagination(catRes);
+  const rowsWithDefaultImages = useMemo(() => {
+    return rows.map((c) => {
+      const img = String(c.image_url ?? "").trim();
+      if (img) return c;
+      const fallback = defaultImageBySlug[c.slug] ?? "";
+      return { ...c, image_url: fallback };
+    });
+  }, [rows, defaultImageBySlug]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
+    if (!q) return rowsWithDefaultImages;
+    return rowsWithDefaultImages.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.slug.toLowerCase().includes(q) ||
         (c.description && c.description.toLowerCase().includes(q))
     );
-  }, [rows, search]);
+  }, [rowsWithDefaultImages, search]);
 
   function closeForm() {
     setShowForm(false);
@@ -118,7 +135,7 @@ export default function AdminCategories() {
     }
     setForm({
       slug: c.slug,
-      imageUrl: c.image_url || "",
+      imageUrl: String(c.image_url ?? "").trim() ? (c.image_url as string) : defaultImageBySlug[c.slug] ?? "",
       displayOrder: c.display_order ?? 0,
       isActive: c.is_active !== false && (c as any).is_active !== 0,
       ...locData,
@@ -324,6 +341,14 @@ export default function AdminCategories() {
                 placeholder="https://… or /Backend/uploads/…"
                 className="w-full px-3 py-2 border border-border rounded-sm text-sm font-mono text-xs"
               />
+              {form.imageUrl.trim() ? (
+                <img
+                  src={resolveBackendUploadUrl(form.imageUrl.trim())}
+                  alt="Category preview"
+                  className="mt-2 h-20 w-full object-cover rounded-sm border border-border bg-muted/20"
+                  loading="lazy"
+                />
+              ) : null}
             </div>
             <div>
               <label className="block text-xs font-medium mb-1">Display order</label>
@@ -387,7 +412,16 @@ export default function AdminCategories() {
                 <td className="p-3 font-medium">{c.name}</td>
                 <td className="p-3 font-mono text-xs">{c.slug}</td>
                 <td className="p-3 hidden md:table-cell max-w-[200px] truncate text-xs text-muted-foreground">
-                  {c.image_url || "—"}
+                  {c.image_url ? (
+                    <img
+                      src={resolveBackendUploadUrl(String(c.image_url))}
+                      alt={c.name}
+                      className="h-10 w-16 object-cover rounded-sm border border-border bg-muted/20"
+                      loading="lazy"
+                    />
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td className="p-3">{c.is_active === false || (c as any).is_active === 0 ? "No" : "Yes"}</td>
                 <td className="p-3 text-right space-x-1">
