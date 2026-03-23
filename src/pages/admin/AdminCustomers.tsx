@@ -53,6 +53,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 type CustomerDocumentRow = {
   id: string;
@@ -321,29 +323,16 @@ export default function AdminCustomers() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading customers" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading customers" />;
   }
 
   // Error state
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h3 className="font-display font-bold text-lg mb-2">Failed to load customers</h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          {error instanceof Error ? error.message : "An error occurred while fetching customers."}
-        </p>
-        <button 
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['customers'] })}
-          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
+      <AdminPageError
+        message={error instanceof Error ? error.message : "An error occurred while fetching customers."}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["customers"] })}
+      />
     );
   }
 
@@ -1102,40 +1091,46 @@ export default function AdminCustomers() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="font-display font-bold text-lg md:text-xl">Customer Management</h2>
-          {pagination && <p className="text-sm text-muted-foreground">{pagination.total} total customers</p>}
-          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-            Bulk import: CSV or JSON (max 5MB). Rows need <code className="text-[10px] bg-secondary px-1 rounded">company_name</code> and <code className="text-[10px] bg-secondary px-1 rounded">email</code> (see API).
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-start">
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".csv,.json,application/json,text/csv"
-            className="hidden"
-            onChange={handleImportCustomersChange}
+        <div className="flex-1 min-w-0">
+          <AdminPageHeader
+            title="Customers"
+            subtitle={pagination ? `${pagination.total} total customers` : undefined}
+            actions={
+              <div className="flex flex-wrap items-center gap-2 self-start">
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".csv,.json,application/json,text/csv"
+                  className="hidden"
+                  onChange={handleImportCustomersChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => importInputRef.current?.click()}
+                  disabled={importCustomersMutation.isLoading}
+                  className="px-4 py-2 border border-border rounded-sm text-sm font-medium flex items-center gap-2 hover:bg-secondary transition-colors disabled:opacity-50"
+                >
+                  {importCustomersMutation.isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  Import file
+                </button>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" /> Add Customer
+                </button>
+              </div>
+            }
           />
-          <button
-            type="button"
-            onClick={() => importInputRef.current?.click()}
-            disabled={importCustomersMutation.isLoading}
-            className="px-4 py-2 border border-border rounded-sm text-sm font-medium flex items-center gap-2 hover:bg-secondary transition-colors disabled:opacity-50"
-          >
-            {importCustomersMutation.isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
-            Import file
-          </button>
-          <button 
-            onClick={() => setShowCreateModal(true)} 
-            className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" /> Add Customer
-          </button>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+            Bulk import: CSV or JSON (max 5MB). Rows need{" "}
+            <code className="text-[10px] bg-secondary px-1 rounded">company_name</code> and{" "}
+            <code className="text-[10px] bg-secondary px-1 rounded">email</code> (see API).
+          </p>
         </div>
       </div>
 

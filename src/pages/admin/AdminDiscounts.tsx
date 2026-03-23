@@ -4,6 +4,8 @@ import { useDiscounts, useApiMutation } from "@/hooks/useApi";
 import { api, Discount, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 const statusStyles: Record<string, string> = {
   active: "badge-success",
@@ -162,50 +164,45 @@ export default function AdminDiscounts() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading discounts" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading discounts" />;
   }
 
   // Error state
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h3 className="font-display font-bold text-lg mb-2">Failed to load discounts</h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          {error instanceof Error ? error.message : "An error occurred while fetching discounts."}
-        </p>
-        <button 
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['discounts'] })}
-          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
+      <AdminPageError
+        message={error instanceof Error ? error.message : "An error occurred while fetching discounts."}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["discounts"] })}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="font-display font-bold text-lg md:text-xl">Discounts & Coupons</h2>
-          {pagination && <p className="text-sm text-muted-foreground">{pagination.total} total codes</p>}
-        </div>
-        <button 
-          onClick={() => { 
-            resetForm(); 
-            setEditingId(null); 
-            setShowForm(!showForm); 
-          }} 
-          className="btn-accent px-3 md:px-4 py-2 rounded-sm text-xs md:text-sm font-medium flex items-center gap-2 self-start"
-        >
-          {showForm ? <><X className="h-4 w-4" /> Cancel</> : <><Plus className="h-4 w-4" /> Create Discount</>}
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Discounts & Coupons"
+        subtitle={pagination ? `${pagination.total} total codes` : undefined}
+        actions={
+          <button
+            onClick={() => {
+              resetForm();
+              setEditingId(null);
+              setShowForm(!showForm);
+            }}
+            className="btn-accent px-3 md:px-4 py-2 rounded-sm text-xs md:text-sm font-medium flex items-center gap-2 self-start"
+          >
+            {showForm ? (
+              <>
+                <X className="h-4 w-4" /> Cancel
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" /> Create Discount
+              </>
+            )}
+          </button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

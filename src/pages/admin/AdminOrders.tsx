@@ -4,6 +4,8 @@ import { useOrders, useOrder, useApiMutation } from "@/hooks/useApi";
 import { api, Order, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 const statusStyles: Record<string, string> = {
   pending: "badge-warning",
@@ -148,29 +150,16 @@ export default function AdminOrders() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading orders" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading orders" />;
   }
 
   // Error state
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h3 className="font-display font-bold text-lg mb-2">Failed to load orders</h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          {error instanceof Error ? error.message : "An error occurred while fetching orders."}
-        </p>
-        <button 
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}
-          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
+      <AdminPageError
+        message={error instanceof Error ? error.message : "An error occurred while fetching orders."}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["orders"] })}
+      />
     );
   }
 
@@ -358,15 +347,18 @@ export default function AdminOrders() {
   // ── Order List View ──
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display font-bold text-lg md:text-xl">Order Management</h2>
-          {pagination && <p className="text-sm text-muted-foreground">{pagination.total} total orders</p>}
-        </div>
-        <button onClick={exportCSV} className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">
-          <Download className="h-3.5 w-3.5" /> Export CSV
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Orders"
+        subtitle={pagination ? `${pagination.total} total orders` : undefined}
+        actions={
+          <button
+            onClick={exportCSV}
+            className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" /> Export CSV
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-4">
         {[

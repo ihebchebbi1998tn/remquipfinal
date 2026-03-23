@@ -409,6 +409,48 @@ export function useAvailableAdminContacts() {
   });
 }
 
+export function useAdminContactsListAll() {
+  return useApiQuery(['admin-contacts', 'all'], () => api.getAllAdminContacts(), {
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useCreateAdminContact() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (data: Record<string, unknown>) => api.createAdminContact(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-contacts'] });
+      },
+    }
+  );
+}
+
+export function useUpdateAdminContact() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { id: string; data: Record<string, unknown> }) => api.updateAdminContact(vars.id, vars.data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-contacts'] });
+      },
+    }
+  );
+}
+
+export function useDeleteAdminContact() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (id: string) => api.deleteAdminContact(id),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-contacts'] });
+      },
+    }
+  );
+}
+
 // ==================== ORDER HOOKS ====================
 
 export function useOrders(page: number = 1, limit: number = 10) {

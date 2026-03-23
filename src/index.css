@@ -226,7 +226,13 @@
     @apply bg-secondary text-muted-foreground text-xs font-semibold uppercase tracking-wider;
   }
   .dashboard-card {
-    @apply bg-card border border-border rounded-md p-6;
+    @apply bg-card border border-border rounded-lg p-6 shadow-sm;
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-card {
+      padding: 1rem;
+    }
   }
 
   /* Public site header — optional promo strip + sticky bar + category strip */

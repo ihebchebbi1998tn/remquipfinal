@@ -5,6 +5,8 @@ import { api, unwrapApiList, unwrapPagination, User } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 type UserRole = "admin" | "manager" | "user";
 type UserStatus = "active" | "inactive" | "suspended";
@@ -160,46 +162,34 @@ export default function AdminUsers() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading users" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading users" />;
   }
 
   // Error state
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h3 className="font-display font-bold text-lg mb-2">Failed to load users</h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          {error instanceof Error ? error.message : "An error occurred while fetching users."}
-        </p>
-        <button 
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
-          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
+      <AdminPageError
+        message={error instanceof Error ? error.message : "An error occurred while fetching users."}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["users"] })}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display font-bold">User Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create and manage admin users. {pagination && `${pagination.total} total users.`}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-            Bulk import: CSV or JSON (max 5MB). JSON file: array of rows, or POST body shape with a <code className="text-[10px] bg-secondary px-1 rounded">users</code> array (email, full_name, optional role, phone).
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <AdminPageHeader
+            title="Users"
+            subtitle={`Create and manage admin users${pagination ? ` (${pagination.total} total)` : ""}.`}
+          />
+          <p className="text-xs text-muted-foreground mt-2 max-w-xl">
+            Bulk import: CSV or JSON (max 5MB). JSON file: array of rows, or POST body shape with a{" "}
+            <code className="text-[10px] bg-secondary px-1 rounded">users</code> array (email, full_name, optional role, phone).
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 self-start">
           <input
             ref={importInputRef}
             type="file"

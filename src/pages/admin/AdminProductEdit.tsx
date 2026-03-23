@@ -7,6 +7,7 @@ import { api, unwrapApiList, resolveUploadImageUrl, type ProductCategory } from 
 import { productDetailHref } from "@/lib/storefront-product";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 type ProductStatus = "active" | "draft" | "archived";
 
@@ -300,22 +301,19 @@ export default function AdminProductEdit() {
     : [];
 
   if (!isNew && productLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading product" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading product" />;
   }
 
   if (!isNew && productError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-destructive">
-        <AlertCircle className="h-10 w-10" />
-        <p>Could not load this product.</p>
-        <Link to="/admin/products" className="text-accent hover:underline text-sm">
-          Back to products
-        </Link>
-      </div>
+      <AdminPageError
+        message="Could not load this product."
+        extra={
+          <Link to="/admin/products" className="text-accent hover:underline text-sm">
+            ← Back to products
+          </Link>
+        }
+      />
     );
   }
 

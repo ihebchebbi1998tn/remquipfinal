@@ -10,6 +10,8 @@ import {
 } from "@/hooks/useApi";
 import { unwrapApiList, resolveBackendUploadUrl } from "@/lib/api";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 type SettingRow = { setting_key: string; setting_value: string | null };
 
@@ -85,27 +87,21 @@ export default function AdminSettings() {
   };
 
   if (loadingSettings && rows.length === 0) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading settings" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading settings" />;
   }
 
   if (isError) {
     return (
-      <div className="dashboard-card text-center py-12 text-muted-foreground">
-        Could not load settings. Ensure you are logged in as admin.
-        <button type="button" onClick={() => refetch()} className="block mx-auto mt-4 btn-accent px-4 py-2 rounded-sm text-sm">
-          Retry
-        </button>
-      </div>
+      <AdminPageError
+        message="Could not load settings. Ensure you are logged in as admin."
+        onRetry={() => refetch()}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display font-bold text-lg md:text-xl">Settings</h2>
+      <AdminPageHeader title="Settings" />
 
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
         <div className="dashboard-card">

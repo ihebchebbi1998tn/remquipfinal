@@ -10,6 +10,8 @@ import {
 import { unwrapApiList } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 const periods = ["7d", "30d", "90d", "12m"] as const;
 
@@ -142,37 +144,25 @@ export default function AdminAnalytics() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading analytics" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading analytics" />;
   }
 
   // Error state
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h3 className="font-display font-bold text-lg mb-2">Failed to load analytics</h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          Unable to fetch analytics data from the server.
-        </p>
-        <button 
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['analytics'] })}
-          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
+      <AdminPageError
+        message="Unable to fetch analytics data from the server."
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["analytics"] })}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="font-display font-bold text-lg md:text-xl">Analytics</h2>
-        <div className="flex gap-1 bg-secondary rounded-sm p-0.5">
+      <AdminPageHeader
+        title="Analytics"
+        actions={
+          <div className="flex gap-1 bg-secondary rounded-sm p-0.5">
           {periods.map((p) => (
             <button
               key={p}
@@ -182,8 +172,9 @@ export default function AdminAnalytics() {
               {p}
             </button>
           ))}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {[

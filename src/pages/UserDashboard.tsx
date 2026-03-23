@@ -53,13 +53,11 @@ export default function UserDashboard() {
   const [notesLoading, setNotesLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'contacts' | 'notes' | 'settings'>('orders');
 
-  // Redirect if not authenticated
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
+  const shouldRedirect = !isAuthenticated || !user;
 
   // Load user orders
   useEffect(() => {
+    if (shouldRedirect) return;
     const fetchOrders = async () => {
       try {
         setOrdersLoading(true);
@@ -86,10 +84,11 @@ export default function UserDashboard() {
     };
 
     fetchOrders();
-  }, []);
+  }, [shouldRedirect]);
 
   // Load admin contacts
   useEffect(() => {
+    if (shouldRedirect) return;
     const fetchContacts = async () => {
       try {
         setContactsLoading(true);
@@ -116,10 +115,11 @@ export default function UserDashboard() {
     };
 
     fetchContacts();
-  }, []);
+  }, [shouldRedirect]);
 
   // Load portal-visible notes (is_internal = 0)
   useEffect(() => {
+    if (shouldRedirect) return;
     const fetchNotes = async () => {
       try {
         setNotesLoading(true);
@@ -138,7 +138,7 @@ export default function UserDashboard() {
       }
     };
     fetchNotes();
-  }, []);
+  }, [shouldRedirect]);
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -171,6 +171,11 @@ export default function UserDashboard() {
         </div>
       </div>
     );
+  }
+
+  // Redirect if not authenticated (after hooks)
+  if (shouldRedirect) {
+    return <Navigate to="/login" replace />;
   }
 
   return (

@@ -17,6 +17,8 @@ import { localeLabel } from "@/contexts/LanguageContext";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import AdminLandingTheme from "./AdminLandingTheme";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 const SECTION_LABELS: Record<string, string> = {
   site_header:
@@ -126,51 +128,43 @@ export default function AdminLanding() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading landing content" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading landing content" />;
   }
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-2" />
-        <p className="text-muted-foreground">Failed to load landing content.</p>
-      </div>
+      <AdminPageError
+        message="Failed to load landing content."
+        onRetry={() => refetch()}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="font-display font-bold text-lg md:text-xl flex items-center gap-2">
-            <LayoutTemplate className="h-5 w-5" />
-            Landing Page Content
-          </h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Edit all texts on the homepage. Changes apply per language.
-          </p>
-        </div>
-        {supportedLocales.length > 1 && (
-          <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <select
-              value={activeLocale}
-              onChange={(e) => setActiveLocale(e.target.value)}
-              className="px-3 py-2 border border-border rounded-sm text-sm bg-background"
-            >
-              {supportedLocales.map((l) => (
-                <option key={l} value={l}>
-                  {localeLabel(l)}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
+      <AdminPageHeader
+        title="Landing Page Content"
+        subtitle="Edit all texts on the homepage. Changes apply per language."
+        icon={LayoutTemplate}
+        actions={
+          supportedLocales.length > 1 ? (
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-muted-foreground" />
+              <select
+                value={activeLocale}
+                onChange={(e) => setActiveLocale(e.target.value)}
+                className="px-3 py-2 border border-border rounded-sm text-sm bg-background"
+              >
+                {supportedLocales.map((l) => (
+                  <option key={l} value={l}>
+                    {localeLabel(l)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : undefined
+        }
+      />
 
       <AdminLandingTheme />
 

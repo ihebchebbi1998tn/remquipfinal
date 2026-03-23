@@ -16,6 +16,8 @@ import { api, unwrapApiList, unwrapPagination, resolveBackendUploadUrl, type Pro
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { categories as defaultCatalogCategories } from "@/config/products";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
 type LocForm = { name: string; description: string };
 
@@ -192,49 +194,40 @@ export default function AdminCategories() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-[min(420px,72vh)] flex items-center justify-center">
-        <RemquipLoadingScreen variant="embedded" message="Loading categories" />
-      </div>
-    );
+    return <AdminPageLoading message="Loading categories" />;
   }
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[320px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-3" />
-        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "Failed to load"}</p>
-      </div>
+      <AdminPageError
+        message={error instanceof Error ? error.message : "Failed to load"}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["categories"] })}
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="font-display font-bold text-lg md:text-xl flex items-center gap-2">
-            <Layers className="h-6 w-6 text-accent" />
-            Product categories
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            English is the default catalog language; add French for the storefront language switcher.
-          </p>
-          {pagination && (
-            <p className="text-xs text-muted-foreground mt-1">{pagination.total} categories (admin list)</p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            closeForm();
-            setShowForm(true);
-            setEditingId(null);
-          }}
-          className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 self-start"
-        >
-          <Plus className="h-4 w-4" />
-          New category
-        </button>
+      <div>
+        <AdminPageHeader
+          title="Product categories"
+          subtitle="English is the default catalog language; add French for the storefront language switcher."
+          icon={Layers}
+          actions={
+            <button
+              type="button"
+              onClick={() => {
+                closeForm();
+                setShowForm(true);
+                setEditingId(null);
+              }}
+              className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 self-start"
+            >
+              <Plus className="h-4 w-4" />
+              New category
+            </button>
+          }
+        />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
