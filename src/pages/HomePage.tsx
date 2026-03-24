@@ -162,7 +162,10 @@ export default function HomePage() {
         try {
           const featuredResponse = await api.getFeaturedProducts();
           if (featuredResponse.data) {
-            setFeaturedProducts(featuredResponse.data.map((row) => apiProductToStorefront(row as Record<string, unknown>)).slice(0, 4));
+            const products = featuredResponse.data.map((row) => apiProductToStorefront(row as Record<string, unknown>));
+            // Shuffle and pick 8
+            const shuffled = [...products].sort(() => Math.random() - 0.5);
+            setFeaturedProducts(shuffled.slice(0, 8));
           } else {
             setFeaturedProducts([]);
           }
@@ -395,10 +398,10 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="mb-12 md:mb-16 text-center max-w-3xl mx-auto">
               <span className="font-display text-accent font-black tracking-[0.25em] text-[11px] uppercase mb-3 block">
-                {featIntro.title || t("products.featured")}
+                {featIntro.title || t("products.popular")}
               </span>
               <h2 className="font-display text-3xl md:text-5xl font-black uppercase tracking-tight text-foreground leading-none">
-                {featIntro.description || "Available for immediate dispatch"}
+                {featIntro.description || t("home.popular.description")}
               </h2>
             </div>
 

@@ -98,6 +98,8 @@
   "products.category": "Catégorie",
   "products.sort_by": "Trier par",
   "products.featured": "Articles en vedette",
+  "products.popular": "Produits Populaires",
+  "home.popular.description": "Nos meilleures sélections",
   "products.price_low": "Prix: croissant",
   "products.price_high": "Prix: décroissant",
   "products.newest": "Plus récents",

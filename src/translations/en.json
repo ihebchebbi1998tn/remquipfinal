@@ -98,6 +98,8 @@
   "products.category": "Category",
   "products.sort_by": "Sort By",
   "products.featured": "Featured Items",
+  "products.popular": "Popular Products",
+  "home.popular.description": "Top picks from our inventory",
   "products.price_low": "Price: Low to High",
   "products.price_high": "Price: High to Low",
   "products.newest": "Newest",
