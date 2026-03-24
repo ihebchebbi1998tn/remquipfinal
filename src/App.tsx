@@ -68,8 +68,8 @@ const App = () => (
             <ErrorBoundary>
               <Toaster />
               <Sonner />
-              <CookieConsent />
               <BrowserRouter>
+                <CookieConsent />
                 <ChatWidget />
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
