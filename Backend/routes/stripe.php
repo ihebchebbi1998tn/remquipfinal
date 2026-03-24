@@ -108,7 +108,7 @@ if ($method === 'POST' && ($id === 'create-checkout-session' || ($routeSegments[
 
         // 5. Build the success/cancel URLs
         $frontendUrl = defined('FRONTEND_URL') ? FRONTEND_URL : 'http://localhost:5173';
-        $successUrl = $frontendUrl . '/payment-success?session_id={CHECKOUT_SESSION_ID}&order_id=' . urlencode($orderId);
+        $successUrl = $frontendUrl . '/payment-success?session_id={CHECKOUT_SESSION_ID}&order_id=' . urlencode($order['id']) . '&order_num=' . urlencode($order['order_number']);
         $cancelUrl  = $frontendUrl . '/payment-cancel?order_id=' . urlencode($orderId);
 
         // 6. Create Stripe Checkout Session via cURL

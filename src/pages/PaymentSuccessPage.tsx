@@ -12,7 +12,8 @@ export default function PaymentSuccessPage() {
   const { clearCart } = useCart();
   
   const sessionId = searchParams.get("session_id");
-  const orderId = searchParams.get("order_id") || "pending";
+  const orderId = searchParams.get("order_id");
+  const orderNum = searchParams.get("order_num") || orderId || "pending";
 
   useEffect(() => {
     // Scroll to top
@@ -54,7 +55,7 @@ export default function PaymentSuccessPage() {
             <Package className="w-6 h-6 text-accent" />
             <div className="text-left">
               <div className="text-[10px] font-display font-black uppercase tracking-widest text-muted-foreground mb-1">{t('payment.success.order_ref')}</div>
-              <div className="font-mono font-medium text-foreground tracking-wider">{orderId.toUpperCase()}</div>
+              <div className="font-mono font-medium text-foreground tracking-wider">{orderNum.toUpperCase()}</div>
             </div>
           </div>
 
