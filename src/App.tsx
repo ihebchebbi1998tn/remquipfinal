@@ -69,8 +69,8 @@ const App = () => (
               <Toaster />
               <Sonner />
               <CookieConsent />
-              <ChatWidget />
               <BrowserRouter>
+                <ChatWidget />
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     {/* Public */}
