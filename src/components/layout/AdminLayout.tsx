@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ADMIN_NO_AUTH } from "@/config/constants";
+import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, path: "/admin" },
@@ -138,13 +139,15 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 md:h-16 bg-card border-b border-border flex items-center px-4 md:px-6 gap-3">
           <button onClick={() => setMobileNav(true)} className="md:hidden text-foreground">
             <Menu className="h-5 w-5" />
           </button>
-          <h2 className="font-display font-bold text-base md:text-lg">{currentPage?.label || "Admin Dashboard"}</h2>
+          <h2 className="font-display font-bold text-base md:text-lg min-w-0 truncate">{currentPage?.label || "Admin Dashboard"}</h2>
+          <div className="ml-auto flex items-center gap-2">
+            <AdminGlobalSearch />
+          </div>
         </header>
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           <Outlet />
