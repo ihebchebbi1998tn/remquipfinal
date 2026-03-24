@@ -293,6 +293,11 @@
   "legal.refund.content": "Les remboursements sont traités dans les 5 à 10 jours ouvrables après réception du produit retourné. Les remboursements sont effectués sur le mode de paiement original.\n\nLes commandes personnalisées et les articles sur commande spéciale ne sont pas remboursables. Les frais de livraison ne sont pas remboursables sauf si le retour est dû à notre erreur.",
   "legal.cookie.title": "Politique des cookies",
   "legal.cookie.content": "REMQUIP utilise des cookies pour améliorer votre expérience de navigation. Les cookies sont de petits fichiers texte stockés sur votre appareil qui nous aident à mémoriser vos préférences.\n\nNous utilisons des cookies essentiels pour le fonctionnement du site et des cookies d'analyse pour comprendre comment les visiteurs utilisent notre site. Vous pouvez contrôler les paramètres des cookies via votre navigateur.",
+  "cookie.banner.title": "Préférences de Cookies",
+  "cookie.banner.description": "Nous utilisons des cookies pour améliorer votre expérience d'approvisionnement industriel, analyser le trafic et assurer une authentification sécurisée.",
+  "cookie.banner.accept": "Tout Accepter",
+  "cookie.banner.decline": "Techniques Uniquement",
+  "cookie.banner.policy": "Politique des Cookies",
   "legal.about.title": "À propos de REMQUIP",
   "legal.about.content": "REMQUIP est le distributeur de pièces lourdes de nouvelle génération au Canada, basé à Québec et desservant les flottes, distributeurs et OEM à l'échelle nationale depuis 2025.\n\nNous nous spécialisons dans les freins pour véhicules lourds et les composants de suspension pneumatique pour camions et remorques commerciaux. Notre engagement envers la qualité, les prix compétitifs et la livraison rapide nous distingue.\n\nAvec plus de 15 ans d'expérience combinée dans l'industrie, notre équipe comprend les exigences de l'industrie du transport lourd et livre les pièces dont vous avez besoin, quand vous en avez besoin."
 }

@@ -293,6 +293,11 @@
   "legal.refund.content": "Refunds are processed within 5-10 business days after we receive the returned product. Refunds are issued to the original payment method.\n\nCustom orders and special-order items are non-refundable. Shipping costs are non-refundable unless the return is due to our error.",
   "legal.cookie.title": "Cookie Policy",
   "legal.cookie.content": "REMQUIP uses cookies to enhance your browsing experience. Cookies are small text files stored on your device that help us remember your preferences.\n\nWe use essential cookies for site functionality and analytics cookies to understand how visitors use our site. You can control cookie settings through your browser.",
+  "cookie.banner.title": "Cookie Preferences",
+  "cookie.banner.description": "We use cookies to enhance your industrial procurement experience, analyze site traffic, and provide secure authentication.",
+  "cookie.banner.accept": "Accept All",
+  "cookie.banner.decline": "Technical Only",
+  "cookie.banner.policy": "Cookie Policy",
   "legal.about.title": "About REMQUIP",
   "legal.about.content": "REMQUIP is Canada's next-generation heavy-duty parts distributor, based in Quebec City and serving fleets, distributors, and OEMs nationwide since 2025.\n\nWe specialize in heavy-duty brakes and air suspension components for commercial trucks and trailers. Our commitment to quality, competitive pricing, and fast shipping sets us apart.\n\nWith 15+ years of combined industry experience, our team understands the demands of the heavy-duty transportation industry and delivers the parts you need, when you need them."
 }

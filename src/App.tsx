@@ -11,6 +11,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { CookieConsent } from "@/components/layout/CookieConsent";
 
 import HomeLandingRoute from "@/pages/HomeLandingRoute";
 
@@ -65,6 +66,7 @@ const App = () => (
             <ErrorBoundary>
               <Toaster />
               <Sonner />
+              <CookieConsent />
               <BrowserRouter>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
