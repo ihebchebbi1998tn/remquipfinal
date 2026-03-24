@@ -327,9 +327,15 @@ if (($method === 'PATCH' || $method === 'PUT') && $userId && $userId !== 'profil
         
         $stmt = $conn->prepare($query);
         $stmt->execute($params);
-        
+
+        // Return the updated user so the frontend can refresh auth state.
+        $updatedUser = $conn->fetch(
+            "SELECT id, email, full_name, role, status, phone, avatar_url, created_at, updated_at FROM remquip_users WHERE id = :id AND deleted_at IS NULL",
+            ['id' => $userId]
+        );
+
         Logger::info('User updated', ['user_id' => $userId, 'updated_by' => $auth['user_id']]);
-        ResponseHelper::sendSuccess([], 'User updated successfully');
+        ResponseHelper::sendSuccess($updatedUser ?: [], 'User updated successfully');
         
     } catch (Exception $e) {
         Logger::error('Failed to update user', ['error' => $e->getMessage()]);

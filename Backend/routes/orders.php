@@ -286,14 +286,16 @@ if ($method === 'POST' && !$id) {
         $total = $tot['total'];
 
         $shipAddr = $data['shipping_address'] ?? $data['shippingAddress'] ?? [];
+        $billAddr = $data['billing_address'] ?? $data['billingAddress'] ?? [];
+        $paymentMethod = trim($data['payment_method'] ?? $data['paymentMethod'] ?? 'stripe');
         $notes = $data['notes'] ?? null;
 
         $orderNumber = 'RMQ-' . date('YmdHis');
 
         $orderId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(
-            "INSERT INTO remquip_orders (id, customer_id, order_number, subtotal, tax, shipping, total, payment_status, status, shipping_address, notes)
-             VALUES (:id, :customerId, :orderNumber, :subtotal, :tax, :shipping, :total, 'pending', 'pending', :shippingAddress, :notes)",
+            "INSERT INTO remquip_orders (id, customer_id, order_number, subtotal, tax, shipping, total, payment_status, payment_method, status, shipping_address, notes)
+             VALUES (:id, :customerId, :orderNumber, :subtotal, :tax, :shipping, :total, 'pending', :paymentMethod, 'pending', :shippingAddress, :notes)",
             [
                 'id' => $orderId,
                 'customerId' => $customerId,
@@ -302,10 +304,23 @@ if ($method === 'POST' && !$id) {
                 'tax' => $tax,
                 'shipping' => $shipping,
                 'total' => $total,
+                'paymentMethod' => $paymentMethod,
                 'shippingAddress' => json_encode($shipAddr),
                 'notes' => $notes,
             ]
         );
+        // Store billing_address separately — column added via migrate_orders_billing_address.sql.
+        // Wrapped in try/catch so order creation never fails if migration hasn't run yet.
+        if (!empty($billAddr)) {
+            try {
+                $conn->execute(
+                    "UPDATE remquip_orders SET billing_address = :ba WHERE id = :id",
+                    ['ba' => json_encode($billAddr), 'id' => $orderId]
+                );
+            } catch (Exception $_) {
+                // Column may not exist yet — silently skip.
+            }
+        }
 
         foreach ($items as $item) {
             $lineId = $conn->fetch('SELECT UUID() AS u')['u'];
@@ -426,14 +441,21 @@ if ($method === 'POST' && $id && $action === 'notes') {
         
         $tok = Auth::getToken();
         $payload = $tok ? Auth::verifyToken($tok) : null;
-        
+        $noteAuthor = 'Admin';
+        if ($payload && !empty($payload['user_id'])) {
+            $noteUser = $conn->fetch('SELECT full_name FROM remquip_users WHERE id = :id AND deleted_at IS NULL', ['id' => $payload['user_id']]);
+            if ($noteUser && !empty($noteUser['full_name'])) {
+                $noteAuthor = $noteUser['full_name'];
+            }
+        }
+
         $noteId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(
             "INSERT INTO remquip_order_notes (id, order_id, `user`, `text`, `date`) VALUES (:nid, :orderId, :user, :text, NOW())",
             [
                 'nid' => $noteId,
                 'orderId' => $id,
-                'user' => $payload['user_id'] ?? 'System',
+                'user' => $noteAuthor,
                 'text' => $data['note']
             ]
         );

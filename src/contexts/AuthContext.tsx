@@ -193,18 +193,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       if (!user?.id) throw new Error('User not authenticated');
       const response = await api.updateUser(user.id, data);
-      
-      if (response.data) {
-        setUser(response.data);
-        return response.data;
+
+      // Backend returns the updated user object. Guard against empty array
+      // responses (legacy) which would corrupt auth state.
+      const returned = response.data;
+      if (returned && !Array.isArray(returned) && typeof returned === 'object' && (returned as any).id) {
+        setUser(returned as User);
+        return returned as User;
       }
-      throw new Error('Invalid update response');
+
+      // Fallback: merge the changes into the existing user state so the UI
+      // reflects what was saved without losing auth context.
+      const merged = { ...user!, ...data };
+      setUser(merged);
+      return merged;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Update failed';
       setError(errorMessage);
       throw err;
     }
-  }, [user?.id]);
+  }, [user]);
 
   const clearError = useCallback(() => {
     setError(null);
