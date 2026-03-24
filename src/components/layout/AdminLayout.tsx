@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Warehouse, ShoppingBag, Users, FileText,
   BarChart3, Settings, ChevronLeft, Menu, X, Tag, Shield, Layers, LayoutTemplate,
-  Phone,
+  Phone, MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
@@ -25,6 +25,7 @@ const navItems = [
   { label: "Analytics", icon: BarChart3, path: "/admin/analytics" },
   { label: "Users", icon: Users, path: "/admin/users" },
   { label: "Access Control", icon: Shield, path: "/admin/access" },
+  { label: "Chat Inbox", icon: MessageCircle, path: "/admin/chat" },
   { label: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 

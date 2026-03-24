@@ -12,6 +12,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import PublicLayout from "@/components/layout/PublicLayout";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { CookieConsent } from "@/components/layout/CookieConsent";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 import HomeLandingRoute from "@/pages/HomeLandingRoute";
 
@@ -48,6 +49,7 @@ const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess"));
 const AdminSetupAdmins = lazy(() => import("@/pages/admin/AdminSetupAdmins"));
 const UserDashboard = lazy(() => import("@/pages/UserDashboard"));
+const AdminChat = lazy(() => import("@/pages/admin/AdminChat"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -67,6 +69,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <CookieConsent />
+              <ChatWidget />
               <BrowserRouter>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
@@ -119,6 +122,7 @@ const App = () => (
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="access" element={<AdminAccess />} />
                       <Route path="settings" element={<AdminSettings />} />
+                      <Route path="chat" element={<AdminChat />} />
                     </Route>
 
                     <Route path="*" element={<NotFound />} />

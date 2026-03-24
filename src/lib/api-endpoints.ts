@@ -245,4 +245,24 @@ export const API_ENDPOINTS = {
     CONTACT_US: '/user/dashboard/contacts',
     NOTES: '/user/dashboard/notes',
   },
+
+  // ==================== CHAT ENDPOINTS ====================
+  CHAT: {
+    /** POST — create conversation + first message (public) */
+    CREATE: '/chat',
+    /** POST — visitor sends message (public) */
+    SEND_MESSAGE: '/chat/:id/messages',
+    /** GET — poll messages for a conversation (public) */
+    GET_MESSAGES: '/chat/:id/messages',
+    /** GET — list all conversations (admin) */
+    LIST: '/chat',
+    /** GET — single conversation with messages (admin) */
+    GET: '/chat/:id',
+    /** PATCH — update status (admin) */
+    UPDATE: '/chat/:id',
+    /** POST — admin reply (admin) */
+    REPLY: '/chat/:id/reply',
+    /** DELETE — delete conversation (admin) */
+    DELETE: '/chat/:id',
+  },
 } as const;
