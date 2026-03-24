@@ -131,14 +131,9 @@ if ($method === 'GET' && $id && !$action && $id !== 'search' && $id !== 'feature
             "SELECT p.*, c.name as category, c.slug as categorySlug
              FROM remquip_products p
              LEFT JOIN remquip_categories c ON p.category_id = c.id
-             WHERE (p.id = :id OR p.sku = :id
-                OR (
-                    p.details IS NOT NULL AND TRIM(p.details) <> ''
-                    AND JSON_VALID(p.details)
-                    AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(p.details, '$.slug'))) = LOWER(:id)
-                ))
+             WHERE (p.id = :id_p OR p.sku = :id_s)
              AND p.deleted_at IS NULL",
-            ['id' => $id]
+            ['id_p' => $id, 'id_s' => $id]
         );
         
         if (!$product) {
@@ -164,14 +159,18 @@ if ($method === 'GET' && $id && !$action && $id !== 'search' && $id !== 'feature
         
         $product['images'] = $images;
         $product['variants'] = $variants;
-        $product['stock'] = $inventory['quantity_available'] ?? 0;
-        $product['details'] = json_decode($product['details'] ?? '{}', true);
+        $product['stock'] = (int)($inventory['quantity_available'] ?? 0);
+        $product['details'] = is_string($product['details']) ? json_decode($product['details'], true) : ($product['details'] ?? []);
         
         ResponseHelper::sendSuccess($product, 'Product details retrieved');
         
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         Logger::error('Get product error', ['error' => $e->getMessage()]);
-        ResponseHelper::sendError('Failed to retrieve product', 500);
+        ResponseHelper::sendError('Failed to retrieve product: ' . $e->getMessage(), 500, [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ]);
     }
 }
 
