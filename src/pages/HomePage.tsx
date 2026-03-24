@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Shield, Truck, Wrench, CheckCircle, ArrowRight, Package, Phone,
   Users, BarChart3, ShoppingCart, Star, CheckCircle2, ShieldCheck, PackageCheck,
+  Facebook, Instagram, Linkedin, Mail,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -73,6 +74,11 @@ type SiteHeaderCms = {
   urgency_cta_label?: string;
   urgency_cta_href?: string;
   marquee_items?: string[];
+  top_email?: string;
+  social_facebook?: string;
+  social_instagram?: string;
+  social_linkedin?: string;
+  professional_email?: string;
 };
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
@@ -184,6 +190,51 @@ export default function HomePage() {
   return (
     <LandingThemeScope>
       <EditableSection sectionKey="site_header" showEdit={isAdmin}>
+        {/* Top Header Bar */}
+        <div className="bg-[#0f172a] text-white border-b border-white/5 py-2 px-4 sm:px-8 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 relative z-50">
+          <div className="flex items-center gap-2 font-display text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">
+            <Mail className="h-3 w-3 text-accent" />
+            <a href={`mailto:${siteHeaderCms.top_email || "lsales@reqmuip.ca"}`} className="hover:text-white transition-colors">
+              {siteHeaderCms.top_email || "lsales@reqmuip.ca"}
+            </a>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              {siteHeaderCms.social_facebook ? (
+                <a href={siteHeaderCms.social_facebook} target="_blank" rel="noopener noreferrer" className="text-[#94a3b8] hover:text-white transition-all transform hover:scale-110">
+                  <Facebook className="h-3.5 w-3.5" />
+                  <span className="sr-only">Facebook</span>
+                </a>
+              ) : (
+                <span className="text-[#94a3b8] opacity-30 cursor-not-allowed"><Facebook className="h-3.5 w-3.5" /></span>
+              )}
+              {siteHeaderCms.social_instagram ? (
+                <a href={siteHeaderCms.social_instagram} target="_blank" rel="noopener noreferrer" className="text-[#94a3b8] hover:text-white transition-all transform hover:scale-110">
+                  <Instagram className="h-3.5 w-3.5" />
+                  <span className="sr-only">Instagram</span>
+                </a>
+              ) : (
+                 <span className="text-[#94a3b8] opacity-30 cursor-not-allowed"><Instagram className="h-3.5 w-3.5" /></span>
+              )}
+              {siteHeaderCms.social_linkedin ? (
+                <a href={siteHeaderCms.social_linkedin} target="_blank" rel="noopener noreferrer" className="text-[#94a3b8] hover:text-white transition-all transform hover:scale-110">
+                  <Linkedin className="h-3.5 w-3.5" />
+                  <span className="sr-only">LinkedIn</span>
+                </a>
+              ) : (
+                 <span className="text-[#94a3b8] opacity-30 cursor-not-allowed"><Linkedin className="h-3.5 w-3.5" /></span>
+              )}
+            </div>
+            <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
+            <div className="flex items-center gap-2 font-display text-[10px] font-bold uppercase tracking-widest text-white hover:text-accent transition-colors">
+               <span className="text-[#94a3b8]">Professional Email:</span>
+               <a href={`mailto:${siteHeaderCms.professional_email || "info@remquip.ca"}`}>
+                 {siteHeaderCms.professional_email || "info@remquip.ca"}
+               </a>
+            </div>
+          </div>
+        </div>
+
         {urgencyText ? (
           <div className="bg-destructive text-destructive-foreground py-3 px-4 sm:px-8 flex flex-wrap justify-center items-center gap-4 shadow-sm z-40 relative">
             <div className="flex items-center gap-2 font-display text-[11px] sm:text-xs font-black uppercase tracking-widest text-center">
