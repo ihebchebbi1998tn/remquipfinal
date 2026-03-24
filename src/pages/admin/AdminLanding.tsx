@@ -22,7 +22,7 @@ import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageSt
 
 const SECTION_LABELS: Record<string, string> = {
   site_header:
-    "Site header & announcement bar (logo, announcement, trust chips, urgency banner, marquee — all configurable per locale)",
+    "Site header — top bar (emails, social links), announcement, urgency banner, marquee — all configurable per locale",
   hero: "Hero (title — use a line break for two-line headline; description; CTAs; slides / layout)",
   value_props:
     "Trust bar & hero chips (JSON object: hero_secondary[], trust_bar{headline,logos[]}, or legacy [] array)",
@@ -401,6 +401,11 @@ type HeaderCmsShape = {
   urgency_cta_label?: string;
   urgency_cta_href?: string;
   marquee_items?: string[];
+  top_email?: string;
+  social_facebook?: string;
+  social_instagram?: string;
+  social_linkedin?: string;
+  professional_email?: string;
 };
 
 function HeaderSectionForm({
@@ -422,6 +427,11 @@ function HeaderSectionForm({
   const [urgencyCtaLabel, setUrgencyCtaLabel] = useState(c.urgency_cta_label ?? "");
   const [urgencyCtaHref, setUrgencyCtaHref] = useState(c.urgency_cta_href ?? "/products");
   const [marqueeLines, setMarqueeLines] = useState(() => (c.marquee_items?.length ? c.marquee_items.join("\n") : ""));
+  const [topEmail, setTopEmail] = useState(c.top_email ?? "");
+  const [socialFacebook, setSocialFacebook] = useState(c.social_facebook ?? "");
+  const [socialInstagram, setSocialInstagram] = useState(c.social_instagram ?? "");
+  const [socialLinkedin, setSocialLinkedin] = useState(c.social_linkedin ?? "");
+  const [professionalEmail, setProfessionalEmail] = useState(c.professional_email ?? "");
 
   useEffect(() => {
     const n = parseJson<HeaderCmsShape>(section.content, {});
@@ -434,6 +444,11 @@ function HeaderSectionForm({
     setUrgencyCtaLabel(n.urgency_cta_label ?? "");
     setUrgencyCtaHref(n.urgency_cta_href ?? "/products");
     setMarqueeLines(n.marquee_items?.length ? n.marquee_items.join("\n") : "");
+    setTopEmail(n.top_email ?? "");
+    setSocialFacebook(n.social_facebook ?? "");
+    setSocialInstagram(n.social_instagram ?? "");
+    setSocialLinkedin(n.social_linkedin ?? "");
+    setProfessionalEmail(n.professional_email ?? "");
   }, [section.content, section.image_url]);
 
   const save = () => {
@@ -457,6 +472,11 @@ function HeaderSectionForm({
         urgency_cta_label: urgencyCtaLabel.trim() || undefined,
         urgency_cta_href: urgencyCtaHref.trim() || undefined,
         marquee_items: marquee_items.length ? marquee_items : undefined,
+        top_email: topEmail.trim() || undefined,
+        social_facebook: socialFacebook.trim() || undefined,
+        social_instagram: socialInstagram.trim() || undefined,
+        social_linkedin: socialLinkedin.trim() || undefined,
+        professional_email: professionalEmail.trim() || undefined,
       }),
     });
   };
@@ -464,8 +484,20 @@ function HeaderSectionForm({
   return (
     <div className="space-y-6">
       <p className="text-xs text-muted-foreground">
-        Header and announcement content. Use the locale selector above to edit per language. Leave announcement empty to hide the top bar.
+        Top header bar, announcement bar, and scrolling marquee settings. Use the locale selector above to edit per language.
       </p>
+
+      <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+        <h4 className="text-sm font-semibold">🔗 Top Header Bar (contact info & social links)</h4>
+        <p className="text-xs text-muted-foreground">Displayed at the very top of the landing page. Leave fields empty to use defaults.</p>
+        <Field label="Sales / Contact Email (left side)" value={topEmail} onChange={setTopEmail} placeholder="sales@remquip.ca" />
+        <Field label="Professional Email (right side)" value={professionalEmail} onChange={setProfessionalEmail} placeholder="info@remquip.ca" />
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label="Facebook URL" value={socialFacebook} onChange={setSocialFacebook} placeholder="https://facebook.com/remquip" />
+          <Field label="Instagram URL" value={socialInstagram} onChange={setSocialInstagram} placeholder="https://instagram.com/remquip" />
+          <Field label="LinkedIn URL" value={socialLinkedin} onChange={setSocialLinkedin} placeholder="https://linkedin.com/company/remquip" />
+        </div>
+      </div>
 
       <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
         <h4 className="text-sm font-semibold">Logo</h4>

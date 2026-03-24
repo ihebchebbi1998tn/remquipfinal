@@ -54,36 +54,25 @@ export default function AdminOverview() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-
-        // Fetch stats
         try {
           const statsResponse = await api.getDashboardStats();
           if (statsResponse.data) {
             setStats(statsResponse.data as DashboardStats);
           }
-        } catch {
-          // Use defaults
-        }
+        } catch { /* Use defaults */ }
 
-        // Fetch recent orders
         try {
           const ordersResponse = await api.getOrders(1, 5);
           setRecentOrders(unwrapApiList<Order>(ordersResponse as any, []));
-        } catch {
-          // Orders API failed
-        }
+        } catch { /* Orders API failed */ }
 
-        // Fetch activity log
         try {
           const activityResponse = await api.getDashboardActivityLog();
           const rows = activityResponse.data;
           if (Array.isArray(rows)) {
             setActivityLog(
               rows.map((r: Record<string, unknown>) => ({
-                time:
-                  r.created_at != null
-                    ? new Date(String(r.created_at)).toLocaleString()
-                    : "",
+                time: r.created_at != null ? new Date(String(r.created_at)).toLocaleString() : "",
                 user: r.user_id != null ? String(r.user_id).slice(0, 8) + "…" : "System",
                 action: String(r.action ?? r.entity_type ?? "event"),
                 type: String(r.entity_type ?? "system"),
@@ -96,7 +85,6 @@ export default function AdminOverview() {
           ]);
         }
 
-        // Fetch low stock products
         try {
           const lowStockResponse = await api.getLowStockProducts();
           setLowStockProducts(unwrapApiList(lowStockResponse as any, []));
@@ -118,10 +106,10 @@ export default function AdminOverview() {
   }
 
   const statsArray = [
-    { label: "Total Products", value: stats.totalProducts.toString(), icon: Package, change: "+3 this month", color: "text-accent" },
-    { label: "Total Orders", value: stats.totalOrders.toString(), icon: ShoppingBag, change: "+12 this week", color: "text-blue-500" },
-    { label: "Customers", value: stats.totalCustomers.toString(), icon: Users, change: "+5 this month", color: "text-green-500" },
-    { label: "Revenue", value: `C$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, change: "+18% vs last month", color: "text-accent" },
+    { label: "Total Products", value: stats.totalProducts.toString(), icon: Package, change: "+3 this month", color: "accent" },
+    { label: "Total Orders", value: stats.totalOrders.toString(), icon: ShoppingBag, change: "+12 this week", color: "info" },
+    { label: "Customers", value: stats.totalCustomers.toString(), icon: Users, change: "+5 this month", color: "success" },
+    { label: "Revenue", value: `C$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, change: "+18% vs last month", color: "accent" },
   ];
 
   return (
@@ -130,17 +118,23 @@ export default function AdminOverview() {
         title="Overview"
         subtitle="Operational snapshot of your store"
       />
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {statsArray.map((stat) => (
-          <div key={stat.label} className="dashboard-card">
+          <div key={stat.label} className={`stat-card stat-card--${stat.color}`}>
             <div className="flex items-start justify-between">
               <div className="min-w-0">
-                <p className="text-xs md:text-sm text-muted-foreground truncate">{stat.label}</p>
-                <p className="text-xl md:text-2xl font-bold font-display mt-1">{isLoading ? "..." : stat.value}</p>
-                <p className="text-xs text-success flex items-center gap-1 mt-1"><TrendingUp className="h-3 w-3 flex-shrink-0" /><span className="truncate">{stat.change}</span></p>
+                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                <p className="text-2xl md:text-3xl font-bold font-display mt-1.5 tracking-tight">{isLoading ? "…" : stat.value}</p>
+                <p className="text-xs text-success flex items-center gap-1 mt-2">
+                  <TrendingUp className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{stat.change}</span>
+                </p>
               </div>
-              <stat.icon className={`h-7 w-7 md:h-8 md:w-8 flex-shrink-0 ${stat.color}`} strokeWidth={1.5} />
+              <div className={`stat-icon stat-icon--${stat.color}`}>
+                <stat.icon className="h-5 w-5" strokeWidth={1.5} />
+              </div>
             </div>
           </div>
         ))}
@@ -149,9 +143,12 @@ export default function AdminOverview() {
       <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
         {/* Recent orders */}
         <div className="lg:col-span-2 dashboard-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-bold text-sm uppercase">Recent Orders</h3>
-            <Link to="/admin/orders" className="text-xs text-accent font-medium hover:underline flex items-center gap-1">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-accent" />
+              Recent Orders
+            </h3>
+            <Link to="/admin/orders" className="admin-btn--ghost text-xs px-2 py-1 gap-1">
               View All <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -159,16 +156,16 @@ export default function AdminOverview() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
             {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
+              <div key={order.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{order.id}</span>
                     <span className={statusStyles[order.status]}>{order.status}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{order.customer}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{order.customer}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
-                  <p className="text-sm font-medium">{order.total}</p>
+                  <p className="text-sm font-semibold">{order.total}</p>
                   <p className="text-xs text-muted-foreground">{order.date}</p>
                 </div>
               </div>
@@ -180,41 +177,61 @@ export default function AdminOverview() {
             <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="table-header">
-                  <th className="text-left px-3 py-2">Order</th>
-                  <th className="text-left px-3 py-2">Customer</th>
-                  <th className="text-left px-3 py-2">Total</th>
-                  <th className="text-left px-3 py-2">Status</th>
-                  <th className="text-left px-3 py-2">Date</th>
+                  <th className="text-left px-3 py-2.5">Order</th>
+                  <th className="text-left px-3 py-2.5">Customer</th>
+                  <th className="text-left px-3 py-2.5">Total</th>
+                  <th className="text-left px-3 py-2.5">Status</th>
+                  <th className="text-left px-3 py-2.5">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-secondary/50 transition-colors">
-                    <td className="px-3 py-2.5 font-medium text-sm">{order.id}</td>
-                    <td className="px-3 py-2.5 text-sm truncate max-w-[200px]">{order.customer}</td>
-                    <td className="px-3 py-2.5 font-medium text-sm">{order.total}</td>
-                    <td className="px-3 py-2.5"><span className={statusStyles[order.status]}>{order.status}</span></td>
-                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{order.date}</td>
+                  <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-3 py-3 font-medium text-sm">{order.id}</td>
+                    <td className="px-3 py-3 text-sm truncate max-w-[200px]">{order.customer}</td>
+                    <td className="px-3 py-3 font-semibold text-sm">{order.total}</td>
+                    <td className="px-3 py-3"><span className={statusStyles[order.status]}>{order.status}</span></td>
+                    <td className="px-3 py-3 text-muted-foreground text-xs">{order.date}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {recentOrders.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">No recent orders.</p>
+          )}
         </div>
 
         {/* Low stock */}
         <div className="dashboard-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-bold text-sm uppercase flex items-center gap-2">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-warning" /> Low Stock
             </h3>
-            <Link to="/admin/inventory" className="text-xs text-accent font-medium hover:underline">View All</Link>
+            <Link to="/admin/inventory" className="admin-btn--ghost text-xs px-2 py-1">View All</Link>
           </div>
           <div className="space-y-3">
             {lowStockProducts.slice(0, 6).map((p) => (
               <div key={p.id} className="flex items-center justify-between text-sm">
-                <span className="truncate mr-2 text-xs md:text-sm">{p.name}</span>
-                <span className={`font-medium flex-shrink-0 text-xs md:text-sm ${p.stock < 20 ? "text-destructive" : "text-warning"}`}>{p.stock}</span>
+                <span className="truncate mr-3 text-xs md:text-sm">{p.name}</span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="admin-progress w-16">
+                    <div
+                      className="admin-progress-bar"
+                      style={{
+                        width: `${Math.min(100, (p.stock / 100) * 100)}%`,
+                        background: p.stock < 20
+                          ? 'hsl(var(--destructive))'
+                          : p.stock < 50
+                            ? 'hsl(var(--warning))'
+                            : 'hsl(var(--accent))',
+                      }}
+                    />
+                  </div>
+                  <span className={`font-semibold text-xs tabular-nums ${p.stock < 20 ? "text-destructive" : p.stock < 50 ? "text-warning" : ""}`}>
+                    {p.stock}
+                  </span>
+                </div>
               </div>
             ))}
             {lowStockProducts.length === 0 && <p className="text-sm text-muted-foreground">All products well-stocked.</p>}
@@ -224,21 +241,21 @@ export default function AdminOverview() {
 
       {/* Activity Log */}
       <div className="dashboard-card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-bold text-sm uppercase flex items-center gap-2">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
             <Clock className="h-4 w-4 text-accent" /> Recent Activity
           </h3>
         </div>
-        <div className="space-y-3">
+        <div className="admin-timeline">
           {activityLog.map((entry, i) => {
             const Icon = activityIcons[entry.type] || FileText;
             return (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-sm bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
+              <div key={i} className="admin-timeline-item">
+                <div className="admin-timeline-dot admin-timeline-dot--accent">
+                  <Icon className="h-2.5 w-2.5" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm">{entry.action}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{entry.action}</p>
                   <p className="text-xs text-muted-foreground">{entry.user} · {entry.time}</p>
                 </div>
               </div>
@@ -258,9 +275,11 @@ export default function AdminOverview() {
           <Link
             key={action.to}
             to={action.to}
-            className="dashboard-card flex items-center gap-3 hover:border-accent transition-colors"
+            className="dashboard-card group flex items-center gap-3 hover:border-accent/40 transition-all"
           >
-            <action.icon className="h-5 w-5 text-accent flex-shrink-0" />
+            <div className="stat-icon stat-icon--accent group-hover:scale-105 transition-transform">
+              <action.icon className="h-4.5 w-4.5" />
+            </div>
             <span className="text-sm font-medium">{action.label}</span>
           </Link>
         ))}

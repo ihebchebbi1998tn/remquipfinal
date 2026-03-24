@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { Plus, Search, Edit, Trash2, Copy, Tag, Percent, DollarSign, Calendar, CheckCircle, X, ChevronDown, ChevronUp, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Copy, Tag, Percent, DollarSign, Calendar, CheckCircle, X, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useDiscounts, useApiMutation } from "@/hooks/useApi";
 import { api, Discount, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
-import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
@@ -45,10 +44,8 @@ export default function AdminDiscounts() {
 
   const queryClient = useQueryClient();
 
-  // Fetch discounts from API
   const { data: discountsResponse, isLoading, isError, error } = useDiscounts(page, 50);
 
-  // Mutations
   const createDiscountMutation = useApiMutation(
     (data: any) => api.createDiscount(data),
     {
@@ -97,7 +94,6 @@ export default function AdminDiscounts() {
   const discounts: Discount[] = unwrapApiList<Discount>(discountsResponse, []);
   const pagination = unwrapPagination(discountsResponse);
 
-  // Filter discounts locally
   const filtered = discounts.filter((d) => {
     const status = getDiscountStatus(d);
     const matchSearch = !search || d.code.toLowerCase().includes(search.toLowerCase());
@@ -162,12 +158,10 @@ export default function AdminDiscounts() {
     navigator.clipboard.writeText(code);
   };
 
-  // Loading state
   if (isLoading) {
     return <AdminPageLoading message="Loading discounts" />;
   }
 
-  // Error state
   if (isError) {
     return (
       <AdminPageError
@@ -182,6 +176,7 @@ export default function AdminDiscounts() {
       <AdminPageHeader
         title="Discounts & Coupons"
         subtitle={pagination ? `${pagination.total} total codes` : undefined}
+        icon={Tag}
         actions={
           <button
             onClick={() => {
@@ -189,16 +184,12 @@ export default function AdminDiscounts() {
               setEditingId(null);
               setShowForm(!showForm);
             }}
-            className="btn-accent px-3 md:px-4 py-2 rounded-sm text-xs md:text-sm font-medium flex items-center gap-2 self-start"
+            className={showForm ? "admin-btn--secondary" : "admin-btn--primary"}
           >
             {showForm ? (
-              <>
-                <X className="h-4 w-4" /> Cancel
-              </>
+              <><X className="h-4 w-4" /> Cancel</>
             ) : (
-              <>
-                <Plus className="h-4 w-4" /> Create Discount
-              </>
+              <><Plus className="h-4 w-4" /> Create Discount</>
             )}
           </button>
         }
@@ -206,21 +197,21 @@ export default function AdminDiscounts() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="dashboard-card">
-          <p className="text-xs text-muted-foreground">Total Codes</p>
-          <p className="text-xl font-bold font-display">{discounts.length}</p>
+        <div className="stat-card stat-card--accent">
+          <p className="text-xs text-muted-foreground font-medium">Total Codes</p>
+          <p className="text-2xl font-bold font-display mt-1 tracking-tight">{discounts.length}</p>
         </div>
-        <div className="dashboard-card">
-          <p className="text-xs text-muted-foreground">Active</p>
-          <p className="text-xl font-bold font-display text-success">{activeCodes}</p>
+        <div className="stat-card stat-card--success">
+          <p className="text-xs text-muted-foreground font-medium">Active</p>
+          <p className="text-2xl font-bold font-display mt-1 tracking-tight text-success">{activeCodes}</p>
         </div>
-        <div className="dashboard-card">
-          <p className="text-xs text-muted-foreground">Total Uses</p>
-          <p className="text-xl font-bold font-display">{totalUsed}</p>
+        <div className="stat-card stat-card--info">
+          <p className="text-xs text-muted-foreground font-medium">Total Uses</p>
+          <p className="text-2xl font-bold font-display mt-1 tracking-tight">{totalUsed}</p>
         </div>
-        <div className="dashboard-card">
-          <p className="text-xs text-muted-foreground">Avg. Discount</p>
-          <p className="text-xl font-bold font-display">
+        <div className="stat-card stat-card--warning">
+          <p className="text-xs text-muted-foreground font-medium">Avg. Discount</p>
+          <p className="text-2xl font-bold font-display mt-1 tracking-tight">
             {discounts.filter(d => d.discount_type === "percentage").length > 0 
               ? Math.round(discounts.filter(d => d.discount_type === "percentage").reduce((s, d) => s + d.discount_value, 0) / discounts.filter(d => d.discount_type === "percentage").length)
               : 0}%
@@ -231,89 +222,94 @@ export default function AdminDiscounts() {
       {/* Create/Edit form */}
       {showForm && (
         <div className="dashboard-card">
-          <h3 className="font-display font-bold text-sm uppercase mb-4">
-            {editingId ? "Edit Discount Code" : "New Discount Code"}
-          </h3>
+          <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-border">
+            <div className="stat-icon stat-icon--accent">
+              <Tag className="h-4 w-4" />
+            </div>
+            <h3 className="font-display font-bold text-sm uppercase tracking-wider">
+              {editingId ? "Edit Discount Code" : "New Discount Code"}
+            </h3>
+          </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Code</label>
+              <label className="admin-label">Code</label>
               <input 
                 value={form.code} 
                 onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
                 placeholder="e.g. FLEET10" 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent font-mono" 
+                className="admin-input font-mono" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
+              <label className="admin-label">Type</label>
               <select 
                 value={form.discount_type} 
                 onChange={(e) => setForm({ ...form, discount_type: e.target.value as "percentage" | "fixed_amount" })} 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none"
+                className="admin-input"
               >
                 <option value="percentage">Percentage (%)</option>
                 <option value="fixed_amount">Fixed Amount ($)</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Value</label>
+              <label className="admin-label">Value</label>
               <input 
                 type="number" 
                 value={form.discount_value} 
                 onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })} 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent" 
+                className="admin-input" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Min. Order (CAD)</label>
+              <label className="admin-label">Min. Order (CAD)</label>
               <input 
                 type="number" 
                 value={form.min_purchase_amount} 
                 onChange={(e) => setForm({ ...form, min_purchase_amount: parseFloat(e.target.value) || 0 })} 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent" 
+                className="admin-input" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Max Uses</label>
+              <label className="admin-label">Max Uses</label>
               <input 
                 type="number" 
                 value={form.max_usage_count} 
                 onChange={(e) => setForm({ ...form, max_usage_count: parseInt(e.target.value) || 0 })} 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent" 
+                className="admin-input" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="admin-label">Description</label>
               <input 
                 value={form.description} 
                 onChange={(e) => setForm({ ...form, description: e.target.value })} 
                 placeholder="Optional description" 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent" 
+                className="admin-input" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Start Date</label>
+              <label className="admin-label">Start Date</label>
               <input 
                 type="date" 
                 value={form.valid_from} 
                 onChange={(e) => setForm({ ...form, valid_from: e.target.value })} 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent" 
+                className="admin-input" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">End Date</label>
+              <label className="admin-label">End Date</label>
               <input 
                 type="date" 
                 value={form.valid_until} 
                 onChange={(e) => setForm({ ...form, valid_until: e.target.value })} 
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent" 
+                className="admin-input" 
               />
             </div>
             <div className="flex items-end">
               <button 
                 onClick={handleSubmit} 
                 disabled={createDiscountMutation.isLoading || updateDiscountMutation.isLoading}
-                className="btn-accent px-6 py-2 rounded-sm text-sm font-medium flex items-center gap-2 w-full justify-center disabled:opacity-50"
+                className="admin-btn--primary w-full py-2.5"
               >
                 {(createDiscountMutation.isLoading || updateDiscountMutation.isLoading) ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -329,20 +325,20 @@ export default function AdminDiscounts() {
 
       {/* List */}
       <div className="dashboard-card">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-5">
           <div className="relative flex-1 w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input 
               value={search} 
               onChange={(e) => setSearch(e.target.value)} 
               placeholder="Search codes..." 
-              className="w-full pl-10 pr-4 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent" 
+              className="admin-input pl-10" 
             />
           </div>
           <select 
             value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)} 
-            className="border border-border rounded-sm px-3 py-2 text-sm bg-background outline-none w-full sm:w-auto"
+            className="admin-input w-full sm:w-auto"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
@@ -357,30 +353,38 @@ export default function AdminDiscounts() {
           {filtered.map((d) => {
             const status = getDiscountStatus(d);
             const isExpanded = expandedDiscount === d.id;
+            const usagePercent = d.max_usage_count ? Math.min(100, (d.current_usage_count / d.max_usage_count) * 100) : 0;
             return (
-              <div key={d.id} className="border border-border rounded-md overflow-hidden">
-                <button onClick={() => setExpandedDiscount(isExpanded ? null : d.id)} className="w-full p-3 text-left flex items-center justify-between">
+              <div key={d.id} className="border border-border rounded-xl overflow-hidden">
+                <button onClick={() => setExpandedDiscount(isExpanded ? null : d.id)} className="w-full p-3 text-left flex items-center justify-between hover:bg-muted/20 transition-colors">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
                       <Tag className="h-3.5 w-3.5 text-accent flex-shrink-0" />
-                      <span className="font-mono font-medium text-sm">{d.code}</span>
+                      <span className="font-mono font-bold text-sm">{d.code}</span>
                       <span className={statusStyles[status]}>{status}</span>
                     </div>
-                    <p className="text-sm font-bold">
+                    <p className="text-sm font-semibold">
                       {d.discount_type === "percentage" ? `${d.discount_value}% off` : `C$${d.discount_value} off`}
                     </p>
                   </div>
                   {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                 </button>
                 {isExpanded && (
-                  <div className="px-3 pb-3 border-t border-border pt-3 space-y-1.5 bg-secondary/30">
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Min. Order</span><span>C${d.min_purchase_amount || 0}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Uses</span><span>{d.current_usage_count} / {d.max_usage_count || "∞"}</span></div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Period</span><span>{d.valid_from.split('T')[0]} → {d.valid_until.split('T')[0]}</span></div>
+                  <div className="px-3 pb-3 border-t border-border pt-3 space-y-2 bg-muted/10">
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Min. Order</span><span className="font-medium">C${d.min_purchase_amount || 0}</span></div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs"><span className="text-muted-foreground">Uses</span><span className="font-medium">{d.current_usage_count} / {d.max_usage_count || "∞"}</span></div>
+                      {d.max_usage_count > 0 && (
+                        <div className="admin-progress">
+                          <div className="admin-progress-bar" style={{ width: `${usagePercent}%`, background: usagePercent >= 90 ? 'hsl(var(--destructive))' : undefined }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Period</span><span className="font-medium">{d.valid_from.split('T')[0]} → {d.valid_until.split('T')[0]}</span></div>
                     <div className="flex gap-2 pt-2">
-                      <button onClick={() => copyToClipboard(d.code)} className="flex-1 text-xs py-1.5 border border-border rounded-sm hover:bg-secondary transition-colors flex items-center justify-center gap-1"><Copy className="h-3 w-3" /> Copy</button>
-                      <button onClick={() => handleEdit(d)} className="flex-1 text-xs py-1.5 btn-accent rounded-sm flex items-center justify-center gap-1"><Edit className="h-3 w-3" /> Edit</button>
-                      <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isLoading} className="px-3 py-1.5 border border-destructive rounded-sm text-destructive text-xs hover:bg-destructive/10 disabled:opacity-50"><Trash2 className="h-3 w-3" /></button>
+                      <button onClick={() => copyToClipboard(d.code)} className="admin-btn--secondary flex-1 text-xs py-1.5"><Copy className="h-3 w-3" /> Copy</button>
+                      <button onClick={() => handleEdit(d)} className="admin-btn--primary flex-1 text-xs py-1.5"><Edit className="h-3 w-3" /> Edit</button>
+                      <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isLoading} className="admin-btn--danger px-3 py-1.5 text-xs"><Trash2 className="h-3 w-3" /></button>
                     </div>
                   </div>
                 )}
@@ -394,35 +398,43 @@ export default function AdminDiscounts() {
           <table className="w-full text-sm">
             <thead>
               <tr className="table-header">
-                <th className="text-left px-3 py-2">Code</th>
-                <th className="text-left px-3 py-2">Discount</th>
-                <th className="text-right px-3 py-2">Min. Order</th>
-                <th className="text-right px-3 py-2">Uses</th>
-                <th className="text-left px-3 py-2">Period</th>
-                <th className="text-left px-3 py-2">Status</th>
-                <th className="text-right px-3 py-2">Actions</th>
+                <th className="text-left px-3 py-2.5">Code</th>
+                <th className="text-left px-3 py-2.5">Discount</th>
+                <th className="text-right px-3 py-2.5">Min. Order</th>
+                <th className="text-left px-3 py-2.5">Usage</th>
+                <th className="text-left px-3 py-2.5">Period</th>
+                <th className="text-left px-3 py-2.5">Status</th>
+                <th className="text-right px-3 py-2.5">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.map((d) => {
                 const status = getDiscountStatus(d);
+                const usagePercent = d.max_usage_count ? Math.min(100, (d.current_usage_count / d.max_usage_count) * 100) : 0;
                 return (
-                  <tr key={d.id} className="hover:bg-secondary/50 transition-colors">
+                  <tr key={d.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <Tag className="h-3.5 w-3.5 text-accent" />
-                        <span className="font-mono font-medium">{d.code}</span>
+                        <Tag className="h-3.5 w-3.5 text-accent flex-shrink-0" />
+                        <span className="font-mono font-bold">{d.code}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-3 font-medium">
+                    <td className="px-3 py-3 font-semibold">
                       <span className="flex items-center gap-1">
                         {d.discount_type === "percentage" ? <><Percent className="h-3 w-3" />{d.discount_value}%</> : <><DollarSign className="h-3 w-3" />C${d.discount_value}</>}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right text-muted-foreground">C${d.min_purchase_amount || 0}</td>
-                    <td className="px-3 py-3 text-right">
-                      <span className={d.max_usage_count && d.current_usage_count >= d.max_usage_count ? "text-destructive" : ""}>{d.current_usage_count}</span>
-                      <span className="text-muted-foreground"> / {d.max_usage_count || "∞"}</span>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-3 min-w-[120px]">
+                        <div className="admin-progress flex-1">
+                          <div className="admin-progress-bar" style={{ width: `${usagePercent}%`, background: usagePercent >= 90 ? 'hsl(var(--destructive))' : undefined }} />
+                        </div>
+                        <span className="text-xs font-medium tabular-nums whitespace-nowrap">
+                          <span className={usagePercent >= 90 ? "text-destructive" : ""}>{d.current_usage_count}</span>
+                          <span className="text-muted-foreground"> / {d.max_usage_count || "∞"}</span>
+                        </span>
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{d.valid_from.split('T')[0]}</div>
@@ -431,10 +443,10 @@ export default function AdminDiscounts() {
                     <td className="px-3 py-3"><span className={statusStyles[status]}>{status}</span></td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => copyToClipboard(d.code)} className="p-1.5 hover:bg-secondary rounded-sm transition-colors" title="Copy Code"><Copy className="h-4 w-4" /></button>
-                        <button onClick={() => handleEdit(d)} className="p-1.5 hover:bg-secondary rounded-sm transition-colors" title="Edit"><Edit className="h-4 w-4" /></button>
-                        <button onClick={() => handleToggleStatus(d)} disabled={updateDiscountMutation.isLoading} className="p-1.5 hover:bg-secondary rounded-sm transition-colors disabled:opacity-50" title={d.is_active ? "Disable" : "Enable"}>{d.is_active ? <X className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}</button>
-                        <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isLoading} className="p-1.5 hover:bg-secondary rounded-sm transition-colors text-destructive disabled:opacity-50" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => copyToClipboard(d.code)} className="admin-btn--ghost p-1.5" title="Copy Code"><Copy className="h-4 w-4" /></button>
+                        <button onClick={() => handleEdit(d)} className="admin-btn--ghost p-1.5" title="Edit"><Edit className="h-4 w-4" /></button>
+                        <button onClick={() => handleToggleStatus(d)} disabled={updateDiscountMutation.isLoading} className="admin-btn--ghost p-1.5" title={d.is_active ? "Disable" : "Enable"}>{d.is_active ? <X className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}</button>
+                        <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isLoading} className="admin-btn--danger p-1.5 border-0" title="Delete"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -444,23 +456,23 @@ export default function AdminDiscounts() {
           </table>
         </div>
 
-        {filtered.length === 0 && <div className="text-center py-8 text-sm text-muted-foreground">No discount codes found.</div>}
+        {filtered.length === 0 && <div className="text-center py-12 text-sm text-muted-foreground">No discount codes found.</div>}
 
         {/* Pagination */}
         {pagination && pagination.pages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-4">
+          <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-border">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-secondary disabled:opacity-50"
+              className="admin-btn--secondary text-xs px-3 py-1.5"
             >
               Previous
             </button>
-            <span className="text-sm text-muted-foreground">Page {page} of {pagination.pages}</span>
+            <span className="text-xs text-muted-foreground font-medium">Page {page} of {pagination.pages}</span>
             <button
               onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
               disabled={page === pagination.pages}
-              className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-secondary disabled:opacity-50"
+              className="admin-btn--secondary text-xs px-3 py-1.5"
             >
               Next
             </button>

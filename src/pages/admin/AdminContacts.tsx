@@ -7,12 +7,11 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  AlertCircle,
   X,
+  CheckCircle,
 } from "lucide-react";
 import { useAdminContactsListAll, useCreateAdminContact, useDeleteAdminContact, useUpdateAdminContact } from "@/hooks/useApi";
-import { unwrapApiList, unwrapPagination } from "@/lib/api";
-import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
+import { unwrapApiList } from "@/lib/api";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
@@ -49,6 +48,12 @@ const emptyForm: ContactForm = {
   display_order: 0,
 };
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return parts[0].slice(0, 2).toUpperCase();
+}
+
 export default function AdminContacts() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -57,7 +62,6 @@ export default function AdminContacts() {
 
   const { data: res, isLoading, isError, error } = useAdminContactsListAll();
   const contacts = unwrapApiList<AdminContactRow>(res, []);
-  const pagination = unwrapPagination(res);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -146,16 +150,16 @@ export default function AdminContacts() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title="Admin contacts"
+        title="Admin Contacts"
         subtitle="Manage the internal contact directory used by the admin UI and customer portal."
         icon={UserRound}
         actions={
           <button
             type="button"
             onClick={openCreate}
-            className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 self-start"
+            className="admin-btn--primary"
           >
-            <Plus className="h-4 w-4" /> New contact
+            <Plus className="h-4 w-4" /> New Contact
           </button>
         }
       />
@@ -166,92 +170,101 @@ export default function AdminContacts() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, department, specialization, email..."
-            className="w-full pl-3 pr-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+            className="admin-input pl-3"
           />
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {filtered.length} contact{filtered.length !== 1 ? "s" : ""}
         </div>
       </div>
 
       {showForm && (
         <div className="dashboard-card space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Layers className="h-4 w-4 text-accent" /> {editingId ? "Edit contact" : "Create contact"}
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-border">
+            <div className="flex items-center gap-2.5">
+              <div className="stat-icon stat-icon--accent">
+                <UserRound className="h-4 w-4" />
+              </div>
+              <span className="font-display font-bold text-sm uppercase tracking-wider">
+                {editingId ? "Edit Contact" : "New Contact"}
+              </span>
             </div>
-            <button type="button" onClick={closeForm} className="p-1.5 rounded-sm hover:bg-muted transition-colors" aria-label="Close">
+            <button type="button" onClick={closeForm} className="admin-btn--ghost p-1.5" aria-label="Close">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium mb-1">Full name</label>
+              <label className="admin-label">Full name</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                className="admin-input"
                 placeholder="e.g. Marc Dupont"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">Email</label>
+              <label className="admin-label">Email</label>
               <input
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                className="admin-input"
                 placeholder="name@company.com"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">Phone</label>
+              <label className="admin-label">Phone</label>
               <input
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                className="admin-input"
                 placeholder="+1-555-0100"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">Department</label>
+              <label className="admin-label">Department</label>
               <input
                 value={form.department}
                 onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                className="admin-input"
                 placeholder="e.g. Sales"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">Specialization</label>
+              <label className="admin-label">Specialization</label>
               <input
                 value={form.specialization}
                 onChange={(e) => setForm((f) => ({ ...f, specialization: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                className="admin-input"
                 placeholder="e.g. Air Suspension"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium mb-1">Display order</label>
+              <label className="admin-label">Display order</label>
               <input
                 type="number"
                 value={form.display_order}
                 onChange={(e) => setForm((f) => ({ ...f, display_order: parseInt(e.target.value, 10) || 0 }))}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                className="admin-input"
               />
             </div>
 
             <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={form.is_available}
-                onChange={(e) => setForm((f) => ({ ...f, is_available: e.target.checked }))}
-                className="h-4 w-4"
-                id="is-available"
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.is_available}
+                onClick={() => setForm((f) => ({ ...f, is_available: !f.is_available }))}
+                className="admin-toggle"
+                data-checked={String(form.is_available)}
               />
-              <label htmlFor="is-available" className="text-sm text-muted-foreground cursor-pointer select-none">
+              <label className="text-sm text-muted-foreground cursor-pointer select-none">
                 Available in portal
               </label>
             </div>
@@ -262,24 +275,58 @@ export default function AdminContacts() {
               type="button"
               onClick={handleSave}
               disabled={isMutating || !form.name.trim()}
-              className="btn-accent px-6 py-2 rounded-sm text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              className="admin-btn--primary px-6"
             >
-              {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {editingId ? (updateMutation.isLoading ? "Saving..." : "Save changes") : createMutation.isLoading ? "Creating..." : "Create"}
+              {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+              {editingId ? (updateMutation.isLoading ? "Saving..." : "Save Changes") : createMutation.isLoading ? "Creating..." : "Create Contact"}
             </button>
-            <button type="button" onClick={closeForm} className="px-6 py-2 border border-border rounded-sm text-sm font-medium hover:bg-secondary transition-colors">
+            <button type="button" onClick={closeForm} className="admin-btn--secondary px-6">
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      <div className="overflow-x-auto border border-border rounded-sm">
+      {/* Contact cards (mobile) + table (desktop) */}
+      <div className="md:hidden space-y-3">
+        {filtered.map((c) => (
+          <div key={c.id} className="dashboard-card">
+            <div className="flex items-start gap-3">
+              <div className="admin-avatar w-10 h-10 text-sm flex-shrink-0">
+                {getInitials(c.name)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm">{c.name}</span>
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${c.is_available ? "bg-success" : "bg-muted-foreground/30"}`} />
+                </div>
+                {c.department && <p className="text-xs text-muted-foreground mt-0.5">{c.department}{c.specialization ? ` · ${c.specialization}` : ""}</p>}
+                <div className="flex flex-col gap-0.5 mt-2 text-xs text-muted-foreground">
+                  {c.email && <span className="inline-flex items-center gap-1.5"><Mail className="h-3 w-3" /> {c.email}</span>}
+                  {c.phone && <span className="inline-flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.phone}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button type="button" onClick={() => openEdit(c)} className="admin-btn--ghost p-1.5"><Pencil className="h-3.5 w-3.5" /></button>
+                <button
+                  type="button"
+                  disabled={deleteMutation.isLoading}
+                  onClick={() => { if (confirm("Delete this admin contact?")) deleteMutation.mutate(c.id); }}
+                  className="admin-btn--danger p-1.5 border-0"
+                ><Trash2 className="h-3.5 w-3.5" /></button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto border border-border rounded-xl">
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
-              <th className="text-left p-3">Name</th>
-              <th className="text-left p-3">Department / specialization</th>
+              <th className="text-left p-3">Contact</th>
+              <th className="text-left p-3">Department / Specialization</th>
               <th className="text-left p-3">Available</th>
               <th className="text-right p-3">Order</th>
               <th className="text-right p-3">Actions</th>
@@ -287,40 +334,44 @@ export default function AdminContacts() {
           </thead>
           <tbody className="divide-y divide-border">
             {filtered.map((c) => (
-              <tr key={c.id} className="hover:bg-secondary/40 transition-colors">
+              <tr key={c.id} className="hover:bg-muted/30 transition-colors">
                 <td className="p-3">
-                  <div className="font-medium">{c.name}</div>
-                  {(c.email || c.phone) && (
-                    <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
-                      {c.email ? (
-                        <span className="inline-flex items-center gap-2">
-                          <Mail className="h-3.5 w-3.5" /> {c.email}
-                        </span>
-                      ) : null}
-                      {c.phone ? (
-                        <span className="inline-flex items-center gap-2">
-                          <Phone className="h-3.5 w-3.5" /> {c.phone}
-                        </span>
-                      ) : null}
+                  <div className="flex items-center gap-3">
+                    <div className="admin-avatar w-8 h-8 text-[10px] flex-shrink-0">
+                      {getInitials(c.name)}
                     </div>
-                  )}
+                    <div className="min-w-0">
+                      <div className="font-medium">{c.name}</div>
+                      {(c.email || c.phone) && (
+                        <div className="text-xs text-muted-foreground mt-0.5 flex flex-col gap-0.5">
+                          {c.email ? <span className="inline-flex items-center gap-1.5"><Mail className="h-3 w-3" /> {c.email}</span> : null}
+                          {c.phone ? <span className="inline-flex items-center gap-1.5"><Phone className="h-3 w-3" /> {c.phone}</span> : null}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </td>
                 <td className="p-3">
-                  <div className="text-sm">
+                  <div className="text-sm font-medium">
                     {c.department ? c.department : <span className="text-muted-foreground">—</span>}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     {c.specialization ? c.specialization : "No specialization"}
                   </div>
                 </td>
-                <td className="p-3">{c.is_available ? "Yes" : "No"}</td>
-                <td className="p-3 text-right font-mono">{c.display_order ?? 0}</td>
+                <td className="p-3">
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${c.is_available ? "text-success" : "text-muted-foreground"}`}>
+                    <span className={`w-2 h-2 rounded-full ${c.is_available ? "bg-success" : "bg-muted-foreground/30"}`} />
+                    {c.is_available ? "Available" : "Unavailable"}
+                  </span>
+                </td>
+                <td className="p-3 text-right font-mono text-xs">{c.display_order ?? 0}</td>
                 <td className="p-3 text-right">
-                  <div className="inline-flex items-center gap-2">
+                  <div className="inline-flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => openEdit(c)}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs bg-secondary hover:bg-muted transition-colors"
+                      className="admin-btn--ghost text-xs px-2 py-1"
                     >
                       <Pencil className="h-3.5 w-3.5" /> Edit
                     </button>
@@ -331,10 +382,9 @@ export default function AdminContacts() {
                         if (!confirm("Delete this admin contact?")) return;
                         deleteMutation.mutate(c.id);
                       }}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                      className="admin-btn--danger text-xs px-2 py-1 border-0"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      Delete
                     </button>
                   </div>
                 </td>
@@ -343,7 +393,13 @@ export default function AdminContacts() {
           </tbody>
         </table>
       </div>
+
+      {filtered.length === 0 && (
+        <div className="dashboard-card text-center py-12">
+          <UserRound className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No contacts found.</p>
+        </div>
+      )}
     </div>
   );
 }
-

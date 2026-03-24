@@ -208,31 +208,270 @@
     @apply border-2 border-primary-foreground/40 text-primary-foreground px-6 py-3 rounded-lg font-semibold uppercase tracking-wide transition-all hover:bg-primary-foreground/10;
   }
   .badge-status {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide;
   }
   .badge-success {
-    @apply badge-status bg-success/10 text-success;
+    @apply badge-status;
+    background: hsl(var(--success) / 0.12);
+    color: hsl(var(--success));
   }
   .badge-warning {
-    @apply badge-status bg-warning/10 text-warning;
+    @apply badge-status;
+    background: hsl(var(--warning) / 0.12);
+    color: hsl(var(--warning));
   }
   .badge-info {
-    @apply badge-status bg-info/10 text-info;
+    @apply badge-status;
+    background: hsl(var(--info) / 0.12);
+    color: hsl(var(--info));
   }
   .badge-destructive {
-    @apply badge-status bg-destructive/10 text-destructive;
+    @apply badge-status;
+    background: hsl(var(--destructive) / 0.12);
+    color: hsl(var(--destructive));
   }
   .table-header {
-    @apply bg-secondary text-muted-foreground text-xs font-semibold uppercase tracking-wider;
+    @apply text-muted-foreground text-[11px] font-semibold uppercase tracking-wider;
+    background: hsl(var(--muted) / 0.6);
+    border-bottom: 2px solid hsl(var(--border));
+  }
+  .table-header th:first-child {
+    border-left: 3px solid hsl(var(--accent) / 0.5);
   }
   .dashboard-card {
-    @apply bg-card border border-border rounded-lg p-6 shadow-sm;
+    @apply bg-card border border-border rounded-xl p-6;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    position: relative;
+  }
+  .dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background: linear-gradient(90deg, hsl(var(--accent) / 0.35), transparent 80%);
+    border-radius: 0 0 2px 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .dashboard-card:hover {
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.06),
+      0 8px 24px rgba(0, 0, 0, 0.05);
+    border-color: hsl(var(--border) / 0.8);
+  }
+  .dashboard-card:hover::before {
+    opacity: 1;
   }
 
   @media (max-width: 640px) {
     .dashboard-card {
       padding: 1rem;
+      border-radius: 0.625rem;
     }
+  }
+
+  /* ── Admin stat cards ── */
+  .stat-card {
+    @apply dashboard-card relative overflow-hidden;
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    opacity: 0.06;
+    pointer-events: none;
+  }
+  .stat-card--accent::after { background: hsl(var(--accent)); }
+  .stat-card--success::after { background: hsl(var(--success)); }
+  .stat-card--info::after { background: hsl(var(--info)); }
+  .stat-card--warning::after { background: hsl(var(--warning)); }
+  .stat-card .stat-icon {
+    @apply flex items-center justify-center rounded-lg;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+  .stat-card .stat-icon--accent {
+    background: hsl(var(--accent) / 0.1);
+    color: hsl(var(--accent));
+  }
+  .stat-card .stat-icon--success {
+    background: hsl(var(--success) / 0.1);
+    color: hsl(var(--success));
+  }
+  .stat-card .stat-icon--info {
+    background: hsl(var(--info) / 0.1);
+    color: hsl(var(--info));
+  }
+  .stat-card .stat-icon--warning {
+    background: hsl(var(--warning) / 0.1);
+    color: hsl(var(--warning));
+  }
+
+  /* ── Admin form inputs ── */
+  .admin-input {
+    @apply w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background outline-none transition-all duration-200;
+  }
+  .admin-input:focus {
+    border-color: hsl(var(--accent) / 0.5);
+    box-shadow: 0 0 0 3px hsl(var(--accent) / 0.08);
+  }
+  .admin-input::placeholder {
+    @apply text-muted-foreground/60;
+  }
+  .admin-label {
+    @apply block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5;
+  }
+
+  /* ── Admin toggle switch ── */
+  .admin-toggle {
+    @apply relative inline-flex h-5 w-9 items-center rounded-full cursor-pointer transition-colors duration-200;
+    background-color: hsl(var(--muted));
+  }
+  .admin-toggle[data-checked="true"] {
+    background-color: hsl(var(--accent));
+  }
+  .admin-toggle::after {
+    content: '';
+    @apply absolute left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200;
+  }
+  .admin-toggle[data-checked="true"]::after {
+    transform: translateX(16px);
+  }
+
+  /* ── Admin section divider ── */
+  .admin-section-label {
+    @apply flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60 px-1 py-2;
+  }
+  .admin-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: hsl(var(--border) / 0.6);
+  }
+
+  /* ── Admin buttons ── */
+  .admin-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    padding: 0.5rem 1rem;
+  }
+  .admin-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  .admin-btn--primary {
+    @apply admin-btn bg-accent text-accent-foreground;
+    box-shadow: 0 1px 3px hsl(var(--accent) / 0.25);
+  }
+  .admin-btn--primary:hover:not(:disabled) {
+    filter: brightness(1.06);
+    box-shadow: 0 2px 8px hsl(var(--accent) / 0.35);
+  }
+  .admin-btn--secondary {
+    @apply admin-btn border border-border bg-card text-foreground;
+  }
+  .admin-btn--secondary:hover:not(:disabled) {
+    @apply bg-secondary;
+  }
+  .admin-btn--ghost {
+    @apply admin-btn text-muted-foreground;
+  }
+  .admin-btn--ghost:hover:not(:disabled) {
+    @apply bg-secondary text-foreground;
+  }
+  .admin-btn--danger {
+    @apply admin-btn border border-destructive text-destructive;
+  }
+  .admin-btn--danger:hover:not(:disabled) {
+    background: hsl(var(--destructive) / 0.08);
+  }
+
+  /* ── Admin avatar ── */
+  .admin-avatar {
+    @apply flex items-center justify-center rounded-full font-semibold text-xs uppercase;
+    background: linear-gradient(135deg, hsl(var(--accent) / 0.2), hsl(var(--accent) / 0.08));
+    color: hsl(var(--accent));
+    border: 1.5px solid hsl(var(--accent) / 0.2);
+  }
+
+  /* ── Admin timeline ── */
+  .admin-timeline {
+    @apply relative;
+  }
+  .admin-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: hsl(var(--border));
+  }
+  .admin-timeline-item {
+    @apply relative pl-10;
+    padding-bottom: 1rem;
+  }
+  .admin-timeline-dot {
+    @apply absolute left-2.5 top-1 w-5 h-5 rounded-full flex items-center justify-center;
+    background: hsl(var(--card));
+    border: 2px solid hsl(var(--border));
+    z-index: 1;
+  }
+  .admin-timeline-dot--accent {
+    border-color: hsl(var(--accent));
+    background: hsl(var(--accent) / 0.1);
+  }
+
+  /* ── Admin page enter animation ── */
+  @keyframes admin-page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .admin-page-enter {
+    animation: admin-page-enter 0.25s ease-out;
+  }
+
+  /* ── Admin scrollbar ── */
+  .admin-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .admin-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .admin-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+  .admin-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+
+  /* ── Admin progress bar ── */
+  .admin-progress {
+    @apply w-full rounded-full overflow-hidden;
+    height: 6px;
+    background: hsl(var(--muted));
+  }
+  .admin-progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    transition: width 0.5s ease;
+    background: linear-gradient(90deg, hsl(var(--accent)), hsl(var(--accent) / 0.7));
   }
 
   /* Public site header — optional promo strip + sticky bar + category strip */
