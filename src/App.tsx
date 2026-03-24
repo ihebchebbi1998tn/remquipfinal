@@ -13,6 +13,7 @@ import PublicLayout from "@/components/layout/PublicLayout";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import ScrollToTop from "@/components/ScrollToTop";
 
 import HomeLandingRoute from "@/pages/HomeLandingRoute";
 
@@ -41,6 +42,7 @@ const AdminContacts = lazy(() => import("@/pages/admin/AdminContacts"));
 const AdminLanding = lazy(() => import("@/pages/admin/AdminLanding"));
 const AdminCMS = lazy(() => import("@/pages/admin/AdminCMS"));
 const AdminCategories = lazy(() => import("@/pages/admin/AdminCategories"));
+const AdminCarts = lazy(() => import("@/pages/admin/AdminCarts"));
 const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminProductLogs = lazy(() => import("@/pages/admin/AdminProductLogs"));
@@ -69,6 +71,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <ScrollToTop />
                 <CookieConsent />
                 <ChatWidget />
                 <Suspense fallback={<PageLoader />}>
@@ -114,6 +117,7 @@ const App = () => (
                       <Route path="inventory" element={<AdminInventory />} />
                       <Route path="orders" element={<AdminOrders />} />
                       <Route path="customers" element={<AdminCustomers />} />
+                      <Route path="carts" element={<AdminCarts />} />
                     <Route path="admin-contacts" element={<AdminContacts />} />
                       <Route path="landing" element={<AdminLanding />} />
                       <Route path="cms" element={<AdminCMS />} />

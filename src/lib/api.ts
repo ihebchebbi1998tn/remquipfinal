@@ -1677,6 +1677,23 @@ class APIService {
     return this.request('GET', API_ENDPOINTS.ADMIN_PERMISSIONS.GET_ALL_PERMISSIONS);
   }
 
+  // ==================== CARTS METHODS ====================
+  async saveCart(data: { email: string; cart_data: any }): Promise<ApiResponse> {
+    return this.request('POST', API_ENDPOINTS.CARTS.SAVE, data);
+  }
+
+  async getAbandonedCarts(page: number = 1, limit: number = 50, status?: string): Promise<PaginatedResponse<unknown>> {
+    const p = new URLSearchParams();
+    p.set('page', String(page));
+    p.set('limit', String(limit));
+    if (status) p.set('status', status);
+    return normalizePaginated(await this.request('GET', `${API_ENDPOINTS.CARTS.LIST}?${p.toString()}`));
+  }
+
+  async updateCartStatus(id: number | string, status: 'abandoned' | 'recovered' | 'completed'): Promise<ApiResponse> {
+    return this.request('PATCH', API_ENDPOINTS.CARTS.UPDATE.replace(':id', String(id)), { status });
+  }
+
   // ==================== STATIC METHODS ====================
 
   static getInstance(): APIService {

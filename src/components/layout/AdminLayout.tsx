@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import {
-  LayoutDashboard, Package, Warehouse, ShoppingBag, Users, FileText,
+  LayoutDashboard, Package, Warehouse, ShoppingBag, ShoppingCart, Users, FileText,
   BarChart3, Settings, ChevronLeft, Menu, X, Tag, Shield, Layers, LayoutTemplate,
   Phone, MessageCircle, LogOut, ExternalLink,
 } from "lucide-react";
@@ -36,6 +36,7 @@ const navGroups: NavGroup[] = [
     label: "Sales",
     items: [
       { label: "Orders", icon: ShoppingBag, path: "/admin/orders" },
+      { label: "Abandoned Carts", icon: ShoppingCart, path: "/admin/carts" },
       { label: "Customers", icon: Users, path: "/admin/customers" },
       { label: "Discounts", icon: Tag, path: "/admin/discounts" },
     ],
@@ -120,8 +121,8 @@ export default function AdminLayout() {
   const isActive = (path: string) =>
     location.pathname === path || (path !== "/admin" && location.pathname.startsWith(path));
 
-  const initials = getInitials(user?.full_name || user?.name, user?.email);
-  const displayName = user?.full_name || user?.name || user?.email || "Admin";
+  const initials = getInitials(user?.full_name, user?.email);
+  const displayName = user?.full_name || user?.email || "Admin";
   const displayRole = user?.role?.replace(/_/g, " ") || "admin";
 
   /* ── Sidebar content (shared between mobile & desktop) ── */

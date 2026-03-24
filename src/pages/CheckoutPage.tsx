@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
 import { useCreateOrder } from "@/hooks/useApi";
+import { api } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
 export default function CheckoutPage() {
@@ -124,7 +125,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) return null;
 
-  const InputField = ({ label, name, type = "text", required = true, value, onChange, placeholder }: { label: string; name: string; type?: string; required?: boolean; value: string; onChange: (v: string) => void; placeholder?: string }) => (
+  const InputField = ({ label, name, type = "text", required = true, value, onChange, onBlur, placeholder }: { label: string; name: string; type?: string; required?: boolean; value: string; onChange: (v: string) => void; onBlur?: () => void; placeholder?: string }) => (
     <div className="group relative">
       <label className="absolute -top-3 left-3 bg-background px-2 text-[10px] font-display font-black uppercase tracking-widest text-muted-foreground group-focus-within:text-accent transition-colors z-10">
         {label}
@@ -135,11 +136,25 @@ export default function CheckoutPage() {
         required={required} 
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         className="w-full bg-transparent border-2 border-border/60 hover:border-border rounded-xl px-4 py-4 text-sm font-medium text-foreground outline-none focus:border-accent transition-all shadow-sm"
       />
     </div>
   );
+
+  const handleEmailBlur = async () => {
+    if (billingData.email && billingData.email.includes('@')) {
+      try {
+        await api.saveCart({
+          email: billingData.email,
+          cart_data: { items, subtotal, tax, shipping, total }
+        });
+      } catch (error) {
+        console.error('Failed to track cart:', error);
+      }
+    }
+  };
 
   const steps = [
     { id: 1, name: t("checkout.billing") },
@@ -201,7 +216,7 @@ export default function CheckoutPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                       <InputField label={t("checkout.first_name")} name="firstName" value={billingData.firstName} onChange={(v) => setBillingData({...billingData, firstName: v})} placeholder="John" />
                       <InputField label={t("checkout.last_name")} name="lastName" value={billingData.lastName} onChange={(v) => setBillingData({...billingData, lastName: v})} placeholder="Doe" />
-                      <InputField label={t("checkout.email")} name="email" type="email" value={billingData.email} onChange={(v) => setBillingData({...billingData, email: v})} placeholder="procurement@corp.com" />
+                      <InputField label={t("checkout.email")} name="email" type="email" value={billingData.email} onChange={(v) => setBillingData({...billingData, email: v})} onBlur={handleEmailBlur} placeholder="procurement@corp.com" />
                       <InputField label={t("checkout.phone")} name="phone" value={billingData.phone} onChange={(v) => setBillingData({...billingData, phone: v})} placeholder="+1 555-0100" />
                       <div className="sm:col-span-2">
                         <InputField label={t("checkout.company")} name="company" required={false} value={billingData.company} onChange={(v) => setBillingData({...billingData, company: v})} placeholder="Enterprise Logistics Inc" />

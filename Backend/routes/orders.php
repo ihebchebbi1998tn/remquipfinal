@@ -321,6 +321,17 @@ if ($method === 'POST' && !$id) {
         }
 
         Logger::info('Order created', ['order_id' => $orderId, 'order_number' => $orderNumber]);
+        
+        // Mark abandoned carts for this email as completed
+        try {
+            $conn->execute(
+                "UPDATE abandoned_carts SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE email = :email AND status = 'abandoned'",
+                ['email' => $email]
+            );
+        } catch (Exception $e) {
+            Logger::error('Failed to mark cart as completed', ['error' => $e->getMessage()]);
+        }
+        
         remquip_notify_new_order($conn, $orderId, $orderNumber, (string)$total);
         ResponseHelper::sendSuccess(['id' => $orderId, 'orderNumber' => $orderNumber], 'Order created successfully', 201);
     } catch (Exception $e) {

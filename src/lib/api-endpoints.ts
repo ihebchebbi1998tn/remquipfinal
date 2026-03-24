@@ -263,6 +263,15 @@ export const API_ENDPOINTS = {
     /** POST — admin reply (admin) */
     REPLY: '/chat/:id/reply',
     /** DELETE — delete conversation (admin) */
-    DELETE: '/chat/:id',
+  },
+  
+  // ==================== CARTS ENDPOINTS ====================
+  CARTS: {
+    /** POST - Save abandoned cart (public) */
+    SAVE: '/carts',
+    /** GET - List abandoned carts (admin) */
+    LIST: '/carts',
+    /** PATCH - Update cart status (admin) */
+    UPDATE: '/carts/:id',
   },
 } as const;
