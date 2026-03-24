@@ -336,20 +336,17 @@
       transform: translateX(8%) skewX(4deg);
     }
   }
-  @keyframes remquip-loader-char {
-    0%,
+  @keyframes remquip-loader-text-shimmer {
+    0% {
+      background-position: -200% center;
+    }
     100% {
-      opacity: 0.38;
-      transform: translateY(0);
+      background-position: 200% center;
     }
-    40% {
-      opacity: 1;
-      transform: translateY(-6px);
-    }
-    65% {
-      opacity: 0.72;
-      transform: translateY(-2px);
-    }
+  }
+  @keyframes remquip-loader-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   @keyframes remquip-loader-shimmer {
     0% {
@@ -422,17 +419,26 @@
     mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, black 15%, transparent 70%);
   }
   .remquip-loader-wordmark {
-    letter-spacing: 0.08em;
-  }
-  .remquip-loader-wordmark--sm .remquip-loader-char {
-    font-size: clamp(1.125rem, 3.5vw, 1.875rem);
-  }
-  .remquip-loader-char {
-    display: inline-block;
-    font-size: clamp(1.625rem, 5.5vw, 3.125rem);
-    letter-spacing: 0.06em;
-    animation: remquip-loader-char 1.45s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-    will-change: transform, opacity;
+    @apply font-display font-black uppercase text-foreground text-center;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    letter-spacing: 0.25em;
+    padding-left: 0.25em; /* Offset for tracking */
+    background: linear-gradient(
+      90deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--foreground) / 0.4) 45%,
+      hsl(var(--accent)) 50%,
+      hsl(var(--foreground) / 0.4) 55%,
+      hsl(var(--foreground)) 100%
+    );
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: 
+      remquip-loader-text-shimmer 3s linear infinite,
+      remquip-loader-fade-in 1s ease-out forwards;
+    will-change: background-position;
   }
   .remquip-loader-track {
     position: relative;

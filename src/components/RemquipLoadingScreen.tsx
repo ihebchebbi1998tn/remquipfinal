@@ -43,19 +43,11 @@ export function RemquipLoadingScreen({
       <div className="relative z-10 flex flex-col items-center">
         <div
           className={cn(
-            "remquip-loader-wordmark flex flex-wrap items-end justify-center gap-px sm:gap-0.5",
-            variant === "panel" && "remquip-loader-wordmark--sm"
+            "remquip-loader-wordmark flex flex-wrap items-center justify-center",
+            variant === "panel" && "text-2xl" // Smaller for panel variant
           )}
         >
-          {LOGO.map((ch, i) => (
-            <span
-              key={`${ch}-${i}`}
-              className="remquip-loader-char font-display font-bold uppercase text-foreground"
-              style={{ animationDelay: `${i * 0.09}s` }}
-            >
-              {ch}
-            </span>
-          ))}
+          REMQUIP
         </div>
 
         <p
