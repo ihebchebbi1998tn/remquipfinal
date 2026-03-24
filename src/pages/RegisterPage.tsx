@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { api } from "@/lib/api";
 import { ArrowRight, AlertCircle, CheckCircle, Loader2, ShieldCheck, Mail, Lock, User, Building2, Phone } from "lucide-react";
 
 interface FormData {
@@ -71,6 +72,12 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
+      await api.register({
+        email: formData.email.trim(),
+        password: formData.password,
+        full_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        phone: formData.phone.trim() || undefined,
+      });
       setSuccess(true);
       setTimeout(() => {
         navigate("/login?email=" + encodeURIComponent(formData.email));

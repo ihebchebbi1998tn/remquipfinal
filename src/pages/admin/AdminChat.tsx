@@ -25,11 +25,14 @@ interface Message {
 }
 
 /* ── API helper ── */
-const adminApi = async (path: string, opts?: RequestInit) => {
+const adminApi = async (path: string, opts?: RequestInit, extraParams?: Record<string, string>) => {
   const base = API_BASE_URL.replace(/\/+$/, "");
   const token = localStorage.getItem("remquip_auth_token") ?? "";
   const params = new URLSearchParams({ path });
   if (token) params.set("token", token);
+  if (extraParams) {
+    Object.entries(extraParams).forEach(([k, v]) => params.set(k, v));
+  }
   const res = await fetch(`${base}/remquip-api.php?${params}`, {
     headers: {
       "Content-Type": "application/json",
@@ -54,11 +57,10 @@ export default function AdminChat() {
   const loadConversations = async () => {
     setLoading(true);
     try {
-      const qs = new URLSearchParams();
-      if (statusFilter) qs.set("status", statusFilter);
-      if (search.trim()) qs.set("search", search.trim());
-      const extra = qs.toString() ? `?${qs}` : "";
-      const res = await adminApi(`chat${extra}`);
+      const extraParams: Record<string, string> = {};
+      if (statusFilter) extraParams.status = statusFilter;
+      if (search.trim()) extraParams.search = search.trim();
+      const res = await adminApi("chat", undefined, Object.keys(extraParams).length ? extraParams : undefined);
       const items = res?.data?.items ?? res?.data ?? [];
       setConversations(Array.isArray(items) ? items : []);
     } catch { setConversations([]); }
