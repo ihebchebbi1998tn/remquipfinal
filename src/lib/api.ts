@@ -1340,6 +1340,7 @@ class APIService {
           price: Number(row.price ?? row.base_price ?? 0),
           category_id: String(row.category_id ?? ''),
           stock_quantity: stock,
+          stock: stock,
           is_featured: false,
           status: 'active' as const,
           created_at: String(row.created_at ?? new Date().toISOString()),

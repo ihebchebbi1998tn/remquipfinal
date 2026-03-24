@@ -65,7 +65,7 @@ if ($method === 'GET') {
         $where  = $status !== '' ? 'WHERE status = :status' : '';
         $params = $status !== '' ? ['status' => $status] : [];
 
-        $total = $conn->count("SELECT COUNT(*) FROM abandoned_carts $where", $params);
+        $total = (int)($conn->fetch("SELECT COUNT(*) as t FROM abandoned_carts $where", $params)['t'] ?? 0);
 
         $rows = $conn->fetchAll(
             "SELECT * FROM abandoned_carts $where ORDER BY created_at DESC LIMIT :limit OFFSET :offset",
@@ -77,15 +77,7 @@ if ($method === 'GET') {
         }
         unset($row);
 
-        ResponseHelper::sendSuccess([
-            'data' => $rows,
-            'pagination' => [
-                'total' => $total,
-                'page'  => $page,
-                'limit' => $limit,
-                'pages' => (int)ceil($total / $limit),
-            ],
-        ]);
+        ResponseHelper::sendPaginated($rows, $total, $limit, ($page - 1) * $limit, 'Abandoned carts');
     } catch (Exception $e) {
         Logger::error('Failed to fetch abandoned carts', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Failed to fetch abandoned carts', 500);

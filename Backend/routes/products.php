@@ -101,9 +101,12 @@ if ($method === 'GET' && (!$id || $id === 'search' || ($id === 'category' && $ac
         }
         
         $sql = "SELECT p.id, p.sku, p.name, p.description, p.category_id, p.base_price as price, p.created_at,
+                       p.is_active,
+                       CASE WHEN p.is_active = 1 THEN 'active' ELSE 'draft' END as status,
                        c.name as category, c.slug as categorySlug,
                        (SELECT image_url FROM remquip_product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image,
-                       COALESCE(inv.quantity_available, 0) as stock
+                       COALESCE(inv.quantity_available, 0) as stock,
+                       COALESCE(inv.quantity_available, 0) as stock_quantity
                 FROM remquip_products p
                 LEFT JOIN remquip_categories c ON p.category_id = c.id
                 LEFT JOIN remquip_inventory inv ON p.id = inv.product_id
@@ -219,6 +222,7 @@ if ($method === 'GET' && $id && !$action && $id !== 'search' && $id !== 'feature
         $product['images'] = $images;
         $product['variants'] = $variants;
         $product['stock'] = (int)($inventory['quantity_available'] ?? 0);
+        $product['stock_quantity'] = $product['stock'];
         $product['details'] = is_string($product['details']) ? json_decode($product['details'], true) : ($product['details'] ?? []);
         
         ResponseHelper::sendSuccess($product, 'Product details retrieved');

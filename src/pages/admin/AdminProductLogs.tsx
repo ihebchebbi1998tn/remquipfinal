@@ -115,13 +115,15 @@ export default function AdminProductLogs() {
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          {product.image && (
-            <img src={product.image} alt="" className="w-12 h-12 rounded-sm object-cover bg-secondary flex-shrink-0" />
-          )}
+          {(() => {
+            // Backend GET /products/:id returns `image` (string) or `images` array
+            const imgSrc = (product as any).image || product.images?.[0]?.image_url;
+            return imgSrc ? <img src={imgSrc} alt="" className="w-12 h-12 rounded-sm object-cover bg-secondary flex-shrink-0" /> : null;
+          })()}
           <div>
             <h2 className="font-display font-bold text-lg md:text-xl">{product.name}</h2>
             <p className="text-xs text-muted-foreground font-mono">
-              {product.sku} · Current Stock: <span className="font-bold text-foreground">{product.stock_quantity ?? 0}</span>
+              {product.sku} · Current Stock: <span className="font-bold text-foreground">{(product as any).stock ?? product.stock_quantity ?? 0}</span>
             </p>
           </div>
         </div>
