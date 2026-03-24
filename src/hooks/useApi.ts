@@ -95,11 +95,11 @@ export function useUsers(page: number = 1, limit: number = 10) {
 }
 
 export function useCreateUser() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.createUser(data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['users'] });
       },
     }
@@ -107,11 +107,11 @@ export function useCreateUser() {
 }
 
 export function useUpdateUser(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.updateUser(id, data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['user', id] });
         queryClient.invalidateQueries({ queryKey: ['users'] });
       },
@@ -120,11 +120,11 @@ export function useUpdateUser(id: string) {
 }
 
 export function useDeleteUser(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     () => api.deleteUser(id),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['users'] });
       },
     }
@@ -169,11 +169,11 @@ export function useSearchProducts(query: string) {
 }
 
 export function useCreateProduct() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.createProduct(data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['products'] });
       },
     }
@@ -181,11 +181,11 @@ export function useCreateProduct() {
 }
 
 export function useUpdateProduct(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.updateProduct(id, data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['product', id] });
         queryClient.invalidateQueries({ queryKey: ['products'] });
       },
@@ -194,11 +194,11 @@ export function useUpdateProduct(id: string) {
 }
 
 export function useDeleteProduct(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     () => api.deleteProduct(id),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['products'] });
       },
     }
@@ -234,11 +234,11 @@ export function useCategory(id: string, locale?: string) {
 }
 
 export function useCreateCategory() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.createCategory(data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['categories'] });
       },
     }
@@ -246,11 +246,11 @@ export function useCreateCategory() {
 }
 
 export function useUpdateCategory(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.updateCategory(id, data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['category', id] });
         queryClient.invalidateQueries({ queryKey: ['categories'] });
       },
@@ -259,11 +259,11 @@ export function useUpdateCategory(id: string) {
 }
 
 export function useDeleteCategory(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     () => api.deleteCategory(id),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['categories'] });
       },
     }
@@ -291,11 +291,11 @@ export function useSearchCustomers(query: string) {
 }
 
 export function useCreateCustomer() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.createCustomer(data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['customers'] });
       },
     }
@@ -303,11 +303,11 @@ export function useCreateCustomer() {
 }
 
 export function useUpdateCustomer(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.updateCustomer(id, data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['customer', id] });
         queryClient.invalidateQueries({ queryKey: ['customers'] });
       },
@@ -316,11 +316,11 @@ export function useUpdateCustomer(id: string) {
 }
 
 export function useDeleteCustomer(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     () => api.deleteCustomer(id),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['customers'] });
       },
     }
@@ -472,11 +472,11 @@ export function useSearchOrders(query: string) {
 }
 
 export function useCreateOrder() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.createOrder(data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['orders'] });
       },
     }
@@ -484,11 +484,11 @@ export function useCreateOrder() {
 }
 
 export function useUpdateOrder(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.updateOrder(id, data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['order', id] });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
       },
@@ -497,11 +497,11 @@ export function useUpdateOrder(id: string) {
 }
 
 export function useUpdateOrderStatus(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (status: any) => api.updateOrderStatus(id, status),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['order', id] });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
       },
@@ -510,11 +510,11 @@ export function useUpdateOrderStatus(id: string) {
 }
 
 export function useDeleteOrder(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     () => api.deleteOrder(id),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['orders'] });
       },
     }
@@ -522,11 +522,11 @@ export function useDeleteOrder(id: string) {
 }
 
 export function useAddOrderNote(orderId: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (note: string) => api.addOrderNote(orderId, note),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['order', orderId] });
       },
     }
@@ -560,11 +560,11 @@ export function useValidateDiscount(code: string) {
 }
 
 export function useCreateDiscount() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.createDiscount(data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['discounts'] });
       },
     }
@@ -572,11 +572,11 @@ export function useCreateDiscount() {
 }
 
 export function useUpdateDiscount(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.updateDiscount(id, data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['discount', id] });
         queryClient.invalidateQueries({ queryKey: ['discounts'] });
       },
@@ -585,11 +585,11 @@ export function useUpdateDiscount(id: string) {
 }
 
 export function useDeleteDiscount(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     () => api.deleteDiscount(id),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['discounts'] });
       },
     }
@@ -611,11 +611,11 @@ export function useLowStockProducts() {
 }
 
 export function useAdjustInventory() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.adjustInventory(data.productId, data.quantity, data.reason),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['inventory'] });
         queryClient.invalidateQueries({ queryKey: ['products'] });
       },
@@ -779,11 +779,11 @@ export function useCMSPage(slug: string, locale?: string) {
 }
 
 export function useCreateCMSPage() {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.createCMSPage(data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['cms', 'pages'] });
       },
     }
@@ -791,11 +791,11 @@ export function useCreateCMSPage() {
 }
 
 export function useUpdateCMSPage(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     (data: any) => api.updateCMSPage(id, data),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['cms', 'pages'] });
       },
     }
@@ -803,11 +803,11 @@ export function useUpdateCMSPage(id: string) {
 }
 
 export function useDeleteCMSPage(id: string) {
+  const queryClient = useQueryClient();
   return useApiMutation(
     () => api.deleteCMSPage(id),
     {
       onSuccess: () => {
-        const queryClient = useQueryClient();
         queryClient.invalidateQueries({ queryKey: ['cms', 'pages'] });
       },
     }

@@ -136,7 +136,10 @@ export default function CheckoutPage() {
       });
       
       clearCart();
-      navigate("/order-confirmed");
+      const confirmedOrderNumber =
+        newOrder?.data?.orderNumber || newOrder?.data?.order_number ||
+        newOrder?.orderNumber || newOrder?.order_number || orderId;
+      navigate("/order-confirmed", { state: { orderId, orderNumber: confirmedOrderNumber } });
     } catch (error) {
       console.error("Checkout error:", error);
       toast({

@@ -12,8 +12,8 @@ import {
 function decodeTokenPayload(token: string): { user_id?: string; role?: string; exp?: number } | null {
   try {
     const parts = token.split('.');
-    if (parts.length !== 2) return null;
-    const payloadB64Url = parts[0];
+    if (parts.length !== 3) return null;
+    const payloadB64Url = parts[1];
     const payloadB64 = payloadB64Url.replace(/-/g, '+').replace(/_/g, '/');
     const pad = payloadB64.length % 4;
     const padded = pad ? payloadB64 + '='.repeat(4 - pad) : payloadB64;

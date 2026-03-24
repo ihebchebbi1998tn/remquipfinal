@@ -309,8 +309,58 @@ if ($method === 'POST' && !$id) {
 
         remquip_notify_new_customer($conn, $companyName, $data['email']);
 
+        // Optionally create a portal user account and send welcome email
+        $createAccount = !empty($data['create_account']);
+        $tempPassword = null;
+        $accountCreated = false;
+        if ($createAccount) {
+            $email = trim($data['email']);
+            // Only create if no user with this email exists
+            $existingUser = $conn->fetch('SELECT id FROM remquip_users WHERE email = :e AND deleted_at IS NULL', ['e' => $email]);
+            if (!$existingUser) {
+                $chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$';
+                $tempPassword = '';
+                for ($i = 0; $i < 12; $i++) {
+                    $tempPassword .= $chars[random_int(0, strlen($chars) - 1)];
+                }
+                $userId = bin2hex(random_bytes(18));
+                $conn->execute(
+                    "INSERT INTO remquip_users (id, email, password_hash, full_name, role, phone, status)
+                     VALUES (:id, :email, :ph, :fn, 'user', :phone, 'active')",
+                    [
+                        'id'    => $userId,
+                        'email' => $email,
+                        'ph'    => Auth::hashPassword($tempPassword),
+                        'fn'    => $contactPerson,
+                        'phone' => $data['phone'] ?? '',
+                    ]
+                );
+                // Build login URL from settings, fallback to a sensible default
+                $siteUrl = '';
+                try {
+                    $row = $conn->fetch("SELECT setting_value FROM remquip_settings WHERE setting_key = 'site_url' LIMIT 1");
+                    $siteUrl = rtrim((string)($row['setting_value'] ?? ''), '/');
+                } catch (Exception $ignored) {}
+                if ($siteUrl === '') { $siteUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'remquip.com'); }
+                $loginUrl = $siteUrl . '/login';
+                $tpl = remquip_tpl_welcome_customer([
+                    'name'      => $contactPerson,
+                    'email'     => $email,
+                    'password'  => $tempPassword,
+                    'login_url' => $loginUrl,
+                    'company'   => $companyName,
+                ]);
+                remquip_send_customer_mail($conn, $email, 'Your REMQUIP account is ready', $tpl['html'], $tpl['text']);
+                $accountCreated = true;
+                Logger::info('Portal account created for customer', ['customer_id' => $customerId, 'user_id' => $userId]);
+            }
+        }
+
         Logger::info('Customer created', ['customer_id' => $customerId]);
-        ResponseHelper::sendSuccess(['id' => $customerId], 'Customer created successfully', 201);
+        ResponseHelper::sendSuccess([
+            'id'              => $customerId,
+            'account_created' => $accountCreated,
+        ], $accountCreated ? 'Customer created and welcome email sent' : 'Customer created successfully', 201);
         
     } catch (Exception $e) {
         Logger::error('Create customer error', ['error' => $e->getMessage()]);

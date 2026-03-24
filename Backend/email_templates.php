@@ -136,6 +136,31 @@ function remquip_tpl_order_paid_customer(array $v): array
         
     $html = remquip_email_layout('Payment confirmed for order ' . $num, 'Payment Successful', $inner);
     $text = "Payment confirmed for order {$num}.\nTotal Paid: {$total}\n\nWe are now preparing your order for shipment.\n\n— REMQUIP";
-    
+
+    return ['html' => $html, 'text' => $text];
+}
+
+function remquip_tpl_welcome_customer(array $v): array
+{
+    $name     = htmlspecialchars($v['name']     ?? 'there',       ENT_QUOTES, 'UTF-8');
+    $email    = htmlspecialchars($v['email']    ?? '',             ENT_QUOTES, 'UTF-8');
+    $password = htmlspecialchars($v['password'] ?? '',             ENT_QUOTES, 'UTF-8');
+    $loginUrl = htmlspecialchars($v['login_url'] ?? '#',           ENT_QUOTES, 'UTF-8');
+    $company  = htmlspecialchars($v['company']  ?? '',             ENT_QUOTES, 'UTF-8');
+
+    $inner = '<p style="margin:0 0 16px;">Hi ' . $name . ',</p>'
+        . '<p style="margin:0 0 20px;">Your REMQUIP customer account has been created'
+        . ($company !== '' ? ' for <strong>' . $company . '</strong>' : '')
+        . '. You can now sign in to track orders, view invoices, and manage your account.</p>'
+        . '<table role="presentation" cellspacing="0" cellpadding="10" style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;background:#141a22;border-radius:6px;">'
+        . '<tr><td style="color:#94a3b8;width:120px;">Email</td><td><strong style="color:#f8fafc;">' . $email . '</strong></td></tr>'
+        . '<tr><td style="color:#94a3b8;">Password</td><td><strong style="color:#e85d04;font-family:monospace;font-size:15px;">' . $password . '</strong></td></tr>'
+        . '</table>'
+        . '<p style="margin:0 0 24px;font-size:13px;color:#94a3b8;">We strongly recommend changing your password after your first login.</p>'
+        . '<p style="margin:24px 0;"><a href="' . $loginUrl . '" style="display:inline-block;padding:14px 28px;background:#e85d04;color:#0f1419;text-decoration:none;font-weight:700;border-radius:4px;">Sign in to your account</a></p>'
+        . '<p style="margin:0;font-size:13px;color:#94a3b8;">If you have any questions, reply to this email or contact our support team.</p>';
+
+    $html = remquip_email_layout('Welcome to REMQUIP', 'Welcome to REMQUIP', $inner);
+    $text = "Hi {$v['name']},\n\nYour REMQUIP account has been created.\n\nEmail: {$v['email']}\nPassword: {$v['password']}\n\nSign in at: {$v['login_url']}\n\nPlease change your password after first login.\n\n— REMQUIP";
     return ['html' => $html, 'text' => $text];
 }

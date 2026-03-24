@@ -16,6 +16,7 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import ScrollToTop from "@/components/ScrollToTop";
 
 import HomeLandingRoute from "@/pages/HomeLandingRoute";
+import { PermissionGate } from "@/components/admin/PermissionGate";
 
 // Lazy-loaded routes
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
@@ -111,28 +112,29 @@ const App = () => (
                     {/* Hidden internal admin setup (create new admins with full permissions) */}
                     <Route path="/admin/setup-admins" element={<AdminSetupAdmins />} />
 
-                    {/* Admin */}
+                    {/* Admin — AdminLayout always enforces login + admin role.
+                        PermissionGate adds per-page permission check on top. */}
                     <Route path="/admin" element={<AdminLayout />}>
-                      <Route index element={<AdminOverview />} />
-                      <Route path="products" element={<AdminProducts />} />
-                      <Route path="categories" element={<AdminCategories />} />
-                      <Route path="products/new" element={<AdminProductEdit />} />
-                      <Route path="products/:productId" element={<AdminProductEdit />} />
-                      <Route path="products/:productId/view" element={<AdminProductDetail />} />
-                      <Route path="products/:productId/logs" element={<AdminProductLogs />} />
-                      <Route path="inventory" element={<AdminInventory />} />
-                      <Route path="orders" element={<AdminOrders />} />
-                      <Route path="customers" element={<AdminCustomers />} />
-                      <Route path="carts" element={<AdminCarts />} />
-                    <Route path="admin-contacts" element={<AdminContacts />} />
-                      <Route path="landing" element={<AdminLanding />} />
-                      <Route path="cms" element={<AdminCMS />} />
-                      <Route path="discounts" element={<AdminDiscounts />} />
-                      <Route path="analytics" element={<AdminAnalytics />} />
-                      <Route path="users" element={<AdminUsers />} />
-                      <Route path="access" element={<AdminAccess />} />
-                      <Route path="settings" element={<AdminSettings />} />
-                      <Route path="chat" element={<AdminChat />} />
+                      <Route index element={<PermissionGate permission="canViewDashboard"><AdminOverview /></PermissionGate>} />
+                      <Route path="analytics"  element={<PermissionGate permission="canManageAnalytics"><AdminAnalytics /></PermissionGate>} />
+                      <Route path="products"   element={<PermissionGate permission="canManageProducts"><AdminProducts /></PermissionGate>} />
+                      <Route path="categories" element={<PermissionGate permission="canManageProducts"><AdminCategories /></PermissionGate>} />
+                      <Route path="products/new"              element={<PermissionGate permission="canManageProducts"><AdminProductEdit /></PermissionGate>} />
+                      <Route path="products/:productId"       element={<PermissionGate permission="canManageProducts"><AdminProductEdit /></PermissionGate>} />
+                      <Route path="products/:productId/view"  element={<PermissionGate permission="canManageProducts"><AdminProductDetail /></PermissionGate>} />
+                      <Route path="products/:productId/logs"  element={<PermissionGate permission="canManageProducts"><AdminProductLogs /></PermissionGate>} />
+                      <Route path="inventory"      element={<PermissionGate permission="canManageInventory"><AdminInventory /></PermissionGate>} />
+                      <Route path="orders"         element={<PermissionGate permission="canManageOrders"><AdminOrders /></PermissionGate>} />
+                      <Route path="carts"          element={<PermissionGate permission="canManageOrders"><AdminCarts /></PermissionGate>} />
+                      <Route path="customers"      element={<PermissionGate permission="canManageCustomers"><AdminCustomers /></PermissionGate>} />
+                      <Route path="discounts"      element={<PermissionGate permission="canManageDiscounts"><AdminDiscounts /></PermissionGate>} />
+                      <Route path="landing"        element={<PermissionGate permission="canManageCMS"><AdminLanding /></PermissionGate>} />
+                      <Route path="cms"            element={<PermissionGate permission="canManageCMS"><AdminCMS /></PermissionGate>} />
+                      <Route path="users"          element={<PermissionGate permission="canManageUsers"><AdminUsers /></PermissionGate>} />
+                      <Route path="admin-contacts" element={<PermissionGate permission="canManageUsers"><AdminContacts /></PermissionGate>} />
+                      <Route path="access"         element={<PermissionGate permission="canManageUsers"><AdminAccess /></PermissionGate>} />
+                      <Route path="settings"       element={<PermissionGate permission="canEditSettings"><AdminSettings /></PermissionGate>} />
+                      <Route path="chat"           element={<PermissionGate permission="canViewDashboard"><AdminChat /></PermissionGate>} />
                     </Route>
 
                     <Route path="*" element={<NotFound />} />

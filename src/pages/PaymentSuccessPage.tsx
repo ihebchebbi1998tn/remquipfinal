@@ -61,7 +61,7 @@ export default function PaymentSuccessPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
-              to="/user/dashboard/orders" 
+              to="/dashboard"
               className="w-full sm:w-auto bg-foreground text-background px-8 py-4 rounded-xl font-display font-black text-[11px] uppercase tracking-widest hover:bg-accent transition-colors flex items-center justify-center gap-3"
             >
               {t('payment.success.track_order')} <ArrowRight className="w-4 h-4" />

@@ -7,60 +7,65 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
-import { usePermissions } from "@/hooks/usePermissions";
-import { ADMIN_NO_AUTH } from "@/config/constants";
+import { usePermissions, AdminPermissions } from "@/hooks/usePermissions";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
+
+type NavItem = {
+  label: string;
+  icon: React.ElementType;
+  path: string;
+  permission?: keyof AdminPermissions;
+};
 
 type NavGroup = {
   label: string;
-  items: { label: string; icon: React.ElementType; path: string }[];
+  items: NavItem[];
 };
 
 const navGroups: NavGroup[] = [
   {
     label: "Main",
     items: [
-      { label: "Overview", icon: LayoutDashboard, path: "/admin" },
-      { label: "Analytics", icon: BarChart3, path: "/admin/analytics" },
+      { label: "Overview",   icon: LayoutDashboard, path: "/admin",            permission: "canViewDashboard" },
+      { label: "Analytics",  icon: BarChart3,        path: "/admin/analytics",  permission: "canManageAnalytics" },
     ],
   },
   {
     label: "Catalog",
     items: [
-      { label: "Products", icon: Package, path: "/admin/products" },
-      { label: "Categories", icon: Layers, path: "/admin/categories" },
-      { label: "Inventory", icon: Warehouse, path: "/admin/inventory" },
+      { label: "Products",   icon: Package,  path: "/admin/products",   permission: "canManageProducts" },
+      { label: "Categories", icon: Layers,   path: "/admin/categories", permission: "canManageProducts" },
+      { label: "Inventory",  icon: Warehouse, path: "/admin/inventory", permission: "canManageInventory" },
     ],
   },
   {
     label: "Sales",
     items: [
-      { label: "Orders", icon: ShoppingBag, path: "/admin/orders" },
-      { label: "Abandoned Carts", icon: ShoppingCart, path: "/admin/carts" },
-      { label: "Customers", icon: Users, path: "/admin/customers" },
-      { label: "Discounts", icon: Tag, path: "/admin/discounts" },
+      { label: "Orders",          icon: ShoppingBag,  path: "/admin/orders",    permission: "canManageOrders" },
+      { label: "Abandoned Carts", icon: ShoppingCart, path: "/admin/carts",     permission: "canManageOrders" },
+      { label: "Customers",       icon: Users,        path: "/admin/customers", permission: "canManageCustomers" },
+      { label: "Discounts",       icon: Tag,          path: "/admin/discounts", permission: "canManageDiscounts" },
     ],
   },
   {
     label: "Content",
     items: [
-      { label: "Landing", icon: LayoutTemplate, path: "/admin/landing" },
-      { label: "CMS", icon: FileText, path: "/admin/cms" },
+      { label: "Landing", icon: LayoutTemplate, path: "/admin/landing", permission: "canManageCMS" },
+      { label: "CMS",     icon: FileText,        path: "/admin/cms",     permission: "canManageCMS" },
     ],
   },
   {
     label: "System",
     items: [
-      { label: "Users", icon: Users, path: "/admin/users" },
-      { label: "Admin Contacts", icon: Phone, path: "/admin/admin-contacts" },
-      { label: "Access Control", icon: Shield, path: "/admin/access" },
-      { label: "Chat Inbox", icon: MessageCircle, path: "/admin/chat" },
-      { label: "Settings", icon: Settings, path: "/admin/settings" },
+      { label: "Users",          icon: Users,          path: "/admin/users",          permission: "canManageUsers" },
+      { label: "Admin Contacts", icon: Phone,          path: "/admin/admin-contacts", permission: "canManageUsers" },
+      { label: "Access Control", icon: Shield,         path: "/admin/access",         permission: "canManageUsers" },
+      { label: "Chat Inbox",     icon: MessageCircle,  path: "/admin/chat",           permission: "canViewDashboard" },
+      { label: "Settings",       icon: Settings,       path: "/admin/settings",       permission: "canEditSettings" },
     ],
   },
 ];
 
-const allNavItems = navGroups.flatMap((g) => g.items);
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -83,38 +88,43 @@ export default function AdminLayout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const { user, isLoading, isAuthenticated } = useAuth();
-  const { permissions } = usePermissions();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { canAccess } = usePermissions();
 
   // Show loading state while checking auth
   if (isLoading) {
     return <RemquipLoadingScreen variant="fullscreen" message="Verifying admin access" />;
   }
 
-  // Staff routes — send to login with return path
-  if (!ADMIN_NO_AUTH) {
-    if (!isAuthenticated || !user) {
-      console.warn('[AdminLayout] Access denied: Not authenticated');
-      const returnTo = `${location.pathname}${location.search}`;
-      return (
-        <Navigate
-          to={`/admin/login?redirect=${encodeURIComponent(returnTo)}`}
-          state={{ from: location }}
-          replace
-        />
-      );
-    }
-
-    const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'manager';
-    if (!isAdmin) {
-      console.warn('[AdminLayout] Access denied: User role is', user.role, 'but admin role required');
-      return <Navigate to="/" replace />;
-    }
-
-    console.log('[AdminLayout] Access granted for:', user.email, 'with role:', user.role);
+  // Always require login — regardless of ADMIN_NO_AUTH (that flag only affects backend API token bypass)
+  if (!isAuthenticated || !user) {
+    const returnTo = `${location.pathname}${location.search}`;
+    return (
+      <Navigate
+        to={`/admin/login?redirect=${encodeURIComponent(returnTo)}`}
+        state={{ from: location }}
+        replace
+      />
+    );
   }
 
-  const currentPage = allNavItems.find(
+  // Only admin-level roles can enter the admin panel
+  const isAdminRole = user.role === 'admin' || user.role === 'super_admin' || user.role === 'manager';
+  if (!isAdminRole) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Filter nav items to only show ones the user has permission to access
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.permission || canAccess(item.permission)),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const allVisibleItems = visibleGroups.flatMap((g) => g.items);
+
+  const currentPage = allVisibleItems.find(
     (item) => location.pathname === item.path || (item.path !== "/admin" && location.pathname.startsWith(item.path))
   );
 
@@ -156,7 +166,7 @@ export default function AdminLayout() {
 
         {/* Nav groups */}
         <nav className="flex-1 py-3 px-2 overflow-y-auto admin-scroll space-y-1">
-          {navGroups.map((group, gi) => (
+          {visibleGroups.map((group, gi) => (
             <div key={group.label}>
               {(!collapsed || isMobile) && (
                 <div className="admin-section-label mt-3 first:mt-0 mb-1 px-2">
@@ -222,6 +232,16 @@ export default function AdminLayout() {
             <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
             {(!collapsed || isMobile) && <span>Back to Store</span>}
           </Link>
+          <button
+            onClick={() => logout()}
+            title="Sign out"
+            className={`w-full flex items-center gap-2 text-xs text-destructive/70 hover:text-destructive transition-colors px-2 py-1.5 rounded-lg hover:bg-destructive/10 ${
+              collapsed && !isMobile ? "justify-center" : ""
+            }`}
+          >
+            <LogOut className="h-3.5 w-3.5 flex-shrink-0" />
+            {(!collapsed || isMobile) && <span>Sign Out</span>}
+          </button>
         </div>
       </>
     );

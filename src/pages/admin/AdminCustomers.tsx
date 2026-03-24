@@ -95,6 +95,7 @@ export default function AdminCustomers() {
     full_name: "",
     email: "",
     phone: "",
+    create_account: true,
   });
   const importInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
@@ -121,10 +122,15 @@ export default function AdminCustomers() {
   const createCustomerMutation = useApiMutation(
     (data: any) => api.createCustomer(data),
     {
-      onSuccess: () => {
+      onSuccess: (res: any) => {
         queryClient.invalidateQueries({ queryKey: ['customers'] });
         setShowCreateModal(false);
-        setNewCustomer({ company_name: "", full_name: "", email: "", phone: "" });
+        setNewCustomer({ company_name: "", full_name: "", email: "", phone: "", create_account: true });
+        if (res?.data?.account_created || res?.account_created) {
+          showSuccessToast("Customer created and welcome email with credentials sent.");
+        } else {
+          showSuccessToast("Customer created successfully.");
+        }
       },
     }
   );
@@ -1064,14 +1070,33 @@ export default function AdminCustomers() {
               </div>
             </div>
 
-            <div className="flex gap-2 pt-4">
-              <button 
-                type="submit" 
+            {/* Portal account toggle */}
+            <div className="border border-border rounded-sm p-4 bg-secondary/30">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newCustomer.create_account}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, create_account: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 accent-accent"
+                />
+                <div>
+                  <p className="text-sm font-medium">Create portal account & send welcome email</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    A user account will be created and an email with login credentials sent automatically to the customer.
+                    {!newCustomer.create_account && " (You can create an account for them later from their profile.)"}
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="submit"
                 disabled={createCustomerMutation.isLoading}
                 className="btn-accent px-6 py-2 rounded-sm text-sm font-medium disabled:opacity-50 flex items-center gap-2"
               >
                 {createCustomerMutation.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                Create Customer
+                {newCustomer.create_account ? "Create Customer & Send Email" : "Create Customer"}
               </button>
               <button 
                 type="button" 

@@ -1,16 +1,18 @@
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ShieldCheck, ArrowRight, Package, Truck, Calendar } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function OrderConfirmedPage() {
   const { t } = useLanguage();
+  const location = useLocation();
+  const { orderNumber } = (location.state as { orderId?: string; orderNumber?: string }) || {};
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const orderId = `RMQ-${Date.now().toString().slice(-6)}`;
+  const displayOrderId = orderNumber || "—";
 
   return (
     <div className="bg-background min-h-[90vh] py-20 px-4 flex items-center justify-center">
@@ -44,7 +46,7 @@ export default function OrderConfirmedPage() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Manifest Routing</p>
                     <div className="flex items-center gap-3">
                         <Package className="h-5 w-5 text-accent" />
-                        <p className="font-display font-black text-lg uppercase tracking-tight">{orderId}</p>
+                        <p className="font-display font-black text-lg uppercase tracking-tight">{displayOrderId}</p>
                     </div>
                 </div>
                 <div className="space-y-1">
@@ -67,7 +69,7 @@ export default function OrderConfirmedPage() {
                 {t("cart.continue")}
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <Link to="/user/dashboard" className="px-10 py-5 rounded-2xl border-2 border-border font-display font-black uppercase tracking-widest text-xs hover:bg-muted transition-all">
+            <Link to="/dashboard" className="px-10 py-5 rounded-2xl border-2 border-border font-display font-black uppercase tracking-widest text-xs hover:bg-muted transition-all">
                 Track Manifest
             </Link>
         </div>
