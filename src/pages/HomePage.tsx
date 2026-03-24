@@ -1,18 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
-  Shield,
-  Truck,
-  Wrench,
-  CheckCircle,
-  ArrowRight,
-  Package,
-  Phone,
-  Users,
-  BarChart3,
-  ShoppingCart,
-  Star,
-  CheckCircle2,
+  Shield, Truck, Wrench, CheckCircle, ArrowRight, Package, Phone,
+  Users, BarChart3, ShoppingCart, Star, CheckCircle2,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -37,14 +27,14 @@ function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   }
 }
 
-const DEFAULT_VALUE_PROPS: { icon: string; text: string }[] = [
+const DEFAULT_VALUE_PROPS = [
   { icon: "Shield", text: "Certified & Tested" },
   { icon: "Truck", text: "Fast Delivery" },
   { icon: "Wrench", text: "Expert Support" },
   { icon: "CheckCircle", text: "In Stock" },
 ];
 
-const DEFAULT_HERO_SECONDARY: { icon: string; text: string }[] = [
+const DEFAULT_HERO_SECONDARY = [
   { icon: "Truck", text: "Fast fulfillment on fleet orders" },
   { icon: "Package", text: "Bulk pricing for authorized partners" },
 ];
@@ -54,50 +44,30 @@ const DEFAULT_TRUST = {
   logos: ["TERRA-CON", "NORSE MARITIME", "ORE-CORP", "HEAVY-CO", "GLOBAL-MIN"],
 };
 
-function parseValuePropsContent(content?: string): {
-  row: { icon: string; text: string }[];
-  heroSecondary: { icon: string; text: string }[];
-  trustBar: { headline: string; logos: string[] };
-} {
+function parseValuePropsContent(content?: string) {
   if (!content?.trim()) {
     return { row: DEFAULT_VALUE_PROPS, heroSecondary: DEFAULT_HERO_SECONDARY, trustBar: DEFAULT_TRUST };
   }
   try {
-    const v = JSON.parse(content) as unknown;
+    const v = JSON.parse(content) as any;
     if (Array.isArray(v)) {
       return {
-        row: v.length ? (v as { icon: string; text: string }[]) : DEFAULT_VALUE_PROPS,
+        row: v.length ? v : DEFAULT_VALUE_PROPS,
         heroSecondary: DEFAULT_HERO_SECONDARY,
         trustBar: DEFAULT_TRUST,
       };
     }
     if (v && typeof v === "object") {
-      const o = v as Record<string, unknown>;
-      const row = Array.isArray(o.props)
-        ? (o.props as { icon: string; text: string }[])
-        : Array.isArray(o.value_props)
-          ? (o.value_props as { icon: string; text: string }[])
-          : DEFAULT_VALUE_PROPS;
-      const heroSecondary = Array.isArray(o.hero_secondary)
-        ? (o.hero_secondary as { icon: string; text: string }[])
-        : DEFAULT_HERO_SECONDARY;
-      const tb = o.trust_bar as { headline?: string; logos?: string[] } | undefined;
-      const trustBar =
-        tb && typeof tb === "object"
-          ? {
-              headline: typeof tb.headline === "string" && tb.headline.trim() ? tb.headline.trim() : DEFAULT_TRUST.headline,
-              logos: Array.isArray(tb.logos) && tb.logos.length ? tb.logos.map(String) : DEFAULT_TRUST.logos,
-            }
-          : DEFAULT_TRUST;
-      return {
-        row: row.length ? row : DEFAULT_VALUE_PROPS,
-        heroSecondary: heroSecondary.length ? heroSecondary : DEFAULT_HERO_SECONDARY,
-        trustBar,
-      };
+      const row = Array.isArray(v.props) ? v.props : Array.isArray(v.value_props) ? v.value_props : DEFAULT_VALUE_PROPS;
+      const heroSecondary = Array.isArray(v.hero_secondary) ? v.hero_secondary : DEFAULT_HERO_SECONDARY;
+      const tb = v.trust_bar;
+      const trustBar = tb && typeof tb === "object" ? {
+        headline: typeof tb.headline === "string" && tb.headline.trim() ? tb.headline.trim() : DEFAULT_TRUST.headline,
+        logos: Array.isArray(tb.logos) && tb.logos.length ? tb.logos.map(String) : DEFAULT_TRUST.logos,
+      } : DEFAULT_TRUST;
+      return { row: row.length ? row : DEFAULT_VALUE_PROPS, heroSecondary: heroSecondary.length ? heroSecondary : DEFAULT_HERO_SECONDARY, trustBar };
     }
-  } catch {
-    /* ignore */
-  }
+  } catch {}
   return { row: DEFAULT_VALUE_PROPS, heroSecondary: DEFAULT_HERO_SECONDARY, trustBar: DEFAULT_TRUST };
 }
 
@@ -109,13 +79,7 @@ type SiteHeaderCms = {
 };
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
-  Shield,
-  Truck,
-  Wrench,
-  CheckCircle,
-  Package,
-  Users,
-  BarChart3,
+  Shield, Truck, Wrench, CheckCircle, Package, Users, BarChart3,
 };
 
 type WhyCard = { icon?: string; title: string; desc: string; role?: string };
@@ -132,9 +96,7 @@ export default function HomePage() {
 
   const { data: sectionRows = [] } = useCMSPageContent("home", lang);
   const sections = useMemo(() => {
-    return Object.fromEntries(
-      sectionRows.map((s: { section_key: string }) => [s.section_key, s])
-    ) as Record<string, { title?: string; description?: string; image_url?: string; content?: string }>;
+    return Object.fromEntries(sectionRows.map((s: any) => [s.section_key, s]));
   }, [sectionRows]);
 
   const hero = sections.hero ?? {};
@@ -150,22 +112,10 @@ export default function HomePage() {
   const whyRemquip = sections.why_remquip ?? {};
   const whyData = parseJson<{ subtitle?: string; cards?: WhyCard[] }>(whyRemquip.content, { subtitle: "", cards: [] });
   const wholesaleCta = sections.wholesale_cta ?? {};
-  const wholesaleData = parseJson<{
-    body?: string;
-    cta_primary_label?: string;
-    cta_primary_link?: string;
-    cta_secondary_label?: string;
-    cta_secondary_link?: string;
-    bullets?: { title: string; text: string }[];
-    badge_label?: string;
-  }>(wholesaleCta.content, {});
-  const wholesaleBannerSrc = wholesaleCta.image_url?.trim()
-    ? resolveUploadImageUrl(wholesaleCta.image_url.trim())
-    : warehouseImage;
-  const wholesaleBannerAlt = wholesaleCta.description?.trim()
-    ? `${wholesaleCta.title || "Fleet"} — ${wholesaleCta.description.slice(0, 80)}`
-    : "Industrial warehouse";
-
+  const wholesaleData = parseJson<any>(wholesaleCta.content, {});
+  
+  const wholesaleBannerSrc = wholesaleCta.image_url?.trim() ? resolveUploadImageUrl(wholesaleCta.image_url.trim()) : warehouseImage;
+  const wholesaleBannerAlt = wholesaleCta.description?.trim() ? `${wholesaleCta.title || "Fleet"} — ${wholesaleCta.description.slice(0, 80)}` : "Industrial warehouse";
   const siteHeader = sections.site_header ?? {};
   const siteHeaderCms = useMemo(() => parseJson<SiteHeaderCms>(siteHeader.content, {}), [siteHeader.content]);
   const urgencyText = siteHeaderCms.urgency_text?.trim() ?? "";
@@ -174,43 +124,22 @@ export default function HomePage() {
   const marqueeItems = (siteHeaderCms.marquee_items ?? []).map((s) => String(s).trim()).filter(Boolean);
 
   const defaultWhyCards: WhyCard[] = [
-    {
-      title: "Marcus Weber",
-      role: "Fleet Manager, Global Mining Inc.",
-      desc: "Reduced our fleet downtime after switching to REMQUIP assemblies. Technical support is responsive and knowledgeable.",
-    },
-    {
-      title: "Sarah Jensen",
-      role: "Procurement Director, Norse Maritime",
-      desc: "Inventory visibility and bulk pricing helped us consolidate suppliers. Ordering through the portal is straightforward.",
-    },
-    {
-      title: "Robert Kovic",
-      role: "Chief Engineer, Terra-Con Projects",
-      desc: "Quality parts and consistent availability keep our heavy equipment running. REMQUIP is a key supplier for our operation.",
-    },
+    { title: "Marcus Weber", role: "Fleet Manager, Global Mining Inc.", desc: "Reduced our fleet downtime after switching to REMQUIP assemblies. Technical support is responsive and knowledgeable." },
+    { title: "Sarah Jensen", role: "Procurement Director, Norse Maritime", desc: "Inventory visibility and bulk pricing helped us consolidate suppliers. Ordering through the portal is straightforward." },
+    { title: "Robert Kovic", role: "Chief Engineer, Terra-Con Projects", desc: "Quality parts and consistent availability keep our heavy equipment running. REMQUIP is a key supplier for our operation." },
   ];
 
-  const wholesaleBullets =
-    wholesaleData.bullets && wholesaleData.bullets.length >= 2
-      ? wholesaleData.bullets.slice(0, 2)
-      : [
-          { title: "Logistics & fulfillment", text: "Coordinated shipping and tracking for fleet-scale orders." },
-          { title: "Account programs", text: "Wholesale tiers and dedicated support for qualified partners." },
-        ];
+  const wholesaleBullets = wholesaleData.bullets && wholesaleData.bullets.length >= 2
+    ? wholesaleData.bullets.slice(0, 2)
+    : [
+        { title: "Logistics & fulfillment", text: "Coordinated shipping and tracking for fleet-scale orders." },
+        { title: "Account programs", text: "Wholesale tiers and dedicated support for qualified partners." },
+      ];
 
   const defaultCatalogCategories: ProductCategory[] = useMemo(() => {
-    return categories.map((c, idx) => {
-      return {
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        description: c.description,
-        image_url: c.image,
-        display_order: idx + 1,
-        is_active: true,
-      } as unknown as ProductCategory;
-    });
+    return categories.map((c, idx) => ({
+      id: c.id, name: c.name, slug: c.slug, description: c.description, image_url: c.image, display_order: idx + 1, is_active: true,
+    } as unknown as ProductCategory));
   }, []);
 
   const defaultImageBySlug = useMemo(() => {
@@ -222,7 +151,6 @@ export default function HomePage() {
     return map;
   }, [defaultCatalogCategories]);
 
-  // If the DB returns empty image_url for seeded categories, fall back to our bundled defaults.
   const cats = categoriesList.length > 0 ? categoriesList : defaultCatalogCategories;
 
   useEffect(() => {
@@ -231,19 +159,11 @@ export default function HomePage() {
         try {
           const featuredResponse = await api.getFeaturedProducts();
           if (featuredResponse.data) {
-            setFeaturedProducts(
-              featuredResponse.data
-                .map((row) => apiProductToStorefront(row as Record<string, unknown>))
-                .slice(0, 4)
-            );
+            setFeaturedProducts(featuredResponse.data.map((row) => apiProductToStorefront(row as Record<string, unknown>)).slice(0, 4));
           } else {
             setFeaturedProducts([]);
           }
-        } catch {
-          setFeaturedProducts([]);
-        } finally {
-          setFeaturedLoaded(true);
-        }
+        } catch { setFeaturedProducts([]); } finally { setFeaturedLoaded(true); }
 
         try {
           const categoriesResponse = await api.getCategories(1, 100, { locale: lang });
@@ -251,43 +171,35 @@ export default function HomePage() {
           const merged = list.map((cat) => {
             const img = String(cat.image_url ?? "").trim();
             if (img) return cat;
-            const fallback = defaultImageBySlug[cat.slug] ?? "";
-            return { ...cat, image_url: fallback || cat.image_url };
+            return { ...cat, image_url: defaultImageBySlug[cat.slug] || cat.image_url };
           });
           setCategoriesList(merged);
-        } catch {
-          setCategoriesList(defaultCatalogCategories);
-        }
-      } catch {
-        /* handled above */
-      }
+        } catch { setCategoriesList(defaultCatalogCategories); }
+      } catch {}
     };
-
     fetchData();
   }, [lang, defaultCatalogCategories, defaultImageBySlug]);
 
   const rawWhyCards = (whyData.cards ?? []).filter((c) => c.desc?.trim());
-  const useTestimonialLayout =
-    rawWhyCards.length === 0 || rawWhyCards.some((c) => Boolean(c.role?.trim()));
+  const useTestimonialLayout = rawWhyCards.length === 0 || rawWhyCards.some((c) => Boolean(c.role?.trim()));
   const displayWhyCards = rawWhyCards.length ? rawWhyCards : defaultWhyCards;
 
   return (
     <LandingThemeScope>
-      {/* Optional urgency + marquee (CMS: site_header JSON) — below global nav */}
       <EditableSection sectionKey="site_header" showEdit={isAdmin}>
         {urgencyText ? (
-          <div className="bg-destructive text-destructive-foreground py-2.5 px-4 sm:px-8 flex flex-wrap justify-center items-center gap-4 border-b border-destructive/30">
-            <div className="flex items-center gap-2 font-display text-[10px] sm:text-xs font-bold uppercase tracking-widest text-center">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive-foreground opacity-40" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive-foreground" />
+          <div className="bg-destructive text-destructive-foreground py-3 px-4 sm:px-8 flex flex-wrap justify-center items-center gap-4 shadow-sm z-40 relative">
+            <div className="flex items-center gap-2 font-display text-[11px] sm:text-xs font-black uppercase tracking-widest text-center">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive-foreground opacity-50" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive-foreground" />
               </span>
               {urgencyText}
             </div>
             {urgencyCtaLabel ? (
               <Link
                 to={urgencyCtaHref}
-                className="bg-background text-foreground px-4 py-1.5 rounded-sm font-display text-[10px] font-bold uppercase tracking-tight hover:opacity-90 transition-opacity"
+                className="bg-background text-foreground px-5 py-2 rounded font-display text-[10px] font-black uppercase tracking-widest hover:bg-background/90 transition-all shadow-sm active:scale-95"
               >
                 {urgencyCtaLabel}
               </Link>
@@ -295,12 +207,12 @@ export default function HomePage() {
           </div>
         ) : null}
         {marqueeItems.length > 0 ? (
-          <aside className="bg-muted/80 text-foreground py-2 text-center overflow-hidden border-b border-border">
-            <div className="landing-marquee-track inline-flex items-center gap-4 whitespace-nowrap px-4 font-display text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">
+          <aside className="bg-muted text-foreground py-2.5 text-center overflow-hidden border-b border-border shadow-sm z-30 relative backdrop-blur-sm">
+            <div className="landing-marquee-track inline-flex items-center gap-6 whitespace-nowrap px-4 font-display text-[11px] sm:text-xs font-black uppercase tracking-[0.25em]">
               {[...marqueeItems, ...marqueeItems].map((line, i) => (
                 <React.Fragment key={`${line}-${i}`}>
-                  <span>{line}</span>
-                  <span className="opacity-40">•</span>
+                  <span className="opacity-80">{line}</span>
+                  <span className="opacity-20 text-accent mx-2">✦</span>
                 </React.Fragment>
               ))}
             </div>
@@ -309,137 +221,113 @@ export default function HomePage() {
       </EditableSection>
 
       <EditableSection sectionKey="hero" showEdit={isAdmin}>
-        <LandingHero hero={hero} heroCta={heroCta} heroSecondary={valuePropsParsed.heroSecondary} />
+        {/* We keep LandingHero to preserve the inner CMS integration but it will naturally inherit our updated LandingThemeScope CSS */}
+        <div className="relative isolate">
+          <LandingHero hero={hero} heroCta={heroCta} heroSecondary={valuePropsParsed.heroSecondary} />
+          {/* Subtle glow underneath hero */}
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-background to-transparent" />
+        </div>
       </EditableSection>
 
-      {/* Trust bar — CMS via value_props JSON trust_bar + headline */}
       <EditableSection sectionKey="value_props" showEdit={isAdmin}>
-        <section className="bg-muted/50 py-10 md:py-12 border-y border-border/80">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="font-display text-[10px] font-bold uppercase tracking-[0.35em] text-center text-muted-foreground mb-8 md:mb-10">
+        <section className="bg-background py-16 md:py-24 border-b border-border/40 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_50%_50%,hsl(var(--accent)/0.03),transparent_60%)] pointer-events-none -translate-y-1/2 translate-x-1/3" />
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <p className="font-display text-[11px] font-black uppercase tracking-[0.4em] text-center text-muted-foreground/80 mb-10 md:mb-14">
               {valuePropsParsed.trustBar.headline}
             </p>
-            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 lg:gap-24 opacity-40 grayscale contrast-125 hover:opacity-70 transition-opacity">
+            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 lg:gap-24 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
               {valuePropsParsed.trustBar.logos.map((name) => (
-                <div key={name} className="font-display text-lg md:text-2xl font-black tracking-tight text-foreground">
+                <div key={name} className="font-display text-xl md:text-3xl font-black tracking-tighter text-foreground drop-shadow-sm">
                   {name}
                 </div>
               ))}
             </div>
-            {/* Value row (icons + labels). Works with both legacy array and object CMS formats. */}
-            {rawValuePropsContent ? (
-              valuePropsParsed.row?.length ? (
-              <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 mt-10 pt-8 border-t border-border/60">
+            {rawValuePropsContent && valuePropsParsed.row?.length ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mt-16 md:mt-20 pt-16 md:pt-20 border-t border-border/40">
                 {valuePropsParsed.row.map(({ icon: iconKey, text }) => {
                   const Icon = ICON_MAP[iconKey] ?? CheckCircle;
                   return (
-                    <div key={text} className="flex items-center gap-2.5">
-                      <Icon className="h-4 w-4 text-accent shrink-0" strokeWidth={2} />
-                      <span className="landing-value-prop-text text-foreground">{text}</span>
+                    <div key={text} className="flex flex-col items-center justify-center gap-4 p-6 rounded-2xl bg-muted/20 border border-border/30 hover:bg-muted/40 transition-colors shadow-sm">
+                      <div className="p-4 rounded-full bg-accent/10 text-accent">
+                        <Icon className="h-6 w-6" strokeWidth={2} />
+                      </div>
+                      <span className="landing-value-prop-text text-foreground font-display font-bold uppercase tracking-widest text-[11px] text-center">{text}</span>
                     </div>
                   );
                 })}
               </div>
-              ) : null
             ) : null}
           </div>
         </section>
       </EditableSection>
 
-      {/* Core inventory — bento from live categories */}
       <EditableSection sectionKey="categories_intro" showEdit={isAdmin} id="categories">
-        <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto">
+        <section className="py-24 md:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6 mb-12 md:mb-16">
-            <div>
-              <h2 className="font-display landing-section-title-xl font-bold uppercase tracking-tight text-foreground">
+            <div className="max-w-2xl">
+              <span className="font-display text-accent font-black tracking-[0.25em] text-[11px] uppercase mb-3 block">
+                {catIntro.title || "Catalog"}
+              </span>
+              <h2 className="font-display text-4xl md:text-6xl font-black uppercase tracking-tight text-foreground leading-none">
                 {catIntro.description || "Core inventory"}
               </h2>
-              <div className="h-1 w-20 bg-accent mt-4" />
-              {catIntro.title ? (
-                <p className="section-eyebrow mt-3 text-muted-foreground">{catIntro.title}</p>
-              ) : null}
             </div>
             <Link
               to="/products"
-              className="font-display text-accent uppercase tracking-widest text-xs font-bold inline-flex items-center gap-2 hover:gap-3 transition-all shrink-0"
+              className="group font-display text-accent uppercase tracking-widest text-xs font-black inline-flex items-center gap-2 transition-all shrink-0 hover:text-foreground bg-accent/10 hover:bg-accent px-5 py-3 rounded-lg"
             >
-              {viewAllCategories} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              {viewAllCategories} <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
             </Link>
           </div>
 
           {cats.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-12">No categories available.</p>
+            <div className="text-sm text-muted-foreground text-center py-20 rounded-3xl border border-dashed border-border/60 bg-muted/10">
+              No categories available. Please configure your catalog.
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 md:gap-6 md:min-h-[640px] lg:min-h-[720px] auto-rows-fr">
+            <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 md:gap-5 md:min-h-[640px] lg:min-h-[720px] auto-rows-fr">
               {cats[0] ? (
-                <Link
-                  key={cats[0].id}
-                  to={`/products/${cats[0].slug || ""}`}
-                  className="md:col-span-2 md:row-span-2 bg-muted/40 group relative overflow-hidden rounded-sm min-h-[280px] md:min-h-0"
-                >
-                  {cats[0].image_url ? (
-                    <img
-                      src={cats[0].image_url}
-                      alt={cats[0].name}
-                      className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                      loading="lazy"
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8 bg-gradient-to-t from-background via-background/50 to-transparent">
-                    <span className="font-display text-accent text-xs font-bold tracking-widest mb-2 uppercase">
-                      {t("cat.shop_all")}
+                <Link key={cats[0].id} to={`/products/${cats[0].slug || ""}`} className="md:col-span-2 md:row-span-2 bg-muted/20 group relative overflow-hidden rounded-2xl min-h-[320px] md:min-h-0 border border-border/50 shadow-sm hover:shadow-2xl transition-all duration-500">
+                  {cats[0].image_url && (
+                    <img src={cats[0].image_url} alt={cats[0].name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-80 group-hover:scale-110 transition-transform duration-1000 ease-out" loading="lazy" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                    <span className="font-display text-accent bg-accent/20 backdrop-blur-md w-fit px-3 py-1.5 rounded text-[10px] font-black tracking-widest mb-4 uppercase inline-flex items-center gap-2">
+                       {t("cat.shop_all")} <ArrowRight className="h-3 w-3" strokeWidth={3} />
                     </span>
-                    <h3 className="font-display text-2xl md:text-3xl font-black uppercase text-foreground mb-4">
+                    <h3 className="font-display text-3xl md:text-5xl font-black uppercase text-white drop-shadow-md">
                       {cats[0].name}
                     </h3>
-                    <span className="landing-machined-cta w-fit px-6 py-3 rounded-sm font-display text-xs font-bold tracking-widest uppercase inline-flex items-center gap-2 pointer-events-none">
-                      {t("products.view_all")} <ArrowRight className="h-4 w-4" strokeWidth={2} />
-                    </span>
                   </div>
                 </Link>
               ) : null}
               {cats[1] ? (
-                <Link
-                  key={cats[1].id}
-                  to={`/products/${cats[1].slug || ""}`}
-                  className="md:col-span-2 md:row-span-1 bg-muted/40 group relative overflow-hidden rounded-sm min-h-[200px]"
-                >
-                  {cats[1].image_url ? (
-                    <img
-                      src={cats[1].image_url}
-                      alt={cats[1].name}
-                      className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                      loading="lazy"
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 bg-gradient-to-t from-background/90 via-background/25 to-transparent">
-                    <h3 className="font-display text-xl md:text-2xl font-black uppercase text-foreground mb-4">
-                      {cats[1].name}
-                    </h3>
-                    <span className="w-fit px-5 py-2.5 rounded-sm font-display text-xs font-bold tracking-widest uppercase border border-border bg-card/90 backdrop-blur-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
+                <Link key={cats[1].id} to={`/products/${cats[1].slug || ""}`} className="md:col-span-2 md:row-span-1 bg-muted/20 group relative overflow-hidden rounded-2xl min-h-[240px] border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500">
+                  {cats[1].image_url && (
+                    <img src={cats[1].image_url} alt={cats[1].name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 ease-out" loading="lazy" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-end">
+                    <h3 className="font-display text-2xl md:text-3xl font-black uppercase text-white drop-shadow-md mb-4">{cats[1].name}</h3>
+                    <span className="w-fit px-5 py-2.5 rounded-lg font-display text-[10px] font-black tracking-widest uppercase border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white hover:text-black transition-colors shadow-sm">
                       {t("cat.shop_all")}
                     </span>
                   </div>
                 </Link>
               ) : null}
               {cats.slice(2, 4).map((cat) => (
-                <Link
-                  key={cat.id}
-                  to={`/products/${cat.slug || ""}`}
-                  className="md:col-span-1 md:row-span-1 bg-muted/40 group relative overflow-hidden rounded-sm min-h-[200px]"
-                >
-                  {cat.image_url ? (
-                    <img
-                      src={cat.image_url}
-                      alt={cat.name}
-                      className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-                      loading="lazy"
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 flex flex-col justify-end p-5 bg-gradient-to-t from-background to-transparent">
-                    <h3 className="font-display text-lg font-black uppercase text-foreground mb-3">{cat.name}</h3>
-                    <span className="w-fit px-4 py-2 rounded-sm font-display text-[10px] font-bold tracking-widest uppercase border border-border bg-card/90 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-                      {t("cat.shop_all")}
+                <Link key={cat.id} to={`/products/${cat.slug || ""}`} className="md:col-span-1 md:row-span-1 bg-muted/20 group relative overflow-hidden rounded-2xl min-h-[220px] border border-border/50 shadow-sm hover:shadow-md transition-all duration-500">
+                  {cat.image_url && (
+                    <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700 ease-out" loading="lazy" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                    <h3 className="font-display text-xl font-black uppercase text-white drop-shadow-md mb-4">{cat.name}</h3>
+                    <span className="w-fit px-4 py-2 rounded-lg font-display text-[10px] font-black tracking-widest uppercase border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white hover:text-black transition-colors shadow-sm">
+                      Explore
                     </span>
                   </div>
                 </Link>
@@ -449,166 +337,140 @@ export default function HomePage() {
         </section>
       </EditableSection>
 
-      {/* Featured products — bordered grid */}
       <EditableSection sectionKey="featured_intro" showEdit={isAdmin} id="products">
-        <section className="bg-muted/30 py-16 md:py-24 relative overflow-hidden border-y border-border/80">
-          <div className="absolute top-0 left-0 w-16 md:w-24 h-full bg-muted -skew-x-12 -translate-x-8 opacity-60 border-r border-border pointer-events-none hidden md:block" />
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="mb-10 md:mb-12">
-              <span className="font-display text-accent font-bold tracking-[0.2em] text-xs uppercase">
+        <section className="bg-muted/10 py-24 md:py-32 relative overflow-hidden">
+          <div className="absolute top-0 right-1/4 w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_50%_0%,hsl(var(--accent)/0.04),transparent_50%)] pointer-events-none -translate-y-1/2" />
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="mb-12 md:mb-16 text-center max-w-3xl mx-auto">
+              <span className="font-display text-accent font-black tracking-[0.25em] text-[11px] uppercase mb-3 block">
                 {featIntro.title || t("products.featured")}
               </span>
-              <h2 className="font-display landing-section-title-xl font-bold uppercase mt-2 text-foreground">
+              <h2 className="font-display text-3xl md:text-5xl font-black uppercase tracking-tight text-foreground leading-none">
                 {featIntro.description || "Available for immediate dispatch"}
               </h2>
             </div>
 
             {!featuredLoaded ? (
-              <p className="text-sm text-muted-foreground py-8">{t("products.loading")}…</p>
+              <div className="flex justify-center items-center h-64 border border-dashed border-border/60 rounded-3xl bg-muted/10">
+                <p className="text-sm font-display font-medium text-muted-foreground uppercase tracking-widest">{t("products.loading")}...</p>
+              </div>
             ) : featuredProducts.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8">
-                No featured products to show. Mark products as featured in admin or check your catalog.
-              </p>
+              <div className="flex justify-center items-center h-64 border border-dashed border-border/60 rounded-3xl bg-muted/10">
+                <p className="text-sm text-muted-foreground font-display max-w-sm text-center">No featured products. Mark products as featured in the admin panel.</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border rounded-sm overflow-hidden">
-                {featuredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-background p-6 md:p-8 group hover:bg-muted/40 transition-colors flex flex-col h-full min-h-0"
-                  >
-                    <Link to={productDetailHref(product.id, product.slug)} className="block flex flex-col flex-1 min-h-0">
-                      <div className="aspect-square bg-muted mb-5 overflow-hidden relative rounded-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+                {featuredProducts.map((product) => {
+                  const isOutOfStock = product.stock <= 0;
+                  return (
+                    <div key={product.id} className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-border/60">
+                      <Link to={productDetailHref(product.id, product.slug)} className="block aspect-[4/3] overflow-hidden bg-muted/30 relative">
                         {product.image ? (
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            loading="lazy"
-                          />
+                          <img src={product.image} alt={product.name} className={`w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal group-hover:scale-110 transition-transform duration-700 ease-out ${isOutOfStock ? "opacity-40 grayscale" : ""}`} loading="lazy" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                            No image
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground/30"><Package className="h-10 w-10 opacity-20" /></div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                        
+                        {isOutOfStock ? (
+                          <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-md text-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded shadow-sm border border-border">
+                            {t("products.out_of_stock")}
+                          </div>
+                        ) : (
+                          <div className="absolute top-4 right-4 bg-accent text-accent-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded shadow-md">
+                            {t("products.in_stock")}
                           </div>
                         )}
-                        {product.stock > 0 ? (
-                          <span className="absolute top-3 right-3 bg-accent text-accent-foreground font-display text-[10px] font-bold px-2 py-1 uppercase rounded-sm">
-                            {t("products.in_stock")}
-                          </span>
-                        ) : (
-                          <span className="absolute top-3 right-3 bg-muted-foreground/20 text-foreground font-display text-[10px] font-bold px-2 py-1 uppercase rounded-sm">
-                            {t("products.out_of_stock") || "Out of stock"}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-1 flex-grow">
-                        <span className="font-display text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
-                          SKU: {product.sku}
-                        </span>
-                        <h4 className="font-display text-base font-bold uppercase leading-snug text-foreground line-clamp-2">
+                      </Link>
+                      
+                      <div className="p-6 flex flex-col flex-1 relative bg-card z-10">
+                        <p className="text-[10px] text-muted-foreground font-display font-black uppercase tracking-widest mb-2 opacity-60 group-hover:opacity-100 transition-opacity">SKU: {product.sku}</p>
+                        <Link to={productDetailHref(product.id, product.slug)} className="text-lg font-display font-bold text-foreground hover:text-accent transition-colors line-clamp-2 leading-tight mb-auto">
                           {product.name}
-                        </h4>
-                        {product.description ? (
-                          <p className="font-body text-sm text-muted-foreground line-clamp-2 mt-1">{product.description}</p>
-                        ) : null}
-                      </div>
-                    </Link>
-                    <div className="mt-auto pt-5 border-t border-border flex flex-col gap-4">
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="font-display text-2xl font-black text-accent">{formatPrice(product.price)}</span>
-                        <Link
-                          to={productDetailHref(product.id, product.slug)}
-                          className="font-display text-[10px] font-bold uppercase text-muted-foreground hover:text-accent transition-colors underline decoration-accent/30 underline-offset-4 shrink-0"
-                        >
-                          {t("products.specifications")}
                         </Link>
+                        
+                        <div className="mt-6 flex items-end justify-between">
+                          <p className="text-2xl font-display font-black text-foreground">{formatPrice(product.price)}</p>
+                        </div>
+                        
+                        {/* Desktop Hover animated CTA */}
+                        <div className="mt-0 lg:max-h-0 lg:opacity-0 lg:overflow-hidden lg:group-hover:mt-6 lg:group-hover:max-h-[80px] lg:group-hover:opacity-100 transition-all duration-300 ease-out">
+                          <button type="button" onClick={() => addItem(product)} disabled={isOutOfStock} className="w-full bg-foreground text-background text-[11px] py-3.5 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+                            <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={2.5} /> {t("products.add_to_cart")}
+                          </button>
+                        </div>
+                        {/* Mobile static CTA */}
+                        <div className="mt-6 lg:hidden">
+                          <button type="button" onClick={() => addItem(product)} disabled={isOutOfStock} className="w-full bg-foreground text-background text-[11px] py-3.5 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+                            <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={2.5} /> {t("products.add_to_cart")}
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        disabled={product.stock <= 0}
-                        onClick={() => addItem(product)}
-                        className="landing-machined-cta w-full py-3.5 rounded-sm font-display text-xs font-bold uppercase tracking-widest inline-flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none hover:brightness-105 active:scale-[0.98] transition-all"
-                      >
-                        <ShoppingCart className="h-4 w-4" strokeWidth={2} />
-                        {t("products.add_to_cart")}
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            <Link
-              to="/products"
-              className="sm:hidden flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground mt-8 font-medium"
-            >
-              {viewAllFeatured} <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="mt-12 md:mt-16 text-center lg:hidden">
+              <Link to="/products" className="inline-flex items-center gap-2 text-sm font-display font-bold uppercase tracking-widest text-accent hover:text-foreground transition-colors bg-accent/10 px-6 py-3.5 rounded-lg border border-transparent hover:border-border/50">
+                {viewAllFeatured} <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </section>
       </EditableSection>
 
-      {/* Why / testimonials */}
       <EditableSection sectionKey="why_remquip" showEdit={isAdmin} id="about">
-        <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-background">
-          <div className="max-w-[1440px] mx-auto">
-            <div className="text-center mb-12 md:mb-16 max-w-3xl mx-auto">
-              <span className="font-display text-accent font-bold tracking-[0.2em] text-xs uppercase">
+        <section className="py-24 md:py-32 px-4 sm:px-6 lg:px-8 bg-background relative overflow-hidden">
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="text-center mb-16 md:mb-20 max-w-3xl mx-auto">
+              <span className="font-display text-accent font-black tracking-[0.25em] text-[11px] uppercase mb-4 block">
                 {whyRemquip.title || "Field reports"}
               </span>
-              <h2 className="font-display landing-section-title-xl font-bold uppercase mt-2 text-foreground">
+              <h2 className="font-display text-3xl md:text-5xl font-black uppercase tracking-tight text-foreground leading-tight">
                 {whyRemquip.description || "Why operators choose REMQUIP"}
               </h2>
               {whyData.subtitle ? (
-                <p className="text-sm text-muted-foreground mt-4 leading-relaxed">{whyData.subtitle}</p>
+                <p className="text-base text-muted-foreground mt-6 leading-relaxed max-w-2xl mx-auto">{whyData.subtitle}</p>
               ) : null}
             </div>
 
             {useTestimonialLayout ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                 {displayWhyCards.map((card, i) => (
-                  <div
-                    key={`${card.title}-${i}`}
-                    className="bg-muted/40 p-6 md:p-8 rounded-sm border border-border border-l-4 border-l-accent"
-                  >
-                    <div className="flex text-accent mb-4 gap-0.5" aria-hidden>
-                      {Array.from({ length: 5 }).map((_, si) => (
-                        <Star key={si} className="h-4 w-4 fill-current text-accent" strokeWidth={0} />
-                      ))}
+                  <div key={`${card.title}-${i}`} className="bg-card p-8 md:p-10 rounded-3xl border border-border/60 shadow-md hover:shadow-xl transition-shadow relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                       <Package className="w-32 h-32 -rotate-12 group-hover:rotate-0 transition-transform duration-700" />
                     </div>
-                    <p className="text-foreground mb-6 italic leading-relaxed">&ldquo;{card.desc}&rdquo;</p>
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center font-display font-black text-xs text-foreground">
-                        {card.title
-                          .split(" ")
-                          .map((w) => w[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()}
+                    <div className="flex text-accent mb-6 gap-1" aria-hidden>
+                      {Array.from({ length: 5 }).map((_, si) => <Star key={si} className="h-5 w-5 fill-current text-accent" strokeWidth={0} />)}
+                    </div>
+                    <p className="text-foreground/90 font-medium mb-8 leading-relaxed text-lg lg:text-xl relative z-10">&ldquo;{card.desc}&rdquo;</p>
+                    <div className="flex items-center gap-5 mt-auto relative z-10">
+                      <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center font-display font-black text-sm text-accent shadow-sm border border-accent/20">
+                        {card.title.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <h4 className="font-display font-bold text-xs uppercase text-foreground">{card.title}</h4>
-                        {card.role ? (
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">{card.role}</p>
-                        ) : null}
+                        <h4 className="font-display font-bold text-sm uppercase tracking-wide text-foreground">{card.title}</h4>
+                        {card.role && <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-display font-semibold">{card.role}</p>}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
                 {displayWhyCards.map(({ icon: iconKey, title, desc }, i) => {
                   const Icon = ICON_MAP[iconKey ?? "Package"] ?? Package;
                   return (
-                    <div
-                      key={i}
-                      className="h-full p-6 md:p-8 border border-border rounded-sm bg-card hover:border-accent/30 transition-colors"
-                    >
-                      <div className="w-11 h-11 rounded-sm flex items-center justify-center mb-5 bg-muted">
-                        <Icon className="h-5 w-5 text-accent" strokeWidth={1.75} />
+                    <div key={i} className="h-full p-8 md:p-10 border border-border/60 rounded-3xl bg-card hover:border-accent/30 shadow-sm hover:shadow-xl transition-all group">
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-accent/10 border border-accent/20 group-hover:scale-110 transition-transform duration-500">
+                        <Icon className="h-6 w-6 text-accent" strokeWidth={2} />
                       </div>
-                      <h3 className="font-display text-base font-bold text-foreground mb-2 uppercase tracking-tight">{title}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                      <h3 className="font-display text-xl font-black text-foreground mb-4 uppercase tracking-tight">{title}</h3>
+                      <p className="text-base text-muted-foreground leading-relaxed font-medium">{desc}</p>
                     </div>
                   );
                 })}
@@ -618,71 +480,65 @@ export default function HomePage() {
         </section>
       </EditableSection>
 
-      {/* Wholesale CTA */}
       <EditableSection sectionKey="wholesale_cta" showEdit={isAdmin} id="wholesale">
-        <section className="py-16 md:py-24 bg-muted/20 relative overflow-hidden border-t border-border">
+        <section className="py-24 md:py-32 bg-background relative overflow-hidden">
           <div className="absolute inset-0 z-0 pointer-events-none">
-            <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_40%,hsl(var(--accent)/0.12),transparent_55%)]" />
+            <div className="absolute top-1/2 left-1/2 w-full max-w-5xl h-[800px] bg-[radial-gradient(ellipse_at_center,hsl(var(--accent)/0.1),transparent_70%)] -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-12 gap-0 rounded-sm overflow-hidden border border-border bg-card shadow-xl">
-              <div className="p-8 md:p-12 lg:p-20 md:col-span-7 border-l-4 border-accent flex flex-col justify-center order-2 md:order-1">
-                <span className="font-display text-accent font-black uppercase tracking-[0.2em] text-xs mb-4 block">
+          
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-12 gap-0 rounded-[2rem] overflow-hidden border border-border/50 bg-card shadow-2xl relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-background/95 to-background/50 pointer-events-none z-10" />
+              
+              <div className="p-8 md:p-16 lg:p-24 lg:col-span-7 flex flex-col justify-center relative z-20">
+                <span className="font-display text-accent font-black uppercase tracking-[0.3em] text-[11px] mb-6 block">
                   {wholesaleCta.title || "Partnership"}
                 </span>
-                <h2 className="font-display landing-wholesale-heading font-black uppercase mb-5 tracking-tight text-foreground leading-tight">
-                  {wholesaleCta.description || "Wholesale programs for fleet operators"}
+                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-black uppercase mb-8 tracking-tight text-foreground leading-[1.1]">
+                  {wholesaleCta.description || "Wholesale programs for fleet operators."}
                 </h2>
-                <p className="landing-wholesale-body text-muted-foreground mb-8 leading-relaxed">
+                <p className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed font-medium max-w-xl">
                   {wholesaleData.body || "Competitive bulk pricing, account support, and streamlined ordering for your operation."}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
                   {wholesaleBullets.map((b) => (
-                    <div key={b.title} className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-accent shrink-0 mt-0.5" strokeWidth={2} />
+                    <div key={b.title} className="flex items-start gap-4">
+                      <div className="p-1.5 rounded-full bg-accent/20 text-accent mt-0.5"><CheckCircle2 className="h-4 w-4" strokeWidth={3} /></div>
                       <div>
-                        <h4 className="font-display font-bold text-sm uppercase text-foreground">{b.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{b.text}</p>
+                        <h4 className="font-display font-black text-sm uppercase text-foreground mb-1.5">{b.title}</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{b.text}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Link
-                    to={wholesaleData.cta_primary_link || "/register"}
-                    className="landing-machined-cta inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-sm font-display font-bold text-sm uppercase tracking-widest text-center shadow-md hover:brightness-105 transition-all"
-                  >
-                    {wholesaleData.cta_primary_label || "Join wholesale"} <ArrowRight className="h-4 w-4" />
+                <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                  <Link to={wholesaleData.cta_primary_link || "/register"} className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-display font-black text-sm uppercase tracking-widest text-background bg-foreground hover:bg-accent transition-colors shadow-xl hover:shadow-2xl hover:-translate-y-1">
+                    {wholesaleData.cta_primary_label || "Join wholesale"} <ArrowRight className="h-4 w-4" strokeWidth={3} />
                   </Link>
-                  <Link
-                    to={wholesaleData.cta_secondary_link || "/contact"}
-                    className="inline-flex items-center justify-center gap-2 border border-border bg-background px-8 py-3.5 rounded-sm font-display font-semibold text-sm uppercase tracking-wide hover:bg-muted/80 transition-colors"
-                  >
-                    <Phone className="h-4 w-4" strokeWidth={2} />{" "}
-                    {wholesaleData.cta_secondary_label || "Contact sales"}
+                  <Link to={wholesaleData.cta_secondary_link || "/contact"} className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-display font-black text-sm uppercase tracking-widest text-foreground bg-transparent border-2 border-border hover:border-foreground transition-all">
+                    <Phone className="h-4 w-4" strokeWidth={2.5} /> {wholesaleData.cta_secondary_label || "Contact sales"}
                   </Link>
                 </div>
               </div>
-              <div className="relative min-h-[240px] md:min-h-full md:col-span-5 order-1 md:order-2">
-                <img
-                  src={wholesaleBannerSrc}
-                  alt={wholesaleBannerAlt}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/50 to-transparent md:hidden" />
-                {wholesaleData.badge_label ? (
-                  <div className="hidden lg:flex absolute -bottom-4 -right-4 w-36 h-36 bg-card border border-border rotate-6 items-center justify-center p-4 text-center shadow-lg">
-                    <span className="font-display font-black text-[10px] leading-tight uppercase text-muted-foreground">
+              
+              <div className="relative min-h-[400px] lg:min-h-full lg:col-span-5 hidden md:block">
+                <img src={wholesaleBannerSrc} alt={wholesaleBannerAlt} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-r from-card to-transparent w-2/3 lg:w-1/2" />
+                
+                {wholesaleData.badge_label && (
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-background/80 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center p-4 text-center shadow-2xl animate-spin-slow pointer-events-none">
+                    <div className="absolute inset-2 border border-dashed border-foreground/20 rounded-full" />
+                    <span className="font-display font-black text-[10px] leading-tight uppercase text-foreground">
                       {wholesaleData.badge_label}
                     </span>
                   </div>
-                ) : null}
+                )}
               </div>
             </div>
           </div>
         </section>
       </EditableSection>
+
     </LandingThemeScope>
   );
 }
