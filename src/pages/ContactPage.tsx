@@ -118,18 +118,18 @@ export default function ContactPage() {
                   const subject = form.subject.trim();
                   const message = form.message.trim();
 
-                  if (!name) return showErrorToast("Name is required");
-                  if (!email || !/^\S+@\S+\.\S+$/.test(email)) return showErrorToast("Valid email is required");
-                  if (!message) return showErrorToast("Message is required");
+                  if (!name) return showErrorToast("Form Error", "Name is required");
+                  if (!email || !/^\S+@\S+\.\S+$/.test(email)) return showErrorToast("Form Error", "Valid email is required");
+                  if (!message) return showErrorToast("Form Error", "Message is required");
 
                   setSubmitting(true);
                   try {
                     await api.submitContactLead({ name, email, subject, message });
                     setSent(true);
                     setForm({ name: "", email: "", subject: "", message: "" });
-                    showSuccessToast("Inquiry received. We'll be in touch.");
+                    showSuccessToast("Success", "Inquiry received. We'll be in touch.");
                   } catch (err) {
-                    showErrorToast(err instanceof Error ? err.message : "Submission failure. Please retry.");
+                    showErrorToast("Submission Failed", err instanceof Error ? err.message : "Submission failure. Please retry.");
                   } finally {
                     setSubmitting(false);
                   }
@@ -222,40 +222,8 @@ export default function ContactPage() {
           </div>
 
           {/* Right: Info Sidebar + Map */}
-          <div className="lg:col-span-5 space-y-12">
+          <div className="lg:col-span-5 space-y-10">
             
-            {/* Contact Grid */}
-            <div className="grid sm:grid-cols-2 gap-8">
-                <div className="group p-6 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
-                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-6 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
-                        <MapPin className="h-5 w-5 text-muted-foreground group-hover:text-white transition-colors" />
-                    </div>
-                    <h3 className="font-display font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{copy.sidebar.address_label}</h3>
-                    <p className="text-sm font-bold text-foreground leading-snug">{mapLoading ? "…" : addressLine}</p>
-                </div>
-                <div className="group p-6 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
-                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-6 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
-                        <Phone className="h-5 w-5 text-muted-foreground group-hover:text-white transition-colors" />
-                    </div>
-                    <h3 className="font-display font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{copy.sidebar.phone_label}</h3>
-                    <a href={`tel:${copy.sidebar.phone}`} className="text-sm font-bold text-foreground hover:text-accent transition-colors">{copy.sidebar.phone}</a>
-                </div>
-                <div className="group p-6 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
-                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-6 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
-                        <Mail className="h-5 w-5 text-muted-foreground group-hover:text-white transition-colors" />
-                    </div>
-                    <h3 className="font-display font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{copy.sidebar.email_label}</h3>
-                    <a href={`mailto:${copy.sidebar.email}`} className="text-sm font-bold text-foreground hover:text-accent transition-colors truncate block">{copy.sidebar.email}</a>
-                </div>
-                <div className="group p-6 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
-                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-6 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
-                        <Clock className="h-5 w-5 text-muted-foreground group-hover:text-white transition-colors" />
-                    </div>
-                    <h3 className="font-display font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{copy.sidebar.hours_label}</h3>
-                    <p className="text-sm font-bold text-foreground leading-snug">{copy.sidebar.hours}</p>
-                </div>
-            </div>
-
             {/* Premium Map Container */}
             <section className="relative group overflow-hidden" aria-labelledby="contact-map-heading">
               <div className="absolute top-0 right-0 p-4 z-10 pointer-events-none">
@@ -280,6 +248,38 @@ export default function ContactPage() {
                   <div className="absolute inset-0 bg-accent/5 pointer-events-none mix-blend-multiply" />
               </div>
             </section>
+
+            {/* Contact Grid */}
+            <div className="grid sm:grid-cols-2 gap-6">
+                <div className="group p-5 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-4 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="font-display font-black text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">{copy.sidebar.address_label}</h3>
+                    <p className="text-xs font-bold text-foreground leading-snug">{mapLoading ? "…" : addressLine}</p>
+                </div>
+                <div className="group p-5 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-4 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="font-display font-black text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">{copy.sidebar.phone_label}</h3>
+                    <a href={`tel:${copy.sidebar.phone}`} className="text-xs font-bold text-foreground hover:text-accent transition-colors">{copy.sidebar.phone}</a>
+                </div>
+                <div className="group p-5 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-4 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
+                        <Mail className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="font-display font-black text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">{copy.sidebar.email_label}</h3>
+                    <a href={`mailto:${copy.sidebar.email}`} className="text-xs font-bold text-foreground hover:text-accent transition-colors truncate block">{copy.sidebar.email}</a>
+                </div>
+                <div className="group p-5 bg-card border border-border/60 rounded-3xl hover:border-accent/40 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-4 border border-border group-hover:bg-accent group-hover:border-accent transition-all shadow-sm">
+                        <Clock className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="font-display font-black text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">{copy.sidebar.hours_label}</h3>
+                    <p className="text-xs font-bold text-foreground leading-snug">{copy.sidebar.hours}</p>
+                </div>
+            </div>
 
           </div>
         </div>
