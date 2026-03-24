@@ -234,12 +234,14 @@ export default function HomePage() {
             <p className="font-display text-[11px] font-black uppercase tracking-[0.4em] text-center text-muted-foreground/80 mb-10 md:mb-14">
               {valuePropsParsed.trustBar.headline}
             </p>
-            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 lg:gap-24 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-              {valuePropsParsed.trustBar.logos.map((name) => (
-                <div key={name} className="font-display text-xl md:text-3xl font-black tracking-tighter text-foreground drop-shadow-sm">
-                  {name}
-                </div>
-              ))}
+            <div className="relative overflow-hidden logo-marquee-mask">
+              <div className="logo-marquee-track flex items-center gap-12 md:gap-24 py-4 whitespace-nowrap">
+                {[...valuePropsParsed.trustBar.logos, ...valuePropsParsed.trustBar.logos, ...valuePropsParsed.trustBar.logos, ...valuePropsParsed.trustBar.logos].map((name, i) => (
+                  <div key={`${name}-${i}`} className="font-display text-xl md:text-3xl font-black tracking-tighter text-foreground/30 hover:text-foreground transition-all duration-700 drop-shadow-sm flex-shrink-0">
+                    {name}
+                  </div>
+                ))}
+              </div>
             </div>
             {rawValuePropsContent && valuePropsParsed.row?.length ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mt-16 md:mt-20 pt-16 md:pt-20 border-t border-border/40">

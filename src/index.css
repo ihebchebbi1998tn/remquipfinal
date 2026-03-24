@@ -530,6 +530,13 @@
   .landing-theme-scope .landing-marquee-track {
     animation: landing-marquee 28s linear infinite;
   }
+  .landing-theme-scope .logo-marquee-track {
+    animation: landing-marquee 50s linear infinite;
+  }
+  .logo-marquee-mask {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  }
   .landing-theme-scope .landing-machined-cta {
     background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent) / 0.82) 100%);
     color: hsl(var(--accent-foreground));
