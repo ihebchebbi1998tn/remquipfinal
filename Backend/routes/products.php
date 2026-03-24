@@ -124,6 +124,65 @@ if ($method === 'GET' && (!$id || $id === 'search' || ($id === 'category' && $ac
     }
 }
 
+// GET /products/:id/stats - Admin product detail stats (orders, revenue, viewer counts)
+if ($method === 'GET' && $id && $action === 'stats') {
+    Auth::requireAuth('admin');
+    try {
+        $pid = $id;
+
+        // Sales summary
+        $sales = $conn->fetch(
+            "SELECT
+                COUNT(DISTINCT oi.order_id)   AS total_orders,
+                COALESCE(SUM(oi.quantity), 0) AS total_units_sold,
+                COALESCE(SUM(oi.line_total), 0) AS total_revenue
+             FROM remquip_order_items oi
+             INNER JOIN remquip_orders o ON oi.order_id = o.id AND o.deleted_at IS NULL
+             WHERE oi.product_id = :pid",
+            ['pid' => $pid]
+        );
+
+        // Recent orders containing this product (last 15)
+        $recentOrders = $conn->fetchAll(
+            "SELECT
+                o.id, o.order_number, o.status, o.payment_status,
+                o.total, o.created_at,
+                oi.quantity, oi.unit_price, oi.line_total,
+                c.company_name AS customer_name, c.email AS customer_email
+             FROM remquip_order_items oi
+             INNER JOIN remquip_orders o ON oi.order_id = o.id AND o.deleted_at IS NULL
+             LEFT JOIN remquip_customers c ON o.customer_id = c.id
+             WHERE oi.product_id = :pid
+             ORDER BY o.created_at DESC
+             LIMIT 15",
+            ['pid' => $pid]
+        );
+
+        // Page-view analytics events for this product (event_type = product_view, data->product_id)
+        $viewCount = 0;
+        try {
+            $row = $conn->fetch(
+                "SELECT COUNT(*) AS c FROM remquip_analytics
+                 WHERE event_type = 'product_view'
+                 AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.product_id')) = :pid",
+                ['pid' => $pid]
+            );
+            $viewCount = (int)($row['c'] ?? 0);
+        } catch (Exception $_) {}
+
+        ResponseHelper::sendSuccess([
+            'total_orders'     => (int)($sales['total_orders'] ?? 0),
+            'total_units_sold' => (int)($sales['total_units_sold'] ?? 0),
+            'total_revenue'    => (float)($sales['total_revenue'] ?? 0),
+            'view_count'       => $viewCount,
+            'recent_orders'    => $recentOrders,
+        ], 'Product stats');
+    } catch (Exception $e) {
+        Logger::error('Product stats error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to load product stats', 500);
+    }
+}
+
 // GET /products/:id - Get product details (exclude reserved paths)
 if ($method === 'GET' && $id && !$action && $id !== 'search' && $id !== 'featured' && $id !== 'category') {
     try {

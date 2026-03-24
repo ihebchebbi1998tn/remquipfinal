@@ -1354,6 +1354,16 @@ class APIService {
     return this.request('GET', API_ENDPOINTS.INVENTORY.HISTORY.replace(':productId', productId));
   }
 
+  async getProductStats(productId: string): Promise<ApiResponse<{
+    total_orders: number;
+    total_units_sold: number;
+    total_revenue: number;
+    view_count: number;
+    recent_orders: Record<string, unknown>[];
+  }>> {
+    return this.request('GET', API_ENDPOINTS.PRODUCTS.STATS.replace(':id', productId));
+  }
+
   // ==================== ANALYTICS METHODS ====================
 
   async getAnalyticsDashboard(): Promise<ApiResponse> {

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(json|js|ts|env|php\\)$\")",
+      "Bash(ls -la /c/Users/ihebc/OneDrive/Desktop/freelance/remquipfinal/.env*)"
+    ]
+  }
+}

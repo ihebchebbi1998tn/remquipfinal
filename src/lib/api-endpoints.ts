@@ -80,6 +80,8 @@ export const API_ENDPOINTS = {
     SEARCH: '/products/search',
     FEATURED: '/products/featured',
     BY_CATEGORY: '/products/category/:categoryId',
+    /** GET admin — sales + revenue + view stats for one product. */
+    STATS: '/products/:id/stats',
   },
 
   // ==================== PRODUCT IMAGES ENDPOINTS ====================
@@ -220,7 +222,10 @@ export const API_ENDPOINTS = {
   // ==================== ADMIN CONTACTS ENDPOINTS ====================
   ADMIN_CONTACTS: {
     LIST: '/admin-contacts',
+    CREATE: '/admin-contacts',
     GET: '/admin-contacts/:id',
+    UPDATE: '/admin-contacts/:id',
+    DELETE: '/admin-contacts/:id',
     BY_DEPARTMENT: '/admin-contacts/department/:department',
     BY_SPECIALIZATION: '/admin-contacts/specialization/:specialization',
     AVAILABLE: '/admin-contacts/available',

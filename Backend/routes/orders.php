@@ -228,6 +228,7 @@ if ($method === 'POST' && !$id) {
             ResponseHelper::sendError('Invalid order data: no valid line items', 400);
         }
 
+        $email = '';
         $customerId = $data['customerId'] ?? $data['customer_id'] ?? null;
         if (!$customerId) {
             $email = trim($data['customer_email'] ?? $data['email'] ?? '');
@@ -325,13 +326,22 @@ if ($method === 'POST' && !$id) {
         Logger::info('Order created', ['order_id' => $orderId, 'order_number' => $orderNumber]);
         
         // Mark abandoned carts for this email as completed
-        try {
-            $conn->execute(
-                "UPDATE abandoned_carts SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE email = :email AND status = 'abandoned'",
-                ['email' => $email]
-            );
-        } catch (Exception $e) {
-            Logger::error('Failed to mark cart as completed', ['error' => $e->getMessage()]);
+        // $email may be empty when order was created via customerId — look it up
+        if ($email === '') {
+            try {
+                $custRow = $conn->fetch('SELECT email FROM remquip_customers WHERE id = :id AND deleted_at IS NULL', ['id' => $customerId]);
+                $email = $custRow['email'] ?? '';
+            } catch (Exception $_) {}
+        }
+        if ($email !== '') {
+            try {
+                $conn->execute(
+                    "UPDATE abandoned_carts SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE email = :email AND status = 'abandoned'",
+                    ['email' => $email]
+                );
+            } catch (Exception $e) {
+                Logger::error('Failed to mark cart as completed', ['error' => $e->getMessage()]);
+            }
         }
         
         remquip_notify_new_order($conn, $orderId, $orderNumber, (string)$total);

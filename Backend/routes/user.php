@@ -73,7 +73,7 @@ try {
             ResponseHelper::sendError('No linked customer record for your email', 404);
         }
 
-        $orderId = String($rs[2]);
+        $orderId = (string)$rs[2];
         try {
             $order = $conn->fetch(
                 "SELECT

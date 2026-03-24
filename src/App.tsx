@@ -48,6 +48,7 @@ const AdminCarts = lazy(() => import("@/pages/admin/AdminCarts"));
 const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminProductLogs = lazy(() => import("@/pages/admin/AdminProductLogs"));
+const AdminProductDetail = lazy(() => import("@/pages/admin/AdminProductDetail"));
 const AdminDiscounts = lazy(() => import("@/pages/admin/AdminDiscounts"));
 const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess"));
@@ -117,6 +118,7 @@ const App = () => (
                       <Route path="categories" element={<AdminCategories />} />
                       <Route path="products/new" element={<AdminProductEdit />} />
                       <Route path="products/:productId" element={<AdminProductEdit />} />
+                      <Route path="products/:productId/view" element={<AdminProductDetail />} />
                       <Route path="products/:productId/logs" element={<AdminProductLogs />} />
                       <Route path="inventory" element={<AdminInventory />} />
                       <Route path="orders" element={<AdminOrders />} />

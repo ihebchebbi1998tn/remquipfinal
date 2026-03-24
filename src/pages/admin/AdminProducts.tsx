@@ -9,7 +9,6 @@ function productListThumb(product: Product): string | null {
   if (!raw) return null;
   return resolveUploadImageUrl(String(raw));
 }
-import { apiProductToStorefront, productDetailHref } from "@/lib/storefront-product";
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -221,7 +220,6 @@ export default function AdminProducts() {
           {filtered.map((product: Product) => {
             const isExpanded = expandedProduct === product.id;
             const thumb = productListThumb(product);
-            const publicProductUrl = productDetailHref(product.id, apiProductToStorefront(product as Record<string, unknown>).slug);
             return (
               <div key={product.id} className="border border-border rounded-xl overflow-hidden">
                 <button onClick={() => setExpandedProduct(isExpanded ? null : product.id)} className="w-full p-3 text-left flex items-center gap-3 hover:bg-muted/20 transition-colors">
@@ -249,7 +247,7 @@ export default function AdminProducts() {
                     </div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Stock</span><span className={`font-medium ${product.stock_quantity < 50 ? "text-warning" : ""}`}>{product.stock_quantity}</span></div>
                     <div className="flex gap-2 pt-2">
-                      <Link to={publicProductUrl} className="admin-btn--secondary flex-1 text-xs py-1.5"><Eye className="h-3 w-3" /> View</Link>
+                      <Link to={`/admin/products/${product.id}/view`} className="admin-btn--secondary flex-1 text-xs py-1.5"><Eye className="h-3 w-3" /> View</Link>
                       <Link to={`/admin/products/${product.id}/logs`} className="admin-btn--secondary flex-1 text-xs py-1.5"><ClipboardList className="h-3 w-3" /> Logs</Link>
                       <Link to={`/admin/products/${product.id}`} className="admin-btn--primary flex-1 text-xs py-1.5"><Edit className="h-3 w-3" /> Edit</Link>
                       <button 
@@ -288,7 +286,6 @@ export default function AdminProducts() {
             <tbody className="divide-y divide-border">
               {filtered.map((product: Product) => {
                 const thumb = productListThumb(product);
-                const publicProductUrl = productDetailHref(product.id, apiProductToStorefront(product as Record<string, unknown>).slug);
                 return (
                   <tr key={product.id} className={`hover:bg-muted/30 transition-colors ${selectedProducts.has(product.id) ? "bg-accent/5" : ""}`}>
                     <td className="px-3 py-3">
@@ -312,7 +309,7 @@ export default function AdminProducts() {
                     <td className="px-3 py-3"><span className={statusStyles[product.status]}>{product.status}</span></td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <Link to={publicProductUrl} className="admin-btn--ghost p-1.5" title="View"><Eye className="h-4 w-4" /></Link>
+                        <Link to={`/admin/products/${product.id}/view`} className="admin-btn--ghost p-1.5" title="View"><Eye className="h-4 w-4" /></Link>
                         <Link to={`/admin/products/${product.id}/logs`} className="admin-btn--ghost p-1.5" title="Stock Logs"><ClipboardList className="h-4 w-4" /></Link>
                         <Link to={`/admin/products/${product.id}`} className="admin-btn--ghost p-1.5" title="Edit"><Edit className="h-4 w-4" /></Link>
                         <button className="admin-btn--ghost p-1.5" title="Duplicate"><Copy className="h-4 w-4" /></button>
