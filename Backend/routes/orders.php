@@ -49,6 +49,7 @@ if ($method === 'GET' && (!$id || $id === 'search')) {
                     c.company_name as customer, c.email as customer_email, c.phone,
                     (SELECT COUNT(*) FROM remquip_order_items WHERE order_id = o.id) as items,
                     o.total, o.total as total_amount, o.status, o.payment_status,
+                    o.payment_method, o.stripe_payment_intent_id, o.paid_at,
                     o.created_at, o.created_at as order_date, o.created_at as date
              FROM remquip_orders o
              LEFT JOIN remquip_customers c ON o.customer_id = c.id
@@ -72,7 +73,8 @@ if ($method === 'GET' && $id && !$action) {
     
     try {
         $order = $conn->fetch(
-            "SELECT o.*, c.company_name, c.email, c.phone
+            "SELECT o.*, o.stripe_session_id, o.stripe_payment_intent_id, o.payment_method, o.paid_at,
+                    c.company_name, c.email, c.phone
              FROM remquip_orders o
              LEFT JOIN remquip_customers c ON o.customer_id = c.id
              WHERE o.id = :id AND o.deleted_at IS NULL",

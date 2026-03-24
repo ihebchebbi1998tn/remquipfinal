@@ -121,3 +121,21 @@ function remquip_tpl_order_status_customer(array $v): array
     $text = "Order {$v['order_number']} status is now: {$v['status']}.\n\n— REMQUIP";
     return ['html' => $html, 'text' => $text];
 }
+
+function remquip_tpl_order_paid_customer(array $v): array
+{
+    $num = htmlspecialchars($v['order_number'] ?? '', ENT_QUOTES, 'UTF-8');
+    $total = htmlspecialchars($v['total'] ?? '', ENT_QUOTES, 'UTF-8');
+    
+    $inner = '<p style="margin:0 0 16px;">Great news! We have successfully received your payment for order <strong>' . $num . '</strong>.</p>'
+        . '<p style="margin:0 0 16px;">We are now preparing your order for shipment. You will receive another email with tracking information once it leaves our warehouse.</p>'
+        . '<table role="presentation" cellspacing="0" cellpadding="8" style="width:100%;border-collapse:collapse;font-size:14px;margin-top:12px;margin-bottom:24px;">'
+        . '<tr><td style="border-bottom:1px solid #2a3441;color:#94a3b8;width:120px;">Order #</td><td style="border-bottom:1px solid #2a3441;"><strong>' . $num . '</strong></td></tr>'
+        . '<tr><td style="color:#94a3b8;">Total Paid</td><td><strong>' . $total . '</strong></td></tr></table>'
+        . '<p style="margin:24px 0 0;font-size:14px;">Thank you for shopping with REMQUIP.</p>';
+        
+    $html = remquip_email_layout('Payment confirmed for order ' . $num, 'Payment Successful', $inner);
+    $text = "Payment confirmed for order {$num}.\nTotal Paid: {$total}\n\nWe are now preparing your order for shipment.\n\n— REMQUIP";
+    
+    return ['html' => $html, 'text' => $text];
+}

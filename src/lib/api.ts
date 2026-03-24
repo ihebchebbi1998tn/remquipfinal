@@ -256,8 +256,11 @@ export interface Order {
   tax_amount: number;
   shipping_amount: number;
   discount_amount?: number;
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | 'expired';
   payment_method?: string;
+  stripe_session_id?: string;
+  stripe_payment_intent_id?: string;
+  paid_at?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -1262,6 +1265,12 @@ class APIService {
         `${API_ENDPOINTS.ORDERS.USER_ORDERS.replace(':userId', userId)}?page=${page}&limit=${limit}`
       )
     );
+  }
+
+  // ==================== STRIPE METHODS ====================
+
+  async createStripeCheckoutSession(orderId: string): Promise<ApiResponse<{ sessionId: string; url: string }>> {
+    return this.request('POST', API_ENDPOINTS.STRIPE.CREATE_SESSION, { order_id: orderId });
   }
 
   // ==================== DISCOUNT METHODS ====================

@@ -9,7 +9,7 @@ function remquip_known_resources(): array
         'auth', 'users', 'products', 'categories', 'inventory', 'customers',
         'orders', 'discounts', 'uploads', 'analytics', 'cms', 'health',
         'dashboard', 'audit', 'user', 'admin', 'admin-contacts', 'settings', 'contact-map', 'landing-theme',
-        'chat', 'carts',
+        'chat', 'carts', 'stripe',
     ];
 }
 
@@ -181,6 +181,9 @@ function remquip_dispatch(array $segments): void
             break;
         case 'carts':
             $safeRequire(__DIR__ . '/routes/carts.php');
+            break;
+        case 'stripe':
+            $safeRequire(__DIR__ . '/routes/stripe.php');
             break;
         default:
             ResponseHelper::sendError('Resource not found', 404);

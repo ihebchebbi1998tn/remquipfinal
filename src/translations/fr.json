@@ -321,5 +321,14 @@
   "chat.faq.warranty_q": "Vos pièces sont-elles garanties?",
   "chat.faq.warranty_a": "Toutes nos pièces sont testées et accompagnées d'une garantie complète conforme ou supérieure aux normes OEM.",
   "legal.about.title": "À propos de REMQUIP",
-  "legal.about.content": "REMQUIP est le distributeur de pièces lourdes de nouvelle génération au Canada, basé à Québec et desservant les flottes, distributeurs et OEM à l'échelle nationale depuis 2025.\n\nNous nous spécialisons dans les freins pour véhicules lourds et les composants de suspension pneumatique pour camions et remorques commerciaux. Notre engagement envers la qualité, les prix compétitifs et la livraison rapide nous distingue.\n\nAvec plus de 15 ans d'expérience combinée dans l'industrie, notre équipe comprend les exigences de l'industrie du transport lourd et livre les pièces dont vous avez besoin, quand vous en avez besoin."
+  "legal.about.content": "REMQUIP est le distributeur de pièces lourdes de nouvelle génération au Canada, basé à Québec et desservant les flottes, distributeurs et OEM à l'échelle nationale depuis 2025.\n\nNous nous spécialisons dans les freins pour véhicules lourds et les composants de suspension pneumatique pour camions et remorques commerciaux. Notre engagement envers la qualité, les prix compétitifs et la livraison rapide nous distingue.\n\nAvec plus de 15 ans d'expérience combinée dans l'industrie, notre équipe comprend les exigences de l'industrie du transport lourd et livre les pièces dont vous avez besoin, quand vous avez besoin.",
+  "payment.success.title": "Paiement Réussi",
+  "payment.success.description": "Votre transaction a été traitée en toute sécurité. Nous préparons maintenant votre équipement pour l'expédition.",
+  "payment.success.order_ref": "Référence de Commande",
+  "payment.success.track_order": "Suivre la Commande",
+  "payment.success.continue_shopping": "Continuer les Achats",
+  "payment.cancel.title": "Paiement Annulé",
+  "payment.cancel.description": "Votre transaction n'a pas été complétée et votre carte n'a pas été débitée. Vos articles sont toujours conservés dans votre panier.",
+  "payment.cancel.try_again": "Réessayer",
+  "payment.cancel.return_cart": "Retourner au Panier"
 }

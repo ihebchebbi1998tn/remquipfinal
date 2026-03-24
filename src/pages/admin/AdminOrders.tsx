@@ -440,10 +440,39 @@ export default function AdminOrders() {
               <h3 className="font-display font-bold text-sm uppercase mb-3">Customer</h3>
               <p className="text-sm font-medium">{selectedOrder.customer_email}</p>
             </div>
-            <div className="dashboard-card">
-              <h3 className="font-display font-bold text-sm uppercase mb-3 flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Payment</h3>
-              <p className="text-sm">{selectedOrder.payment_method || "N/A"}</p>
-              <span className={statusStyles[selectedOrder.payment_status]}>{selectedOrder.payment_status}</span>
+            <div className="dashboard-card flex flex-col gap-2">
+              <h3 className="font-display font-bold text-sm uppercase mb-1 flex items-center gap-1.5">
+                <CreditCard className="h-3.5 w-3.5" /> Payment
+              </h3>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground w-24">Method:</span>
+                <p className="text-sm font-medium uppercase tracking-wider">{selectedOrder.payment_method || "N/A"}</p>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground w-24">Status:</span>
+                <span className={statusStyles[selectedOrder.payment_status]}>{selectedOrder.payment_status}</span>
+              </div>
+              
+              {selectedOrder.stripe_payment_intent_id && (
+                <div className="flex items-center justify-between mt-2 pt-3 border-t border-border/50">
+                  <span className="text-xs text-muted-foreground">Stripe ID:</span>
+                  <a href={`https://dashboard.stripe.com/test/payments/${selectedOrder.stripe_payment_intent_id}`}
+                     target="_blank" rel="noopener noreferrer" 
+                     className="text-[10px] text-accent hover:underline font-mono truncate max-w-[150px]"
+                     title={selectedOrder.stripe_payment_intent_id}>
+                    {selectedOrder.stripe_payment_intent_id}
+                  </a>
+                </div>
+              )}
+              
+              {selectedOrder.paid_at && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Paid At:</span>
+                  <span className="text-xs font-medium">{new Date(selectedOrder.paid_at).toLocaleString()}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

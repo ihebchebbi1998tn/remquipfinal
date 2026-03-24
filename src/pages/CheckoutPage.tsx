@@ -4,9 +4,13 @@ import { CreditCard, Building, Landmark, Loader2, ChevronRight, MapPin, ShieldCh
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/contexts/CartContext";
-import { useCreateOrder } from "@/hooks/useApi";
+import { useCreateOrder, useCreateStripeSession } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+import { loadStripe } from "@stripe/stripe-js";
+
+// Initialize Stripe with the publishable key from your settings
+const stripePromise = loadStripe('pk_test_51TEVPS2Rz0p3EiIyZbOjZ3dUdtoQUt0adBMXcntWYZzcG0A7vGdGE5KNCxOoH3oquGN1ClqUTltPMmCAY0e4InWn00eVZeWtdK');
 
 export default function CheckoutPage() {
   const { t } = useLanguage();
@@ -43,6 +47,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("stripe");
   
   const createOrderMutation = useCreateOrder();
+  const createStripeSessionMutation = useCreateStripeSession();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -93,8 +98,38 @@ export default function CheckoutPage() {
         notes: billingData.taxId ? `Tax ID: ${billingData.taxId}` : undefined,
       };
 
-      await createOrderMutation.mutateAsync(orderData);
+      // 1. Create order in the backend (status=pending)
+      const newOrder = await createOrderMutation.mutateAsync(orderData);
+      const orderId = newOrder?.id || newOrder?.data?.id;
+
+      if (!orderId) {
+        throw new Error("Order ID not returned");
+      }
       
+      // 2. If payment method is Stripe, create a checkout session
+      if (paymentMethod === "stripe") {
+        toast({
+          title: "Order Processed",
+          description: "Redirecting to secure payment gateway...",
+        });
+
+        const sessionResponse = await createStripeSessionMutation.mutateAsync(orderId);
+        const { sessionId } = sessionResponse.data || sessionResponse;
+        
+        if (sessionId) {
+          const stripe = await stripePromise;
+          if (stripe) {
+            const { error } = await stripe.redirectToCheckout({ sessionId });
+            if (error) {
+              console.error("Stripe routing error:", error);
+              throw new Error(error.message);
+            }
+          }
+        }
+        return; // Early return to let redirect happen (keep cart intact)
+      }
+
+      // 3. For other payment methods (like invoice/transfer), clear cart and show confirmation
       toast({
         title: "Order Processed",
         description: "Your equipment logistics are being finalized.",
@@ -102,10 +137,11 @@ export default function CheckoutPage() {
       
       clearCart();
       navigate("/order-confirmed");
-    } catch {
+    } catch (error) {
+      console.error("Checkout error:", error);
       toast({
         title: "Logistics Error",
-        description: "Failed to initialize order sequence. Please retry.",
+        description: error instanceof Error ? error.message : "Failed to initialize order sequence. Please retry.",
         variant: "destructive",
       });
     } finally {

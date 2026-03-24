@@ -774,6 +774,37 @@ function remquip_mail_from_address($conn) {
     return null;
 }
 
+function remquip_notify_order_paid_to_customer($conn, $orderId) {
+    if (!remquip_setting_is_on($conn, 'notif_order_status')) {
+        return;
+    }
+    $row = $conn->fetch(
+        'SELECT o.order_number, o.total, c.email FROM remquip_orders o
+         INNER JOIN remquip_customers c ON c.id = o.customer_id AND c.deleted_at IS NULL
+         WHERE o.id = :id AND o.deleted_at IS NULL',
+        ['id' => $orderId]
+    );
+    if (!$row || empty($row['email'])) {
+        return;
+    }
+    $cust = filter_var($row['email'], FILTER_VALIDATE_EMAIL);
+    if (!$cust) {
+        return;
+    }
+    
+    $num = $row['order_number'];
+    
+    // Add currency safely
+    $currency = defined('CURRENCY_CODE') ? mb_strtoupper((string)CURRENCY_CODE) : 'CAD';
+    $totalString = number_format((float)$row['total'], 2) . ' ' . $currency;
+
+    $tpl = remquip_tpl_order_paid_customer([
+        'order_number' => $num,
+        'total' => $totalString,
+    ]);
+    remquip_send_customer_mail($conn, $cust, 'REMQUIP: Payment confirmed for order ' . $num, $tpl['html'], $tpl['text']);
+}
+
 /**
  * @param object $conn
  * @return string|null "Name <email@domain>"

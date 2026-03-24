@@ -274,4 +274,10 @@ export const API_ENDPOINTS = {
     /** PATCH - Update cart status (admin) */
     UPDATE: '/carts/:id',
   },
+  
+  // ==================== STRIPE ENDPOINTS ====================
+  STRIPE: {
+    /** POST - Create Stripe Checkout Session */
+    CREATE_SESSION: '/stripe/create-checkout-session',
+  },
 } as const;

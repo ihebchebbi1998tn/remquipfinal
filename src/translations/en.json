@@ -321,5 +321,14 @@
   "chat.faq.warranty_q": "Do your parts come with a warranty?",
   "chat.faq.warranty_a": "All our parts are quality-tested and come with a comprehensive warranty meeting or exceeding OEM standards.",
   "legal.about.title": "About REMQUIP",
-  "legal.about.content": "REMQUIP is Canada's next-generation heavy-duty parts distributor, based in Quebec City and serving fleets, distributors, and OEMs nationwide since 2025.\n\nWe specialize in heavy-duty brakes and air suspension components for commercial trucks and trailers. Our commitment to quality, competitive pricing, and fast shipping sets us apart.\n\nWith 15+ years of combined industry experience, our team understands the demands of the heavy-duty transportation industry and delivers the parts you need, when you need them."
+  "legal.about.content": "REMQUIP is Canada's next-generation heavy-duty parts distributor, based in Quebec City and serving fleets, distributors, and OEMs nationwide since 2025.\n\nWe specialize in heavy-duty brakes and air suspension components for commercial trucks and trailers. Our commitment to quality, competitive pricing, and fast shipping sets us apart.\n\nWith 15+ years of combined industry experience, our team understands the demands of the heavy-duty transportation industry and delivers the parts you need, when you need them.",
+  "payment.success.title": "Payment Successful",
+  "payment.success.description": "Your transaction has been securely processed. We are now preparing your equipment for dispatch.",
+  "payment.success.order_ref": "Order Reference",
+  "payment.success.track_order": "Track Order",
+  "payment.success.continue_shopping": "Continue Shopping",
+  "payment.cancel.title": "Payment Cancelled",
+  "payment.cancel.description": "Your transaction was not completed and your card has not been charged. Your items are still saved in your cart.",
+  "payment.cancel.try_again": "Try Again",
+  "payment.cancel.return_cart": "Return to Cart"
 }

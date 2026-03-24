@@ -533,6 +533,12 @@ export function useAddOrderNote(orderId: string) {
   );
 }
 
+// ==================== STRIPE HOOKS ====================
+
+export function useCreateStripeSession() {
+  return useApiMutation((orderId: string) => api.createStripeCheckoutSession(orderId));
+}
+
 // ==================== DISCOUNT HOOKS ====================
 
 export function useDiscounts(page: number = 1, limit: number = 10) {

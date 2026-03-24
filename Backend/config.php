@@ -127,6 +127,11 @@ define('FEATURE_MULTI_CURRENCY', false);
 // Development mode (set true locally to expose DB errors in API responses)
 define('DEBUG_MODE', false);
 
+// Stripe Payment Gateway (TEST keys — replace before production)
+define('STRIPE_SECRET_KEY',      'sk_test_51TEVPS2Rz0p3EiIySnjzWG7Pcb1MGiiHTogMWBdh5iHA55YXgb851ndfMyRZTmkcCEiEKpdFR6NEVkdTIyE9R7Z500Z5Wmt7La');
+define('STRIPE_PUBLISHABLE_KEY', 'pk_test_51TEVPS2Rz0p3EiIyZbOjZ3dUdtoQUt0adBMXcntWYZzcG0A7vGdGE5KNCxOoH3oquGN1ClqUTltPMmCAY0e4InWn00eVZeWtdK');
+define('STRIPE_WEBHOOK_SECRET',  'whsec_nTdDxe2a9GwiDyUqh8vssAdNpmpKtxmW');  // Set from Stripe Dashboard → Webhooks
+
 // Ensure upload directory exists
 if (!is_dir(UPLOAD_DIR)) {
     @mkdir(UPLOAD_DIR, 0755, true);
