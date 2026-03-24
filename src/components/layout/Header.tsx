@@ -142,7 +142,7 @@ export default function Header() {
           headerEditLink={headerEditLink}
         />
 
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-20">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-50">
           <div className="flex items-center justify-between gap-4 lg:gap-8 min-h-[72px]">
             
             {/* 1. Brand Logo */}
@@ -162,7 +162,7 @@ export default function Header() {
             </div>
 
             {/* 2. Primary Desktop Navigation */}
-            <nav className="hidden lg:flex flex-1 justify-center gap-4 xl:gap-8 items-center h-full" aria-label="Main">
+            <nav className="hidden lg:flex flex-1 justify-center gap-4 xl:gap-8 items-center h-full relative z-10" aria-label="Main">
               <Link to="/products" className={navLinkClass("/products")}>
                 {t("nav.products")}
                 <span className={`absolute bottom-0 left-0 w-full h-[3px] rounded-t-full bg-accent transform origin-bottom transition-transform duration-300 ${path.startsWith("/products") ? "scale-y-100" : "scale-y-0 group-hover:scale-y-100"}`} />
@@ -178,7 +178,7 @@ export default function Header() {
             </nav>
 
             {/* 3. Search & Utilities (Right Side) */}
-            <div className="flex flex-1 lg:flex-none shrink-0 justify-end gap-3 sm:gap-4 md:gap-5 lg:gap-6 items-center">
+            <div className="flex flex-1 lg:flex-none shrink-0 justify-end gap-3 sm:gap-4 md:gap-5 lg:gap-6 items-center relative z-20">
               {/* Search - Hidden on small mobile, shown as pill on md+ */}
               <div className="hidden md:block flex-1 min-w-0 md:w-56 lg:w-48 xl:w-72">
                 <HeaderSearch />

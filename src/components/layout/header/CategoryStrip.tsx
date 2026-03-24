@@ -9,7 +9,7 @@ export function CategoryStrip() {
   const path = location.pathname;
 
   return (
-    <nav className="hidden md:block bg-background/95 backdrop-blur-md border-b border-border shadow-sm relative z-40 transition-colors" aria-label={t("footer.categories")}>
+    <nav className="hidden md:block bg-background/95 backdrop-blur-md border-b border-border shadow-sm relative z-30 transition-colors" aria-label={t("footer.categories")}>
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-end justify-start gap-2 overflow-x-auto py-0 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categories.map((cat) => {
