@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Shield, Truck, Wrench, CheckCircle, ArrowRight, Package, Phone,
-  Users, BarChart3, ShoppingCart, Star, CheckCircle2,
+  Users, BarChart3, ShoppingCart, Star, CheckCircle2, ShieldCheck, PackageCheck,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -28,16 +28,13 @@ function parseJson<T>(raw: string | null | undefined, fallback: T): T {
 }
 
 const DEFAULT_VALUE_PROPS = [
-  { icon: "Shield", text: "Certified & Tested" },
-  { icon: "Truck", text: "Fast Delivery" },
-  { icon: "Wrench", text: "Expert Support" },
-  { icon: "CheckCircle", text: "In Stock" },
+  { icon: "ShieldCheck", text: "home.value_prop.certified" },
+  { icon: "Truck", text: "home.value_prop.shipping" },
+  { icon: "Wrench", text: "home.value_prop.support" },
+  { icon: "PackageCheck", text: "home.value_prop.stock" },
 ];
 
-const DEFAULT_HERO_SECONDARY = [
-  { icon: "Truck", text: "Fast fulfillment on fleet orders" },
-  { icon: "Package", text: "Bulk pricing for authorized partners" },
-];
+const DEFAULT_HERO_SECONDARY = [];
 
 const DEFAULT_TRUST = {
   headline: "Trusted by operators in mining, construction & transportation",
@@ -79,7 +76,7 @@ type SiteHeaderCms = {
 };
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
-  Shield, Truck, Wrench, CheckCircle, Package, Users, BarChart3,
+  Shield, Truck, Wrench, CheckCircle, Package, Users, BarChart3, ShieldCheck, PackageCheck,
 };
 
 type WhyCard = { icon?: string; title: string; desc: string; role?: string };
@@ -248,12 +245,13 @@ export default function HomePage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mt-16 md:mt-20 pt-16 md:pt-20 border-t border-border/40">
                 {valuePropsParsed.row.map(({ icon: iconKey, text }) => {
                   const Icon = ICON_MAP[iconKey] ?? CheckCircle;
+                  const label = text.includes(".") ? t(text) : text;
                   return (
-                    <div key={text} className="flex flex-col items-center justify-center gap-4 p-6 rounded-2xl bg-muted/20 border border-border/30 hover:bg-muted/40 transition-colors shadow-sm">
-                      <div className="p-4 rounded-full bg-accent/10 text-accent">
-                        <Icon className="h-6 w-6" strokeWidth={2} />
+                    <div key={text} className="flex flex-col items-center justify-center gap-5 p-8 rounded-3xl bg-muted/10 border border-border/40 hover:bg-muted/20 hover:border-accent/30 transition-all duration-300 shadow-sm group/prop">
+                      <div className="p-5 rounded-2xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 group-hover:scale-110 transition-transform duration-500">
+                        <Icon className="h-7 w-7" strokeWidth={2.5} />
                       </div>
-                      <span className="landing-value-prop-text text-foreground font-display font-bold uppercase tracking-widest text-[11px] text-center">{text}</span>
+                      <span className="landing-value-prop-text text-foreground font-display font-black uppercase tracking-[0.2em] text-[10px] sm:text-xs text-center leading-tight">{label}</span>
                     </div>
                   );
                 })}

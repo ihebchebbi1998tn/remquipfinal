@@ -153,13 +153,7 @@ export default function LandingHero({
     setIndex((i) => (i + dir + slides.length) % slides.length);
   };
 
-  const secondaryRow =
-    heroSecondary.length > 0
-      ? heroSecondary
-      : [
-          { icon: "Truck", text: "Fast fulfillment on fleet orders" },
-          { icon: "Package", text: "Bulk pricing for authorized partners" },
-        ];
+  const secondaryRow = heroSecondary;
 
   if (layout === "spotlight") {
     const bg = slides[0];
