@@ -4,7 +4,9 @@
       "Bash(grep -E \"\\\\.\\(json|js|ts|env|php\\)$\")",
       "Bash(ls -la /c/Users/ihebc/OneDrive/Desktop/freelance/remquipfinal/.env*)",
       "Bash(find /c/Users/ihebc/OneDrive/Desktop/freelance/remquipfinal -name *.php -type f)",
-      "Bash(find /c/Users/ihebc/OneDrive/Desktop/freelance/remquipfinal/backend -name *email* -o -name *mail* -o -name *smtp*)"
+      "Bash(find /c/Users/ihebc/OneDrive/Desktop/freelance/remquipfinal/backend -name *email* -o -name *mail* -o -name *smtp*)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -r \"exit\\\\|die\" Backend/*.php)"
     ]
   }
 }

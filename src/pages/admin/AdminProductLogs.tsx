@@ -1,105 +1,100 @@
 import React, { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight, Package, Search, Filter, Calendar, ChevronDown, ChevronUp, TrendingUp, TrendingDown, RotateCcw } from "lucide-react";
-import { products } from "@/config/products";
+import {
+  ArrowLeft, ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight,
+  Search, Calendar, ChevronDown, ChevronUp, TrendingUp, TrendingDown, RotateCcw, Loader2,
+} from "lucide-react";
+import { useProduct, useProductHistory } from "@/hooks/useApi";
 import { AdminPageError } from "@/components/admin/AdminPageState";
 
 type LogType = "in" | "out" | "transfer" | "adjustment" | "return";
 
-interface StockLog {
-  id: string;
-  date: string;
-  type: LogType;
-  quantity: number;
-  reference: string;
-  warehouse: string;
-  note: string;
-  user: string;
-  balanceAfter: number;
-}
-
 const logTypeConfig: Record<LogType, { label: string; icon: React.ElementType; className: string }> = {
-  in: { label: "Stock In", icon: ArrowDownToLine, className: "text-green-600 bg-green-500/10" },
-  out: { label: "Stock Out", icon: ArrowUpFromLine, className: "text-red-500 bg-red-500/10" },
-  transfer: { label: "Transfer", icon: ArrowLeftRight, className: "text-blue-500 bg-blue-500/10" },
-  adjustment: { label: "Adjustment", icon: RotateCcw, className: "text-amber-500 bg-amber-500/10" },
-  return: { label: "Return", icon: RotateCcw, className: "text-purple-500 bg-purple-500/10" },
+  in:         { label: "Stock In",   icon: ArrowDownToLine,  className: "text-green-600 bg-green-500/10" },
+  out:        { label: "Stock Out",  icon: ArrowUpFromLine,  className: "text-red-500 bg-red-500/10" },
+  transfer:   { label: "Transfer",   icon: ArrowLeftRight,   className: "text-blue-500 bg-blue-500/10" },
+  adjustment: { label: "Adjustment", icon: RotateCcw,        className: "text-amber-500 bg-amber-500/10" },
+  return:     { label: "Return",     icon: RotateCcw,        className: "text-purple-500 bg-purple-500/10" },
 };
 
-function generateLogs(productId: string, currentStock: number): StockLog[] {
-  const refs = [
-    { type: "in" as LogType, ref: "PO-2024-0891", note: "Supplier shipment received", user: "Marc Dupont" },
-    { type: "out" as LogType, ref: "ORD-7823", note: "Customer order fulfilled", user: "System" },
-    { type: "out" as LogType, ref: "ORD-7801", note: "Customer order fulfilled", user: "System" },
-    { type: "in" as LogType, ref: "PO-2024-0876", note: "Restocking from manufacturer", user: "Marc Dupont" },
-    { type: "transfer" as LogType, ref: "TRF-0234", note: "Transfer QC-01 → ON-01", user: "Julie Martin" },
-    { type: "out" as LogType, ref: "ORD-7756", note: "Wholesale order shipped", user: "System" },
-    { type: "adjustment" as LogType, ref: "ADJ-0112", note: "Physical count correction", user: "Marc Dupont" },
-    { type: "return" as LogType, ref: "RET-0089", note: "Customer return - defective", user: "Julie Martin" },
-    { type: "in" as LogType, ref: "PO-2024-0845", note: "Bulk supplier delivery", user: "Marc Dupont" },
-    { type: "out" as LogType, ref: "ORD-7702", note: "Customer order fulfilled", user: "System" },
-    { type: "out" as LogType, ref: "ORD-7688", note: "B2B order dispatched", user: "System" },
-    { type: "transfer" as LogType, ref: "TRF-0221", note: "Transfer QC-02 → QC-01", user: "Julie Martin" },
-    { type: "in" as LogType, ref: "PO-2024-0812", note: "Scheduled restock", user: "Marc Dupont" },
-    { type: "out" as LogType, ref: "ORD-7654", note: "Customer order fulfilled", user: "System" },
-    { type: "adjustment" as LogType, ref: "ADJ-0098", note: "Damaged goods write-off", user: "Marc Dupont" },
-  ];
-
-  let balance = currentStock;
-  const logs: StockLog[] = [];
-  const warehouses = ["QC-01", "QC-02", "ON-01"];
-  const baseDate = new Date(2025, 2, 15);
-
-  for (let i = 0; i < refs.length; i++) {
-    const entry = refs[i];
-    const qty = entry.type === "adjustment" ? (i % 2 === 0 ? -3 : 5) :
-      entry.type === "return" ? Math.floor(Math.random() * 5) + 1 :
-      Math.floor(Math.random() * 30) + 5;
-
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() - i * 2 - Math.floor(Math.random() * 3));
-
-    logs.push({
-      id: `log-${productId}-${i}`,
-      date: d.toISOString(),
-      type: entry.type,
-      quantity: entry.type === "out" ? -qty : qty,
-      reference: entry.ref,
-      warehouse: warehouses[i % 3],
-      note: entry.note,
-      user: entry.user,
-      balanceAfter: balance,
-    });
-
-    balance -= (entry.type === "out" ? -qty : qty);
-  }
-
-  return logs;
+function resolveLogType(action: string, quantityChange: number): LogType {
+  const a = (action || "").toLowerCase();
+  if (a === "in" || a === "stock_in" || a === "receive") return "in";
+  if (a === "out" || a === "stock_out" || a === "ship") return "out";
+  if (a === "transfer") return "transfer";
+  if (a === "return") return "return";
+  // For "adjustment" or unknown: infer direction from quantity
+  if (a === "adjustment") return "adjustment";
+  // Fallback by quantity sign
+  if (quantityChange > 0) return "in";
+  if (quantityChange < 0) return "out";
+  return "adjustment";
 }
 
 export default function AdminProductLogs() {
-  const { productId } = useParams();
-  const product = products.find((p) => p.id === productId);
+  const { productId } = useParams<{ productId: string }>();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
-  const logs = useMemo(() => product ? generateLogs(product.id, product.stock) : [], [product]);
+  const { data: productData, isLoading: productLoading, isError: productError } = useProduct(productId!);
+  const { data: logsData, isLoading: logsLoading, isError: logsError } = useProductHistory(productId!);
+
+  const product = productData?.data;
+  const rawLogs = logsData?.data ?? [];
+
+  const logs = useMemo(() =>
+    rawLogs.map((l: any) => ({
+      id: String(l.id),
+      date: l.created_at,
+      type: resolveLogType(l.action, Number(l.quantity_change)),
+      quantity: Number(l.quantity_change),
+      reason: l.reason || "",
+      oldQuantity: Number(l.old_quantity),
+      newQuantity: Number(l.new_quantity),
+      user: l.user_name || "System",
+      action: l.action,
+    })),
+    [rawLogs]
+  );
 
   const filtered = useMemo(() =>
     logs.filter((l) => {
-      const matchSearch = !search || l.reference.toLowerCase().includes(search.toLowerCase()) || l.note.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = !search || l.reason.toLowerCase().includes(search.toLowerCase()) || l.user.toLowerCase().includes(search.toLowerCase());
       const matchType = typeFilter === "all" || l.type === typeFilter;
       return matchSearch && matchType;
-    }), [logs, search, typeFilter]);
+    }),
+    [logs, search, typeFilter]
+  );
 
-  const totalIn = logs.filter((l) => l.quantity > 0).reduce((s, l) => s + l.quantity, 0);
+  const totalIn  = logs.filter((l) => l.quantity > 0).reduce((s, l) => s + l.quantity, 0);
   const totalOut = logs.filter((l) => l.quantity < 0).reduce((s, l) => s + Math.abs(l.quantity), 0);
 
-  if (!product) {
+  if (productLoading || logsLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (productError || !product) {
     return (
       <AdminPageError
         message="Product not found."
+        extra={
+          <Link to="/admin/products" className="text-accent hover:underline text-sm">
+            ← Back to Products
+          </Link>
+        }
+      />
+    );
+  }
+
+  if (logsError) {
+    return (
+      <AdminPageError
+        message="Failed to load inventory logs."
         extra={
           <Link to="/admin/products" className="text-accent hover:underline text-sm">
             ← Back to Products
@@ -120,10 +115,14 @@ export default function AdminProductLogs() {
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <img src={product.image} alt="" className="w-12 h-12 rounded-sm object-cover bg-secondary flex-shrink-0" />
+          {product.image && (
+            <img src={product.image} alt="" className="w-12 h-12 rounded-sm object-cover bg-secondary flex-shrink-0" />
+          )}
           <div>
             <h2 className="font-display font-bold text-lg md:text-xl">{product.name}</h2>
-            <p className="text-xs text-muted-foreground font-mono">{product.sku} · Current Stock: <span className="font-bold text-foreground">{product.stock}</span></p>
+            <p className="text-xs text-muted-foreground font-mono">
+              {product.sku} · Current Stock: <span className="font-bold text-foreground">{product.stock_quantity ?? 0}</span>
+            </p>
           </div>
         </div>
       </div>
@@ -164,7 +163,7 @@ export default function AdminProductLogs() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search reference or note..."
+              placeholder="Search reason or user..."
               className="w-full pl-10 pr-4 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
@@ -207,19 +206,21 @@ export default function AdminProductLogs() {
                         {log.quantity > 0 ? "+" : ""}{log.quantity}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{log.reference} · {new Date(log.date).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(log.date).toLocaleDateString()} · {log.user}
+                    </p>
                   </div>
                   {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 </button>
                 {isExpanded && (
                   <div className="px-3 pb-3 border-t border-border pt-3 bg-secondary/30 space-y-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Warehouse</span>
-                      <span>{log.warehouse}</span>
+                      <span className="text-muted-foreground">Stock Before</span>
+                      <span>{log.oldQuantity}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Balance After</span>
-                      <span className="font-medium">{log.balanceAfter}</span>
+                      <span className="text-muted-foreground">Stock After</span>
+                      <span className="font-medium">{log.newQuantity}</span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">User</span>
@@ -229,9 +230,11 @@ export default function AdminProductLogs() {
                       <span className="text-muted-foreground">Time</span>
                       <span>{new Date(log.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                     </div>
-                    <div className="pt-1.5 border-t border-border mt-1.5">
-                      <p className="text-xs text-muted-foreground">{log.note}</p>
-                    </div>
+                    {log.reason && (
+                      <div className="pt-1.5 border-t border-border mt-1.5">
+                        <p className="text-xs text-muted-foreground">{log.reason}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -246,11 +249,10 @@ export default function AdminProductLogs() {
               <tr className="table-header">
                 <th className="text-left px-3 py-2">Date</th>
                 <th className="text-left px-3 py-2">Type</th>
-                <th className="text-left px-3 py-2">Reference</th>
-                <th className="text-right px-3 py-2">Quantity</th>
-                <th className="text-right px-3 py-2">Balance</th>
-                <th className="text-left px-3 py-2">Warehouse</th>
-                <th className="text-left px-3 py-2">Note</th>
+                <th className="text-right px-3 py-2">Change</th>
+                <th className="text-right px-3 py-2">Before</th>
+                <th className="text-right px-3 py-2">After</th>
+                <th className="text-left px-3 py-2">Reason</th>
                 <th className="text-left px-3 py-2">User</th>
               </tr>
             </thead>
@@ -271,13 +273,12 @@ export default function AdminProductLogs() {
                         <Icon className="h-3 w-3" /> {config.label}
                       </span>
                     </td>
-                    <td className="px-3 py-3 font-mono text-xs">{log.reference}</td>
                     <td className={`px-3 py-3 text-right font-bold ${log.quantity > 0 ? "text-green-600" : "text-red-500"}`}>
                       {log.quantity > 0 ? "+" : ""}{log.quantity}
                     </td>
-                    <td className="px-3 py-3 text-right font-medium">{log.balanceAfter}</td>
-                    <td className="px-3 py-3">{log.warehouse}</td>
-                    <td className="px-3 py-3 text-muted-foreground max-w-[200px] truncate">{log.note}</td>
+                    <td className="px-3 py-3 text-right text-muted-foreground">{log.oldQuantity}</td>
+                    <td className="px-3 py-3 text-right font-medium">{log.newQuantity}</td>
+                    <td className="px-3 py-3 text-muted-foreground max-w-[200px] truncate">{log.reason || "—"}</td>
                     <td className="px-3 py-3 text-muted-foreground">{log.user}</td>
                   </tr>
                 );
