@@ -26,25 +26,40 @@ final class RemquipSmtp
      * @param string $subject UTF-8 subject
      * @param string $htmlBody HTML fragment or full document
      * @param string|null $plainBody Optional plain text (multipart/alternative)
+     * @param string $html HTML fragment or full document
+     * @param string|null $plain Optional plain text (multipart/alternative)
      * @param string|null $replyTo Optional Reply-To address
+     * @param array|null $config Optional array of configuration settings (host, port, encryption, user, pass)
      */
     public static function send(
         string $from,
         string $to,
         string $subject,
-        string $htmlBody,
-        ?string $plainBody = null,
-        ?string $replyTo = null
+        string $html,
+        ?string $plain = null,
+        ?string $replyTo = null,
+        ?array $config = null
     ): bool {
-        if (!self::isConfigured()) {
-            Logger::warning('RemquipSmtp: not configured', []);
+        // Check if configuration is provided via $config or global constants
+        $host = isset($config['host']) ? $config['host'] : (defined('SMTP_HOST') ? SMTP_HOST : '');
+        $port = (int)(isset($config['port']) ? $config['port'] : (defined('SMTP_PORT') ? SMTP_PORT : 465));
+        $encryption = isset($config['encryption']) ? $config['encryption'] : (defined('SMTP_ENCRYPTION') ? SMTP_ENCRYPTION : 'ssl');
+        $user = isset($config['user']) ? $config['user'] : (defined('SMTP_USER') ? SMTP_USER : '');
+        $pass = isset($config['pass']) ? $config['pass'] : (defined('SMTP_PASS') ? SMTP_PASS : '');
+
+        // If user/pass are still empty, and no config was provided, check global config
+        if (($user === '' || $pass === '') && $config === null) {
+            if (!self::isConfigured()) {
+                Logger::warning('RemquipSmtp: not configured', []);
+                return false;
+            }
+        } elseif ($user === '' || $pass === '') {
+            // If config was provided but user/pass are empty in it
+            Logger::warning('RemquipSmtp: user or pass not provided in config', []);
             return false;
         }
-        $host = SMTP_HOST;
-        $port = (int)SMTP_PORT;
-        $enc = defined('SMTP_ENCRYPTION') ? strtolower((string)SMTP_ENCRYPTION) : 'tls';
-        $user = SMTP_USER;
-        $pass = SMTP_PASS;
+
+        $enc = strtolower($encryption);
 
         $smtp = new self();
         try {
@@ -58,7 +73,7 @@ final class RemquipSmtp
             $smtp->authLogin($user, $pass);
             $smtp->mailFrom(self::extractAddr($from));
             $smtp->rcptTo($to);
-            $smtp->sendData($from, $to, $subject, $htmlBody, $plainBody, $replyTo);
+            $smtp->sendData($from, $to, $subject, $html, $plain, $replyTo);
             $smtp->cmd("QUIT\r\n", [221]);
         } catch (Throwable $e) {
             Logger::error('RemquipSmtp send failed', ['error' => $e->getMessage()]);

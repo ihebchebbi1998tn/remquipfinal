@@ -774,6 +774,17 @@ function remquip_mail_from_address($conn) {
     return null;
 }
 
+function remquip_get_smtp_config($conn) {
+    return [
+        'host' => settings_fetch_value($conn, 'smtp_host', defined('SMTP_HOST') ? SMTP_HOST : ''),
+        'port' => (int)settings_fetch_value($conn, 'smtp_port', defined('SMTP_PORT') ? (string)SMTP_PORT : '465'),
+        'user' => settings_fetch_value($conn, 'smtp_user', defined('SMTP_USER') ? SMTP_USER : ''),
+        'pass' => settings_fetch_value($conn, 'smtp_pass', defined('SMTP_PASS') ? SMTP_PASS : ''),
+        'encryption' => settings_fetch_value($conn, 'smtp_encryption', defined('SMTP_ENCRYPTION') ? SMTP_ENCRYPTION : 'ssl'),
+        'from' => remquip_mail_from_address($conn)
+    ];
+}
+
 function remquip_notify_order_paid_to_customer($conn, $orderId) {
     if (!remquip_setting_is_on($conn, 'notif_order_status')) {
         return;
@@ -837,12 +848,9 @@ function remquip_send_admin_mail($conn, $to, $subject, $html, $plain = null) {
         return false;
     }
     require_once __DIR__ . '/lib/RemquipSmtp.php';
-    if (!RemquipSmtp::isConfigured()) {
-        Logger::warning('remquip_mail_skip', ['reason' => 'smtp_not_configured']);
-        return false;
-    }
+    $config = remquip_get_smtp_config($conn);
     $reply = remquip_mail_from_address($conn);
-    $ok = RemquipSmtp::send($from, $to, $subject, $html, $plain, $reply);
+    $ok = RemquipSmtp::send($from, $to, $subject, $html, $plain, $reply, $config);
     Logger::info('remquip_admin_mail', ['to' => $to, 'subject' => $subject, 'ok' => $ok]);
 
     return $ok;
@@ -865,11 +873,9 @@ function remquip_send_customer_mail($conn, $to, $subject, $html, $plain = null) 
         return false;
     }
     require_once __DIR__ . '/lib/RemquipSmtp.php';
-    if (!RemquipSmtp::isConfigured()) {
-        return false;
-    }
+    $config = remquip_get_smtp_config($conn);
     $reply = remquip_mail_from_address($conn);
-    $ok = RemquipSmtp::send($from, $to, $subject, $html, $plain, $reply);
+    $ok = RemquipSmtp::send($from, $to, $subject, $html, $plain, $reply, $config);
     Logger::info('remquip_customer_mail', ['to' => $to, 'subject' => $subject, 'ok' => $ok]);
 
     return $ok;

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Eye, Search, X, ChevronDown, ChevronUp, Package, Truck, CheckCircle, Clock, Printer, Download, Mail, ArrowLeft, MapPin, CreditCard, FileText, Loader2, AlertCircle } from "lucide-react";
 import { useOrders, useOrder, useApiMutation } from "@/hooks/useApi";
 import { api, Order, unwrapApiList, unwrapPagination } from "@/lib/api";
@@ -29,6 +30,9 @@ const statusIcons: Record<string, React.ElementType> = {
 const carriers = ["Purolator", "Canada Post", "UPS", "FedEx", "Day & Ross"];
 
 export default function AdminOrders() {
+  const { orderId } = useParams();
+  const navigate = useNavigate();
+
   // Backend sometimes returns numeric fields as strings.
   // Convert safely so `.toFixed()` never crashes.
   function toNumber(v: unknown): number {
@@ -166,7 +170,14 @@ export default function AdminOrders() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(orderId || null);
+
+  // Sync state if URL changes (e.g. searching/clicking new result)
+  useEffect(() => {
+    if (orderId) {
+      setSelectedOrderId(orderId);
+    }
+  }, [orderId]);
   const [newNote, setNewNote] = useState("");
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [showShipment, setShowShipment] = useState<string | null>(null);

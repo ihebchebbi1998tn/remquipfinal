@@ -84,10 +84,20 @@ function toNumber(v: unknown): number {
 }
 
 export default function AdminCustomers() {
+  const { customerId } = useParams();
+  const navigate = useNavigate();
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customerId || null);
+
+  // Sync state if URL changes (e.g. searching/clicking new result)
+  useEffect(() => {
+    if (customerId) {
+      setSelectedCustomerId(customerId);
+    }
+  }, [customerId]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [detailTab, setDetailTab] = useState<"activity" | "notes" | "tasks">("activity");

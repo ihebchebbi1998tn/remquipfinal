@@ -125,8 +125,10 @@ const App = () => (
                       <Route path="products/:productId/logs"  element={<PermissionGate permission="canManageProducts"><AdminProductLogs /></PermissionGate>} />
                       <Route path="inventory"      element={<PermissionGate permission="canManageInventory"><AdminInventory /></PermissionGate>} />
                       <Route path="orders"         element={<PermissionGate permission="canManageOrders"><AdminOrders /></PermissionGate>} />
+                      <Route path="orders/:orderId" element={<PermissionGate permission="canManageOrders"><AdminOrders /></PermissionGate>} />
                       <Route path="carts"          element={<PermissionGate permission="canManageOrders"><AdminCarts /></PermissionGate>} />
                       <Route path="customers"      element={<PermissionGate permission="canManageCustomers"><AdminCustomers /></PermissionGate>} />
+                      <Route path="customers/:customerId" element={<PermissionGate permission="canManageCustomers"><AdminCustomers /></PermissionGate>} />
                       <Route path="discounts"      element={<PermissionGate permission="canManageDiscounts"><AdminDiscounts /></PermissionGate>} />
                       <Route path="landing"        element={<PermissionGate permission="canManageCMS"><AdminLanding /></PermissionGate>} />
                       <Route path="cms"            element={<PermissionGate permission="canManageCMS"><AdminCMS /></PermissionGate>} />

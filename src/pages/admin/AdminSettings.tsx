@@ -258,6 +258,35 @@ export default function AdminSettings() {
               <input type="email" className="admin-input" placeholder="Uses contact email if empty" value={v("notif_from_email", "")} onChange={(e) => setK("notif_from_email", e.target.value)} />
             </div>
           </div>
+          
+          <div className="grid sm:grid-cols-2 gap-3 mb-5 border-t border-border pt-4">
+            <div>
+              <label className="admin-label">SMTP Host</label>
+              <input className="admin-input" placeholder="e.g. ssl0.ovh.net" value={v("smtp_host", "")} onChange={(e) => setK("smtp_host", e.target.value)} />
+            </div>
+            <div>
+              <label className="admin-label">SMTP Port</label>
+              <input className="admin-input" placeholder="465 or 587" value={v("smtp_port", "")} onChange={(e) => setK("smtp_port", e.target.value)} />
+            </div>
+            <div>
+              <label className="admin-label">SMTP User</label>
+              <input className="admin-input" value={v("smtp_user", "")} onChange={(e) => setK("smtp_user", e.target.value)} />
+            </div>
+            <div>
+              <label className="admin-label">SMTP Password</label>
+              <input type="password" title="SMTP Password" name="smtp_pass" id="smtp_pass" className="admin-input" value={v("smtp_pass", "")} onChange={(e) => setK("smtp_pass", e.target.value)} />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Defaults to "Dadouhibou2025" if empty.
+              </p>
+            </div>
+            <div>
+              <label className="admin-label">Encryption</label>
+              <select className="admin-input" value={v("smtp_encryption", "ssl")} onChange={(e) => setK("smtp_encryption", e.target.value)}>
+                <option value="ssl">SSL (Port 465)</option>
+                <option value="tls">TLS/STARTTLS (Port 587)</option>
+              </select>
+            </div>
+          </div>
           <div className="space-y-0.5">
             {[
               { key: "notif_new_order", label: "New order confirmation" },
@@ -276,7 +305,7 @@ export default function AdminSettings() {
               </div>
             ))}
           </div>
-          <SaveButton section="notif" keys={["notif_recipient_email", "notif_from_email", "notif_new_order", "notif_order_shipped", "notif_order_status", "notif_low_stock", "notif_new_customer", "notif_weekly_summary"]} />
+          <SaveButton section="notif" keys={["notif_recipient_email", "notif_from_email", "notif_new_order", "notif_order_shipped", "notif_order_status", "notif_low_stock", "notif_new_customer", "notif_weekly_summary", "smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_encryption"]} />
         </SectionCard>
 
         {/* File Registry */}
