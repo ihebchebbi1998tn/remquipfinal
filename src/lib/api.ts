@@ -1353,8 +1353,10 @@ class APIService {
     return res as ApiResponse<Product[]>;
   }
 
-  async getProductHistory(productId: string): Promise<ApiResponse<InventoryLog[]>> {
-    return this.request('GET', API_ENDPOINTS.INVENTORY.HISTORY.replace(':productId', productId));
+  async getProductHistory(productId: string): Promise<PaginatedResponse<InventoryLog>> {
+    return normalizePaginated<InventoryLog>(
+      await this.request('GET', API_ENDPOINTS.INVENTORY.HISTORY.replace(':productId', productId))
+    );
   }
 
   async getProductStats(productId: string): Promise<ApiResponse<{

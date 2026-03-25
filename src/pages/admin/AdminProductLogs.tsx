@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useProduct, useProductHistory } from "@/hooks/useApi";
 import { AdminPageError } from "@/components/admin/AdminPageState";
+import { unwrapApiList, unwrapPagination, resolveUploadImageUrl } from "@/lib/api";
 
 type LogType = "in" | "out" | "transfer" | "adjustment" | "return";
 
@@ -41,7 +42,8 @@ export default function AdminProductLogs() {
   const { data: logsData, isLoading: logsLoading, isError: logsError } = useProductHistory(productId!);
 
   const product = productData?.data;
-  const rawLogs = logsData?.data ?? [];
+  const rawLogs = unwrapApiList<any>(logsData, []);
+  const pagination = unwrapPagination(logsData);
 
   const logs = useMemo(() =>
     rawLogs.map((l: any) => ({
@@ -116,9 +118,8 @@ export default function AdminProductLogs() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3">
           {(() => {
-            // Backend GET /products/:id returns `image` (string) or `images` array
             const imgSrc = (product as any).image || product.images?.[0]?.image_url;
-            return imgSrc ? <img src={imgSrc} alt="" className="w-12 h-12 rounded-sm object-cover bg-secondary flex-shrink-0" /> : null;
+            return imgSrc ? <img src={resolveUploadImageUrl(imgSrc)} alt="" className="w-12 h-12 rounded-sm object-cover bg-secondary flex-shrink-0" /> : null;
           })()}
           <div>
             <h2 className="font-display font-bold text-lg md:text-xl">{product.name}</h2>
@@ -292,8 +293,8 @@ export default function AdminProductLogs() {
           )}
         </div>
 
-        <div className="mt-4 text-xs text-muted-foreground">
-          Showing {filtered.length} of {logs.length} entries
+        <div className="mt-4 text-xs text-muted-foreground font-medium">
+          Showing {filtered.length} of {Number(pagination?.total ?? logs.length)} entries
         </div>
       </div>
     </div>
