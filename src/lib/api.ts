@@ -139,6 +139,8 @@ export interface Product {
   stock_quantity: number;
   is_featured: boolean;
   status: 'active' | 'draft' | 'archived';
+  image?: string;
+  image_url?: string;
   images?: ProductImage[];
   variants?: ProductVariant[];
   created_at: string;

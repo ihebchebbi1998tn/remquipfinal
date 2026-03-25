@@ -4,8 +4,10 @@ import { Search, Plus, Edit, Trash2, Copy, Eye, X, ChevronDown, ChevronUp, Clipb
 import { useProducts, useCategories, useApiMutation } from "@/hooks/useApi";
 import { api, unwrapApiList, unwrapPagination, Product, ProductCategory, resolveUploadImageUrl } from "@/lib/api";
 
-function productListThumb(product: Product): string | null {
-  const raw = product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url;
+function productListThumb(product: any): string | null {
+  const images = product.images || [];
+  const primary = images.find((img: any) => img.is_primary)?.image_url || images[0]?.image_url;
+  const raw = primary || product.image || product.image_url;
   if (!raw) return null;
   return resolveUploadImageUrl(String(raw));
 }
@@ -164,21 +166,21 @@ export default function AdminProducts() {
           <span className="text-sm font-semibold">{selectedProducts.size} selected</span>
           <button 
             onClick={() => handleBulkStatusChange("active")}
-            disabled={updateProductMutation.isLoading}
+            disabled={updateProductMutation.isPending}
             className="admin-btn--secondary text-xs py-1.5"
           >
             Set Active
           </button>
           <button 
             onClick={() => handleBulkStatusChange("draft")}
-            disabled={updateProductMutation.isLoading}
+            disabled={updateProductMutation.isPending}
             className="admin-btn--secondary text-xs py-1.5"
           >
             Set Draft
           </button>
           <button 
             onClick={handleBulkDelete}
-            disabled={deleteProductMutation.isLoading}
+            disabled={deleteProductMutation.isPending}
             className="admin-btn--danger text-xs py-1.5"
           >
             Delete
@@ -252,7 +254,7 @@ export default function AdminProducts() {
                       <Link to={`/admin/products/${product.id}`} className="admin-btn--primary flex-1 text-xs py-1.5"><Edit className="h-3 w-3" /> Edit</Link>
                       <button 
                         onClick={() => handleDeleteProduct(product.id)}
-                        disabled={deleteProductMutation.isLoading}
+                        disabled={deleteProductMutation.isPending}
                         className="admin-btn--danger px-3 py-1.5 text-xs"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -315,7 +317,7 @@ export default function AdminProducts() {
                         <button className="admin-btn--ghost p-1.5" title="Duplicate"><Copy className="h-4 w-4" /></button>
                         <button 
                           onClick={() => handleDeleteProduct(product.id)}
-                          disabled={deleteProductMutation.isLoading}
+                          disabled={deleteProductMutation.isPending}
                           className="admin-btn--danger p-1.5 border-0" 
                           title="Delete"
                         >
@@ -334,8 +336,8 @@ export default function AdminProducts() {
 
         {/* Pagination */}
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
-          <span className="text-xs font-medium">Showing {filtered.length} of {pagination?.total || products.length} products</span>
-          {pagination && pagination.pages > 1 && (
+          <span className="text-xs font-medium">Showing {filtered.length} of {Number(pagination?.total ?? products.length)} products</span>
+          {pagination && Number(pagination.pages ?? 0) > 1 && (
             <div className="flex gap-1">
               <button 
                 onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -346,8 +348,8 @@ export default function AdminProducts() {
               </button>
               <span className="px-3 py-1 bg-accent text-accent-foreground rounded-lg text-xs font-semibold">{page}</span>
               <button 
-                onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
-                disabled={page === pagination.pages}
+                onClick={() => setPage(p => Math.min(Number(pagination.pages), p + 1))}
+                disabled={page === Number(pagination.pages)}
                 className="admin-btn--secondary text-xs px-3 py-1"
               >
                 Next
