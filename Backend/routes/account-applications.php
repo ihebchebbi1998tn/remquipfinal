@@ -42,7 +42,8 @@ if ($method === 'POST' && !$id) {
             ResponseHelper::sendError('An application with this email is already pending review', 409);
         }
 
-        $appId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $uRow = $conn->fetch('SELECT UUID() AS u');
+        $appId = $uRow['u'] ?? bin2hex(random_bytes(16));
 
         // Distributor type
         $distributorType = null;
@@ -194,10 +195,11 @@ if ($method === 'GET' && (!$id || $id === 'list')) {
 
         $whereClause = implode(' AND ', $where);
 
-        $total = $conn->fetch(
+        $totalRow = $conn->fetch(
             "SELECT COUNT(*) as total FROM remquip_account_applications WHERE $whereClause",
             $params
-        )['total'] ?? 0;
+        );
+        $total = $totalRow['total'] ?? 0;
 
         $params['limit'] = $limit;
         $params['offset'] = $offset;
@@ -253,7 +255,8 @@ if (($method === 'PATCH' || $method === 'POST') && $id && $action === 'approve')
         }
 
         // Create customer record
-        $customerId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $uRow = $conn->fetch('SELECT UUID() AS u');
+        $customerId = $uRow['u'] ?? bin2hex(random_bytes(16));
         $conn->execute(
             "INSERT INTO remquip_customers
               (id, company_name, contact_person, contact_title, email, phone, customer_type,

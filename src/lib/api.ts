@@ -445,29 +445,43 @@ export function resolveUploadImageUrl(imageUrl: string): string {
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
 
   // 2. Skip local Vite assets or special schemes
-  // Vite assets often start with /src/, /assets/, or use @/ aliases.
-  // Data URLs and blob URLs should also be returned as-is.
   if (
     imageUrl.startsWith("data:") ||
     imageUrl.startsWith("blob:") ||
     imageUrl.startsWith("/src/") ||
     imageUrl.startsWith("/assets/") ||
     imageUrl.startsWith("@/") ||
-    // Check for common Vite-hashed asset patterns like -[hash].
     /\.[a-f0-9]{8}\./.test(imageUrl)
   ) {
     return imageUrl;
   }
 
   // 3. Resolve backend-stored assets
-  const trimmed = API_BASE_URL.replace(/\/+$/, "");
+  const apiBase = API_BASE_URL.replace(/\/+$/, "");
+  let baseUrl: string = apiBase;
+  let basePrefix: string = "";
+
+  try {
+    // Attempt to parse domain and path from API_BASE_URL
+    const url = new URL(apiBase);
+    baseUrl = url.origin;
+    basePrefix = url.pathname.replace(/\/+$/, "");
+  } catch (e) {
+    // Fallback if URL parsing fails
+  }
+
   let path = imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`;
 
-  // PHP stores `/Backend/uploads/...`; sometimes we need to strip `/Backend` 
-  // if the API_BASE_URL already points to the backend folder.
+  // If the path already includes the base prefix (e.g. /remquip/backend),
+  // just prepend the origin to satisfy the absolute URL requirement without duplication.
+  if (basePrefix && basePrefix !== "" && path.startsWith(basePrefix)) {
+    return `${baseUrl}${path}`;
+  }
+
+  // Legacy fallback: strip /Backend if it exists (for old DB entries or specific routing)
   path = path.replace(/^\/Backend(?=\/|$)/i, "");
 
-  return `${trimmed}${path}`;
+  return `${apiBase}${path}`;
 }
 
 /** Alias — documents and product images use the same `/Backend/uploads/...` base. */
