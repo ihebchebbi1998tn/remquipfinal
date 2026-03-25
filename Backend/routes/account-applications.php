@@ -369,6 +369,8 @@ if (($method === 'PATCH' || $method === 'POST') && $id && $action === 'approve')
             'id' => $id,
             'customer_id' => $customerId,
             'account_created' => $accountCreated,
+            'generated_email' => $accountCreated ? $app['email'] : null,
+            'generated_password' => $tempPassword,
         ], 'Application approved and customer account created', 200);
 
     } catch (Exception $e) {

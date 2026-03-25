@@ -537,6 +537,34 @@ export default function AdminCustomers() {
               )}
             </div>
 
+            {(c.neq_tva || c.payment_method || c.payment_terms || c.num_trucks || c.distributor_type) && (
+              <div className="dashboard-card">
+                <h3 className="font-display font-bold text-sm uppercase mb-3 flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Extended CRM Info</h3>
+                <div className="space-y-2">
+                  {c.neq_tva && <div className="text-sm"><span className="text-muted-foreground mr-1">NEQ/TVA:</span> <span className="font-medium text-foreground">{c.neq_tva}</span></div>}
+                  {c.contact_title && <div className="text-sm"><span className="text-muted-foreground mr-1">Title:</span> <span className="font-medium text-foreground">{c.contact_title}</span></div>}
+                  
+                  {c.payment_terms && <div className="text-sm mt-3 pt-3 border-t border-border"><span className="text-muted-foreground mr-1">Payment:</span> <span className="font-medium text-foreground capitalize">{c.payment_terms.replace('_', ' ')}</span> {c.payment_method && `(${c.payment_method})`}</div>}
+                  {c.credit_limit && <div className="text-sm"><span className="text-muted-foreground mr-1">Credit Limit:</span> <span className="font-medium text-foreground">${c.credit_limit}</span></div>}
+                  
+                  {(Number(c.num_trucks) > 0 || Number(c.num_trailers) > 0 || c.distributor_type) && (
+                    <div className="text-sm mt-3 pt-3 border-t border-border">
+                      <span className="text-muted-foreground block mb-1">Fleet & Type</span>
+                      {c.distributor_type && <div>Type: <span className="font-medium text-foreground capitalize">{(() => {
+                          try {
+                            const arr = JSON.parse(c.distributor_type);
+                            return Array.isArray(arr) ? arr.join(', ') : c.distributor_type;
+                          } catch { return c.distributor_type }
+                      })()}</span></div>}
+                      {(Number(c.num_trucks) > 0 || Number(c.num_trailers) > 0) && <div className="font-medium text-foreground mt-0.5">{c.num_trucks || 0} Trucks, {c.num_trailers || 0} Trailers</div>}
+                    </div>
+                  )}
+                  
+                  {c.sales_representative && <div className="text-sm mt-3 pt-3 border-t border-border"><span className="text-muted-foreground mr-1">Sales Rep:</span> <span className="font-medium text-foreground">{c.sales_representative}</span></div>}
+                </div>
+              </div>
+            )}
+
             <div className="dashboard-card">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="font-display font-bold text-sm uppercase flex items-center gap-1.5">
@@ -545,7 +573,7 @@ export default function AdminCustomers() {
                 <input
                   ref={documentInputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                   onChange={handleDocumentFileChange}
                 />
@@ -568,7 +596,7 @@ export default function AdminCustomers() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Loading…
                 </div>
               ) : customerDocuments.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No documents yet. PDF, Word, or Excel up to the server limit.</p>
+                <p className="text-xs text-muted-foreground">No documents yet. Images, PDF, Word, or Excel up to the server limit.</p>
               ) : (
                 <ul className="space-y-2">
                   {customerDocuments.map((doc) => (

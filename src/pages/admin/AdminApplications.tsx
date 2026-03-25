@@ -48,6 +48,7 @@ export default function AdminApplications() {
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [approvalResult, setApprovalResult] = useState<{ email?: string | null; password?: string | null; company?: string } | null>(null);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -77,7 +78,15 @@ export default function AdminApplications() {
     if (!selected) return;
     setActionLoading(true);
     try {
-      await api.approveAccountApplication(selected.id);
+      const res = await api.approveAccountApplication(selected.id);
+      
+      if (res.data?.account_created && res.data.generated_password) {
+        setApprovalResult({
+          email: res.data.generated_email,
+          password: res.data.generated_password,
+          company: selected.company_name
+        });
+      }
       setSelected(null);
       fetchList();
     } catch (e) {
@@ -250,6 +259,48 @@ export default function AdminApplications() {
   /* ── List View ── */
   return (
     <div className="space-y-6">
+      {/* Approved Success Modal */}
+      {approvalResult && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-6 shadow-2xl">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-success/10 border-4 border-success/20 flex items-center justify-center">
+                <Check className="h-8 w-8 text-success" strokeWidth={3} />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Application Approved</h3>
+              <p className="text-sm text-muted-foreground font-medium">
+                {approvalResult.company} has been approved. A new customer and user account have been created. An email has been sent to the user with these credentials.
+              </p>
+            </div>
+            
+            <div className="bg-secondary border border-border rounded-lg p-4 space-y-3">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Portal Email</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="flex-1 bg-background border border-border rounded px-3 py-2 text-sm text-foreground">{approvalResult.email}</code>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Default Password</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="flex-1 bg-background border border-border rounded px-3 py-2 text-sm text-foreground">{approvalResult.password}</code>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(approvalResult.password || '')}
+                    className="p-2 bg-background border border-border rounded hover:bg-secondary transition-colors"
+                    title="Copy Password"
+                  >
+                    <Copy className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center pt-2">
+              <button onClick={() => setApprovalResult(null)} className="btn-accent w-full py-2.5 rounded-lg text-sm font-medium">Done</button>
+            </div>
+          </div>
+        </div>
+      )}
       <AdminPageHeader
         title="Account Applications"
         subtitle="Review and manage customer account applications"

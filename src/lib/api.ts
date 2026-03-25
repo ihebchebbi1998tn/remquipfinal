@@ -206,6 +206,26 @@ export interface Customer {
   total_spent?: number;
   assigned_contact_id?: string | null;
   notes?: CustomerNote[];
+  // Application Extended Fields
+  neq_tva?: string | null;
+  contact_title?: string | null;
+  distributor_type?: string | null;
+  num_trucks?: number | null;
+  num_trailers?: number | null;
+  billing_address?: string | null;
+  shipping_address?: string | null;
+  accounting_contact?: string | null;
+  accounting_phone?: string | null;
+  billing_email?: string | null;
+  payment_terms?: string | null;
+  payment_method?: string | null;
+  bank_reference?: string | null;
+  credit_limit?: number | null;
+  supplier_ref_1?: string | null;
+  supplier_ref_2?: string | null;
+  parts_needed?: string | null;
+  special_requests?: string | null;
+  sales_representative?: string | null;
 }
 
 export interface CustomerNote {
@@ -1776,7 +1796,7 @@ class APIService {
   }
 
   /** Admin: approve an application (creates customer + user account). */
-  async approveAccountApplication(id: string): Promise<ApiResponse<{ id: string; customer_id: string; account_created: boolean }>> {
+  async approveAccountApplication(id: string): Promise<ApiResponse<{ id: string; customer_id: string; account_created: boolean; generated_email?: string | null; generated_password?: string | null; }>> {
     return this.request('PATCH', API_ENDPOINTS.ACCOUNT_APPLICATIONS.APPROVE.replace(':id', id));
   }
 
