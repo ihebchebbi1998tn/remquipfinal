@@ -439,12 +439,34 @@ export function unwrapPagination(response: ApiResponse<any> | undefined | null):
  * Same path shape as PHP (`publicPath` in uploads/products/cms routes).
  */
 export function resolveUploadImageUrl(imageUrl: string): string {
-  if (!imageUrl) return '';
+  if (!imageUrl) return "";
+
+  // 1. Skip absolute URLs
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
-  const trimmed = API_BASE_URL.replace(/\/+$/, '');
-  let path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-  // PHP stores `/Backend/uploads/...`; site URL is `/remquip/backend/uploads/...` (same folder as index.php)
-  path = path.replace(/^\/Backend(?=\/|$)/i, '');
+
+  // 2. Skip local Vite assets or special schemes
+  // Vite assets often start with /src/, /assets/, or use @/ aliases.
+  // Data URLs and blob URLs should also be returned as-is.
+  if (
+    imageUrl.startsWith("data:") ||
+    imageUrl.startsWith("blob:") ||
+    imageUrl.startsWith("/src/") ||
+    imageUrl.startsWith("/assets/") ||
+    imageUrl.startsWith("@/") ||
+    // Check for common Vite-hashed asset patterns like -[hash].
+    /\.[a-f0-9]{8}\./.test(imageUrl)
+  ) {
+    return imageUrl;
+  }
+
+  // 3. Resolve backend-stored assets
+  const trimmed = API_BASE_URL.replace(/\/+$/, "");
+  let path = imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`;
+
+  // PHP stores `/Backend/uploads/...`; sometimes we need to strip `/Backend` 
+  // if the API_BASE_URL already points to the backend folder.
+  path = path.replace(/^\/Backend(?=\/|$)/i, "");
+
   return `${trimmed}${path}`;
 }
 
