@@ -438,23 +438,27 @@ export function unwrapPagination(response: ApiResponse<any> | undefined | null):
  * Absolute URL for backend-stored assets (`/Backend/uploads/images|contracts|...`).
  * Same path shape as PHP (`publicPath` in uploads/products/cms routes).
  */
-export function resolveUploadImageUrl(imageUrl: string): string {
+export function resolveUploadImageUrl(imageUrl: string | null | undefined): string {
   if (!imageUrl) return "";
+  const trimmed = String(imageUrl).trim();
+  if (!trimmed || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") return "";
 
-  // 1. Skip absolute URLs
-  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  // 1. Skip absolute URLs (already trimmed)
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
 
   // 2. Skip local Vite assets or special schemes
   if (
-    imageUrl.startsWith("data:") ||
-    imageUrl.startsWith("blob:") ||
-    imageUrl.startsWith("/src/") ||
-    imageUrl.startsWith("/assets/") ||
-    imageUrl.startsWith("@/") ||
-    /\.[a-f0-9]{8}\./.test(imageUrl)
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("blob:") ||
+    trimmed.startsWith("/src/") ||
+    trimmed.startsWith("/assets/") ||
+    trimmed.startsWith("@/") ||
+    /\.[a-f0-9]{8}\./.test(trimmed)
   ) {
-    return imageUrl;
+    return trimmed;
   }
+
+  const imageUrlToUse = trimmed;
 
   // 3. Resolve backend-stored assets
   const apiBase = API_BASE_URL.replace(/\/+$/, "");
@@ -470,7 +474,7 @@ export function resolveUploadImageUrl(imageUrl: string): string {
     // Fallback if URL parsing fails
   }
 
-  let path = imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`;
+  let path = imageUrlToUse.startsWith("/") ? imageUrlToUse : `/${imageUrlToUse}`;
 
   // If the path already includes the base prefix (e.g. /remquip/backend),
   // just prepend the origin to satisfy the absolute URL requirement without duplication.
