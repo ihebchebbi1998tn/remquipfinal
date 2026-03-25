@@ -106,10 +106,8 @@ const App = () => (
                       <Route path="/refund" element={<LegalPage titleKey="legal.refund.title" contentKey="legal.refund.content" />} />
                       <Route path="/cookie" element={<LegalPage titleKey="legal.cookie.title" contentKey="legal.cookie.content" />} />
                       <Route path="/about" element={<AboutPage />} />
+                      <Route path="/apply" element={<CustomerApplicationPage />} />
                     </Route>
-
-                    {/* Public standalone pages (no store chrome) */}
-                    <Route path="/apply" element={<CustomerApplicationPage />} />
 
                     {/* Admin sign-in (no storefront chrome) — must be before /admin layout */}
                     <Route path="/admin/login" element={<LoginPage />} />

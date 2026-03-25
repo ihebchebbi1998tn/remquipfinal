@@ -87,25 +87,25 @@ const PAYMENT_METHOD_OPTIONS = [
 /* ------------------------------------------------------------------ */
 function FormField({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-slate-300">
-        {label} {required && <span className="text-orange-500">*</span>}
+    <div className="space-y-1.5 font-medium">
+      <label className="block text-xs font-display font-black uppercase tracking-widest text-muted-foreground">
+        {label} {required && <span className="text-accent">*</span>}
       </label>
       {children}
     </div>
   );
 }
 
-const inputClass = "w-full px-4 py-3 bg-[#1a222c] border border-[#2a3441] rounded-lg text-slate-100 placeholder-slate-500 outline-none focus:border-[#e85d04] focus:ring-1 focus:ring-[#e85d04]/40 transition-all duration-200";
+const inputClass = "w-full bg-background border-2 border-border/60 hover:border-border rounded-xl px-4 py-3.5 text-sm font-medium text-foreground outline-none focus:border-accent transition-all shadow-sm";
 const textareaClass = inputClass + " resize-none";
 
 function SectionTitle({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
   return (
-    <div className="flex items-center gap-3 mb-6">
-      <div className="w-10 h-10 rounded-lg bg-[#e85d04]/10 border border-[#e85d04]/20 flex items-center justify-center">
-        <Icon className="h-5 w-5 text-[#e85d04]" />
+    <div className="flex items-center gap-4 mb-8">
+      <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+        <Icon className="h-6 w-6 text-accent" />
       </div>
-      <h3 className="text-lg font-bold text-slate-100">{title}</h3>
+      <h3 className="text-xl font-display font-black tracking-tight text-foreground">{title}</h3>
     </div>
   );
 }
@@ -174,20 +174,20 @@ export default function CustomerApplicationPage() {
   /* ── Success screen ── */
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#0f1419] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-lg text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500 flex items-center justify-center">
-            <Check className="h-10 w-10 text-emerald-400" />
+          <div className="w-24 h-24 mx-auto rounded-full bg-success/10 border-4 border-success/20 flex items-center justify-center">
+            <Check className="h-12 w-12 text-success" strokeWidth={3} />
           </div>
-          <h1 className="text-3xl font-bold text-slate-100">Application Submitted!</h1>
-          <p className="text-slate-400 text-lg">
+          <h1 className="text-4xl font-display font-black tracking-tight text-foreground uppercase">Application Submitted</h1>
+          <p className="text-muted-foreground text-lg font-medium">
             Thank you for your application. Our team will review your information and get back to you shortly.
-            A confirmation email has been sent to <strong className="text-slate-200">{form.email}</strong>.
+            A confirmation email has been sent to <strong className="text-foreground">{form.email}</strong>.
           </p>
           {submittedId && (
-            <p className="text-sm text-slate-500">Reference: <code className="text-[#e85d04]">{submittedId.slice(0, 8)}</code></p>
+            <p className="text-sm text-muted-foreground font-bold">Ref: <code className="text-accent">{submittedId.slice(0, 8)}</code></p>
           )}
-          <Link to="/" className="inline-block mt-4 px-8 py-3 bg-[#e85d04] text-[#0f1419] font-bold rounded-lg hover:bg-[#f97316] transition-colors">
+          <Link to="/" className="inline-block mt-8 px-10 py-4 bg-foreground text-background font-display font-black uppercase tracking-widest text-sm rounded-xl hover:bg-accent hover:text-white transition-all shadow-xl hover:-translate-y-1">
             Return to REMQUIP
           </Link>
         </div>
@@ -197,24 +197,30 @@ export default function CustomerApplicationPage() {
 
   /* ── Form steps ── */
   return (
-    <div className="min-h-screen bg-[#0f1419]">
-      {/* Header */}
-      <header className="border-b border-[#2a3441] bg-[#141a22]">
-        <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
-          <div>
-            <Link to="/" className="text-2xl font-black tracking-wider text-slate-100 hover:text-[#e85d04] transition-colors">REMQUIP</Link>
-            <p className="text-xs text-slate-500 mt-1">Pièces de remorques & camions | Trailer & Truck Parts</p>
-          </div>
-          <div className="text-right">
-            <h1 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Formulaire d'ouverture de compte client</h1>
-            <p className="text-xs text-slate-500">Customer Account Application Form</p>
-          </div>
-        </div>
-      </header>
+    <div className="bg-background min-h-screen">
+      {/* Decorative background */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(circle_at_100%_0%,hsl(var(--accent)/0.03),transparent_60%)] pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="container mx-auto max-w-4xl px-4 py-20 md:py-32 relative z-10">
+        
+        <header className="mb-12 text-center max-w-3xl mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px w-8 bg-accent/40" />
+            <span className="font-display font-black uppercase tracking-[0.2em] text-[10px] text-accent">
+              Application
+            </span>
+            <div className="h-px w-8 bg-accent/40" />
+          </div>
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tighter text-foreground leading-[0.95] mb-4">
+            Ouverture de compte
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base font-medium leading-relaxed max-w-xl mx-auto">
+            Veuillez compléter le formulaire de demande d'ouverture de compte client. / Please complete the customer account application form.
+          </p>
+        </header>
+
         {/* Step indicators */}
-        <div className="flex items-center justify-center gap-1 mb-10">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
           {STEPS.map((s, i) => {
             const Icon = s.icon;
             const isActive = i === step;
@@ -224,17 +230,17 @@ export default function CustomerApplicationPage() {
                 <button
                   type="button"
                   onClick={() => { if (isDone) setStep(i); }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                    isActive ? "bg-[#e85d04]/10 border border-[#e85d04] text-[#e85d04]"
-                    : isDone ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-pointer hover:bg-emerald-500/20"
-                    : "bg-[#1a222c] border border-[#2a3441] text-slate-500"
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-display font-black uppercase tracking-widest transition-all duration-300 ${
+                    isActive ? "bg-accent/10 border-2 border-accent text-accent shadow-sm"
+                    : isDone ? "bg-success/10 border-2 border-success/30 text-success cursor-pointer hover:bg-success/20"
+                    : "bg-muted/50 border-2 border-border/50 text-muted-foreground opacity-70"
                   }`}
                 >
-                  {isDone ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
+                  {isDone ? <Check className="h-4 w-4" strokeWidth={3} /> : <Icon className="h-4 w-4" />}
                   <span className="hidden sm:inline">{s.label}</span>
                 </button>
                 {i < STEPS.length - 1 && (
-                  <div className={`w-6 h-0.5 ${isDone ? "bg-emerald-500/40" : "bg-[#2a3441]"}`} />
+                  <div className={`hidden sm:block w-8 h-0.5 rounded-full ${isDone ? "bg-success/40" : "bg-border/60"}`} />
                 )}
               </React.Fragment>
             );
@@ -242,7 +248,10 @@ export default function CustomerApplicationPage() {
         </div>
 
         {/* Form card */}
-        <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-6 sm:p-8 space-y-6">
+        <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-10 md:p-12 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[radial-gradient(circle_at_100%_0%,hsl(var(--accent)/0.05),transparent_70%)] pointer-events-none" />
+          
+          <div className="relative z-10 space-y-8">
 
           {/* Step 0: Company Information */}
           {step === 0 && (
@@ -275,10 +284,10 @@ export default function CustomerApplicationPage() {
               <FormField label="Type de distributeur / Distributor Type">
                 <div className="flex flex-wrap gap-3 mt-1">
                   {DISTRIBUTOR_OPTIONS.map(opt => (
-                    <label key={opt.value} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-all text-sm ${
+                    <label key={opt.value} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 cursor-pointer transition-all text-sm font-semibold ${
                       form.distributor_type.includes(opt.value)
-                        ? "border-[#e85d04] bg-[#e85d04]/10 text-[#e85d04]"
-                        : "border-[#2a3441] bg-[#1a222c] text-slate-400 hover:border-slate-500"
+                        ? "border-accent bg-accent/5 text-accent"
+                        : "border-border/60 bg-transparent text-muted-foreground hover:border-border hover:bg-muted/20"
                     }`}>
                       <input
                         type="checkbox"
@@ -291,10 +300,10 @@ export default function CustomerApplicationPage() {
                           set("distributor_type", arr);
                         }}
                       />
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                        form.distributor_type.includes(opt.value) ? "border-[#e85d04] bg-[#e85d04]" : "border-slate-600"
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                        form.distributor_type.includes(opt.value) ? "border-accent bg-accent" : "border-muted-foreground/30"
                       }`}>
-                        {form.distributor_type.includes(opt.value) && <Check className="h-3 w-3 text-white" />}
+                        {form.distributor_type.includes(opt.value) && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
                       </div>
                       {opt.label}
                     </label>
@@ -329,7 +338,7 @@ export default function CustomerApplicationPage() {
               <FormField label="Adresse de livraison / Shipping Address">
                 <textarea className={textareaClass} rows={3} value={form.shipping_address} onChange={e => set("shipping_address", e.target.value)} placeholder="Full shipping address (leave empty if same as billing)..." />
               </FormField>
-              <button type="button" className="text-sm text-[#e85d04] hover:underline"
+              <button type="button" className="text-xs font-bold uppercase tracking-widest text-accent hover:underline flex items-center gap-1 mt-2"
                 onClick={() => set("shipping_address", form.billing_address)}>
                 ↳ Same as billing address
               </button>
@@ -355,11 +364,11 @@ export default function CustomerApplicationPage() {
               <FormField label="Conditions de paiement / Payment Terms">
                 <div className="grid sm:grid-cols-2 gap-3 mt-1">
                   {PAYMENT_TERMS_OPTIONS.map(opt => (
-                    <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all text-sm ${
-                      form.payment_terms === opt.value ? "border-[#e85d04] bg-[#e85d04]/10 text-[#e85d04]" : "border-[#2a3441] bg-[#1a222c] text-slate-400 hover:border-slate-500"
+                    <label key={opt.value} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 cursor-pointer transition-all text-sm font-semibold ${
+                      form.payment_terms === opt.value ? "border-accent bg-accent/5 text-accent" : "border-border/60 bg-transparent text-muted-foreground hover:border-border hover:bg-muted/20"
                     }`}>
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${form.payment_terms === opt.value ? "border-[#e85d04]" : "border-slate-600"}`}>
-                        {form.payment_terms === opt.value && <div className="w-2 h-2 rounded-full bg-[#e85d04]" />}
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${form.payment_terms === opt.value ? "border-accent" : "border-muted-foreground/30"}`}>
+                        {form.payment_terms === opt.value && <div className="w-2.5 h-2.5 rounded-full bg-accent" />}
                       </div>
                       <input type="radio" className="hidden" name="payment_terms" value={opt.value} checked={form.payment_terms === opt.value}
                         onChange={e => set("payment_terms", e.target.value)} />
@@ -372,11 +381,11 @@ export default function CustomerApplicationPage() {
               <FormField label="Mode de paiement préféré / Payment Method">
                 <div className="grid sm:grid-cols-2 gap-3 mt-1">
                   {PAYMENT_METHOD_OPTIONS.map(opt => (
-                    <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all text-sm ${
-                      form.payment_method === opt.value ? "border-[#e85d04] bg-[#e85d04]/10 text-[#e85d04]" : "border-[#2a3441] bg-[#1a222c] text-slate-400 hover:border-slate-500"
+                    <label key={opt.value} className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 cursor-pointer transition-all text-sm font-semibold ${
+                      form.payment_method === opt.value ? "border-accent bg-accent/5 text-accent" : "border-border/60 bg-transparent text-muted-foreground hover:border-border hover:bg-muted/20"
                     }`}>
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${form.payment_method === opt.value ? "border-[#e85d04]" : "border-slate-600"}`}>
-                        {form.payment_method === opt.value && <div className="w-2 h-2 rounded-full bg-[#e85d04]" />}
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${form.payment_method === opt.value ? "border-accent" : "border-muted-foreground/30"}`}>
+                        {form.payment_method === opt.value && <div className="w-2.5 h-2.5 rounded-full bg-accent" />}
                       </div>
                       <input type="radio" className="hidden" name="payment_method" value={opt.value} checked={form.payment_method === opt.value}
                         onChange={e => set("payment_method", e.target.value)} />
@@ -434,24 +443,24 @@ export default function CustomerApplicationPage() {
               <SectionTitle icon={PenTool} title="6. Validation / Authorization" />
 
               {/* Review Summary */}
-              <div className="bg-[#1a222c] border border-[#2a3441] rounded-lg p-5 mb-6 space-y-3">
-                <h4 className="font-bold text-sm text-slate-300 uppercase tracking-wider mb-3">Application Summary</h4>
-                <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  <div><span className="text-slate-500">Company:</span> <span className="text-slate-200">{form.company_name}</span></div>
-                  <div><span className="text-slate-500">NEQ/TVA:</span> <span className="text-slate-200">{form.neq_tva || "—"}</span></div>
-                  <div><span className="text-slate-500">Contact:</span> <span className="text-slate-200">{form.contact_person}</span></div>
-                  <div><span className="text-slate-500">Email:</span> <span className="text-slate-200">{form.email}</span></div>
-                  <div><span className="text-slate-500">Phone:</span> <span className="text-slate-200">{form.phone || "—"}</span></div>
-                  <div><span className="text-slate-500">Payment:</span> <span className="text-slate-200">{form.payment_terms || "—"}</span></div>
-                  <div><span className="text-slate-500">Credit Limit:</span> <span className="text-slate-200">{form.credit_limit_requested ? `$${form.credit_limit_requested}` : "—"}</span></div>
-                  <div><span className="text-slate-500">Trucks/Trailers:</span> <span className="text-slate-200">{form.num_trucks || 0} / {form.num_trailers || 0}</span></div>
+              <div className="bg-muted/30 border-2 border-border/60 rounded-xl p-6 mb-8 space-y-4">
+                <h4 className="font-display font-black text-xs text-foreground uppercase tracking-widest mb-4">Application Summary</h4>
+                <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3 justify-between text-sm">
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Company:</span> <span className="font-bold text-foreground text-right">{form.company_name}</span></div>
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">NEQ/TVA:</span> <span className="font-bold text-foreground text-right">{form.neq_tva || "—"}</span></div>
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Contact:</span> <span className="font-bold text-foreground text-right">{form.contact_person}</span></div>
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Email:</span> <span className="font-bold text-foreground text-right">{form.email}</span></div>
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Phone:</span> <span className="font-bold text-foreground text-right">{form.phone || "—"}</span></div>
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Payment:</span> <span className="font-bold text-foreground text-right">{form.payment_terms || "—"}</span></div>
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Credit Limit:</span> <span className="font-bold text-foreground text-right">{form.credit_limit_requested ? `$${form.credit_limit_requested}` : "—"}</span></div>
+                  <div className="flex items-center justify-between border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Trucks/Trailers:</span> <span className="font-bold text-foreground text-right">{form.num_trucks || 0} / {form.num_trailers || 0}</span></div>
                 </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-5">
                 <FormField label="Nom du signataire / Signatory Name" required>
                   <input className={inputClass} value={form.signatory_name} onChange={e => set("signatory_name", e.target.value)} placeholder="Full name of signatory" />
-                  {errors.signatory_name && <p className="text-xs text-red-400 mt-1">{errors.signatory_name}</p>}
+                  {errors.signatory_name && <p className="text-xs text-red-500 mt-1">{errors.signatory_name}</p>}
                 </FormField>
                 <FormField label="Titre / Fonction / Title">
                   <input className={inputClass} value={form.signatory_title} onChange={e => set("signatory_title", e.target.value)} placeholder="Title / Position" />
@@ -463,22 +472,22 @@ export default function CustomerApplicationPage() {
               </FormField>
 
               <FormField label="Signature" required>
-                <div className="border border-[#2a3441] rounded-lg overflow-hidden bg-white">
+                <div className="border-2 border-border/60 rounded-xl overflow-hidden bg-white shadow-sm hover:border-border transition-colors">
                   <SignatureCanvas
                     ref={sigRef}
-                    penColor="#0f1419"
-                    canvasProps={{ className: "w-full", style: { height: 160, width: "100%" } }}
+                    penColor="#090a0f"
+                    canvasProps={{ className: "w-full", style: { height: 180, width: "100%" } }}
                     onEnd={() => {
                       if (sigRef.current) setSignatureData(sigRef.current.toDataURL("image/png"));
                     }}
                   />
                 </div>
-                <div className="flex items-center gap-3 mt-2">
-                  <button type="button" className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                <div className="flex items-center gap-4 mt-3">
+                  <button type="button" className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
                     onClick={() => { sigRef.current?.clear(); setSignatureData(null); }}>
                     Clear Signature
                   </button>
-                  {errors.signature && <p className="text-xs text-red-400">{errors.signature}</p>}
+                  {errors.signature && <p className="text-xs font-bold text-destructive">{errors.signature}</p>}
                 </div>
               </FormField>
             </>
@@ -486,38 +495,39 @@ export default function CustomerApplicationPage() {
 
           {/* Error message */}
           {errors._submit && (
-            <div className="flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <div className="flex items-center gap-3 p-5 bg-destructive/10 border border-destructive/20 rounded-xl text-sm font-medium text-destructive mt-6">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
               {errors._submit}
             </div>
           )}
 
           {/* Navigation */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#2a3441]">
+          <div className="flex items-center justify-between pt-8 mt-8 border-t-2 border-border/40">
             <button type="button" onClick={goBack} disabled={step === 0}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border border-[#2a3441] text-slate-300 hover:bg-[#1a222c] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              className="flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-display font-black uppercase tracking-widest border-2 border-border/60 text-muted-foreground hover:border-foreground hover:text-foreground transition-all disabled:opacity-30 disabled:cursor-not-allowed">
               <ChevronLeft className="h-4 w-4" /> Previous
             </button>
 
-            <span className="text-xs text-slate-500">Step {step + 1} of {STEPS.length}</span>
+            <span className="text-[10px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground hidden sm:block">Step {step + 1} of {STEPS.length}</span>
 
             {step < STEPS.length - 1 ? (
               <button type="button" onClick={goNext}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold bg-[#e85d04] text-[#0f1419] hover:bg-[#f97316] transition-colors">
+                className="flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-display font-black uppercase tracking-widest bg-foreground text-background hover:bg-accent hover:text-white transition-all shadow-md hover:-translate-y-0.5">
                 Next <ChevronRight className="h-4 w-4" />
               </button>
             ) : (
               <button type="button" onClick={handleSubmit} disabled={submitting}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-50">
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                {submitting ? "Submitting..." : "Submit Application"}
+                className="flex items-center gap-2 px-8 py-3 rounded-xl text-xs font-display font-black uppercase tracking-widest bg-accent text-white hover:bg-accent/90 transition-all shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none">
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" strokeWidth={3} />}
+                {submitting ? "Submitting..." : "Submit"}
               </button>
             )}
+          </div>
           </div>
         </div>
 
         {/* Footer note */}
-        <p className="text-center text-xs text-slate-600 mt-8">
+        <p className="text-center text-[10px] font-display font-black uppercase tracking-widest text-muted-foreground mt-12 opacity-60">
           Merci de nous retourner ce formulaire complété / Please complete this application form
           <br />© 2025 REMQUIP — Pièces de remorques & camions | Trailer & Truck Parts
         </p>

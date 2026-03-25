@@ -6,32 +6,28 @@ import {
   ChevronLeft, ChevronRight, Loader2, Building2, Mail,
   Phone, Clock, AlertCircle, Filter
 } from "lucide-react";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  pending:  { label: "Pending",  color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/30" },
-  approved: { label: "Approved", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
-  rejected: { label: "Rejected", color: "text-red-400",     bg: "bg-red-500/10 border-red-500/30" },
+const STATUS_CFG: Record<string, string> = {
+  pending: "badge-warning",
+  approved: "badge-success",
+  rejected: "badge-destructive",
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const c = STATUS_CFG[status] ?? STATUS_CFG.pending;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${c.bg} ${c.color}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${c.color.replace("text", "bg")}`} />
-      {c.label}
-    </span>
-  );
+  const cn = STATUS_CFG[status] ?? "badge-secondary";
+  return <span className={cn}>{status.charAt(0).toUpperCase() + status.slice(1)}</span>;
 }
 
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
-    <div className="flex gap-2 text-sm py-1.5 border-b border-[#2a3441]/50 last:border-0">
-      <span className="text-slate-500 w-40 flex-shrink-0">{label}</span>
-      <span className="text-slate-200">{value}</span>
+    <div className="flex gap-2 text-sm py-2 border-b border-border last:border-0">
+      <span className="text-muted-foreground w-40 flex-shrink-0 font-medium">{label}</span>
+      <span className="text-foreground font-medium">{value}</span>
     </div>
   );
 }
@@ -118,39 +114,41 @@ export default function AdminApplications() {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <button onClick={() => setSelected(null)} className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={() => setSelected(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
             <ChevronLeft className="h-4 w-4" /> Back to list
           </button>
           <StatusBadge status={a.status} />
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-100">{a.company_name}</h2>
-            <p className="text-sm text-slate-500 mt-1">Submitted {new Date(a.created_at).toLocaleDateString()} · {a.contact_person}</p>
-          </div>
-          {a.status === "pending" && (
-            <div className="flex gap-3">
-              <button onClick={() => setShowRejectModal(true)} disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 transition-colors disabled:opacity-50">
-                <X className="h-4 w-4" /> Reject
-              </button>
-              <button onClick={handleApprove} disabled={actionLoading}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition-colors disabled:opacity-50">
-                {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Approve & Create Account
-              </button>
+        <div className="dashboard-card mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="font-display font-bold text-xl md:text-2xl">{a.company_name}</h2>
+              <p className="text-sm text-muted-foreground mt-1">Submitted {new Date(a.created_at).toLocaleDateString()} · {a.contact_person}</p>
             </div>
-          )}
+            {a.status === "pending" && (
+              <div className="flex gap-2">
+                <button onClick={() => setShowRejectModal(true)} disabled={actionLoading}
+                  className="px-4 py-2 border border-destructive text-destructive rounded-sm text-sm font-medium hover:bg-destructive/10 transition-colors disabled:opacity-50 flex items-center gap-2">
+                  <X className="h-4 w-4" /> Reject
+                </button>
+                <button onClick={handleApprove} disabled={actionLoading}
+                  className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50">
+                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Approve & Create Account
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sections */}
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Company Info */}
-          <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-[#e85d04]" /> Company Information
+          <div className="dashboard-card">
+            <h3 className="text-sm font-bold text-accent uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Building2 className="h-4 w-4" /> Company Information
             </h3>
             <InfoRow label="Company Name" value={a.company_name} />
             <InfoRow label="NEQ / TVA" value={a.neq_tva} />
@@ -165,15 +163,15 @@ export default function AdminApplications() {
           </div>
 
           {/* Addresses */}
-          <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Addresses</h3>
+          <div className="dashboard-card">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Addresses</h3>
             <InfoRow label="Billing Address" value={a.billing_address} />
             <InfoRow label="Shipping Address" value={a.shipping_address} />
           </div>
 
           {/* Accounting */}
-          <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Accounting & Payment</h3>
+          <div className="dashboard-card">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Accounting & Payment</h3>
             <InfoRow label="Accounting Contact" value={a.accounting_contact} />
             <InfoRow label="Accounting Phone" value={a.accounting_phone} />
             <InfoRow label="Billing Email" value={a.billing_email} />
@@ -182,8 +180,8 @@ export default function AdminApplications() {
           </div>
 
           {/* Credit */}
-          <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Credit References</h3>
+          <div className="dashboard-card">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Credit References</h3>
             <InfoRow label="Bank Reference" value={a.bank_reference} />
             <InfoRow label="Credit Limit" value={a.credit_limit_requested ? `$${a.credit_limit_requested}` : undefined} />
             <InfoRow label="Supplier Ref 1" value={a.supplier_ref_1} />
@@ -191,23 +189,23 @@ export default function AdminApplications() {
           </div>
 
           {/* Needs */}
-          <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Products & Needs</h3>
+          <div className="dashboard-card">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Products & Needs</h3>
             <InfoRow label="Parts Needed" value={a.parts_needed} />
             <InfoRow label="Special Requests" value={a.special_requests} />
             <InfoRow label="Sales Rep" value={a.sales_representative} />
           </div>
 
           {/* Signature */}
-          <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Authorization</h3>
+          <div className="dashboard-card">
+            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Authorization</h3>
             <InfoRow label="Signatory" value={a.signatory_name} />
             <InfoRow label="Title" value={a.signatory_title} />
             <InfoRow label="Date" value={a.signature_date} />
             {a.signature_data && (
               <div className="mt-3">
-                <p className="text-xs text-slate-500 mb-2">Signature:</p>
-                <div className="bg-white rounded-lg p-3 inline-block">
+                <p className="text-xs text-muted-foreground mb-2">Signature:</p>
+                <div className="bg-white rounded-lg p-3 inline-block border border-border">
                   <img src={a.signature_data} alt="Signature" className="h-20 object-contain" />
                 </div>
               </div>
@@ -217,28 +215,28 @@ export default function AdminApplications() {
 
         {/* Rejection reason if rejected */}
         {a.status === "rejected" && a.rejection_reason && (
-          <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-red-400 mb-2">Rejection Reason</h3>
-            <p className="text-sm text-slate-300">{a.rejection_reason}</p>
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-destructive mb-2">Rejection Reason</h3>
+            <p className="text-sm text-foreground font-medium">{a.rejection_reason}</p>
           </div>
         )}
 
         {/* Reject Modal */}
         {showRejectModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowRejectModal(false)}>
-            <div className="bg-[#141a22] border border-[#2a3441] rounded-xl p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
-              <h3 className="text-lg font-bold text-slate-100">Reject Application</h3>
-              <p className="text-sm text-slate-400">Optionally provide a reason for rejection:</p>
+            <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-foreground">Reject Application</h3>
+              <p className="text-sm text-muted-foreground">Optionally provide a reason for rejection:</p>
               <textarea
-                className="w-full px-4 py-3 bg-[#1a222c] border border-[#2a3441] rounded-lg text-slate-100 placeholder-slate-500 outline-none focus:border-red-500 resize-none"
+                className="w-full px-4 py-3 bg-background border border-border/80 rounded-lg text-foreground outline-none focus:border-destructive resize-none"
                 rows={3} value={rejectReason}
                 onChange={e => setRejectReason(e.target.value)}
                 placeholder="Reason for rejection..."
               />
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setShowRejectModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200">Cancel</button>
+              <div className="flex justify-end gap-3 pt-2">
+                <button onClick={() => setShowRejectModal(false)} className="px-5 py-2 text-sm text-muted-foreground hover:text-foreground font-medium rounded-lg hover:bg-secondary transition-colors">Cancel</button>
                 <button onClick={handleReject} disabled={actionLoading}
-                  className="px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 disabled:opacity-50">
+                  className="px-5 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:bg-destructive/90 disabled:opacity-50 transition-colors">
                   {actionLoading ? "Rejecting..." : "Confirm Reject"}
                 </button>
               </div>
@@ -252,101 +250,110 @@ export default function AdminApplications() {
   /* ── List View ── */
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Account Applications</h1>
-          <p className="text-sm text-slate-500 mt-1">Review and manage customer account applications</p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={copyFormLink}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#2a3441] text-sm text-slate-300 hover:bg-[#1a222c] transition-colors">
-            {linkCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-            {linkCopied ? "Copied!" : "Copy Form Link"}
-          </button>
-          <a href="/apply" target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#e85d04] text-[#0f1419] text-sm font-bold hover:bg-[#f97316] transition-colors">
-            <ExternalLink className="h-4 w-4" /> Open Form
-          </a>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Account Applications"
+        subtitle="Review and manage customer account applications"
+        actions={
+          <div className="flex flex-wrap items-center gap-2 self-start">
+            <button onClick={copyFormLink}
+              className="px-4 py-2 border border-border rounded-sm text-sm font-medium flex items-center gap-2 hover:bg-secondary transition-colors">
+              {linkCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+              {linkCopied ? "Copied!" : "Copy Form Link"}
+            </button>
+            <a href="/apply" target="_blank" rel="noopener noreferrer"
+               className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" /> Open Form
+            </a>
+          </div>
+        }
+      />
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <Filter className="h-4 w-4 text-slate-500" />
-        {["", "pending", "approved", "rejected"].map(s => (
-          <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              statusFilter === s
-                ? "border-[#e85d04] bg-[#e85d04]/10 text-[#e85d04]"
-                : "border-[#2a3441] text-slate-400 hover:border-slate-500"
-            }`}>
-            {s === "" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
-          </button>
-        ))}
-      </div>
+      {/* Filters & Table */}
+      <div className="dashboard-card">
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+            {["", "pending", "approved", "rejected"].map(s => (
+              <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
+                className={`px-3 py-1.5 text-xs font-medium rounded-sm border whitespace-nowrap transition-colors ${
+                  statusFilter === s
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border text-muted-foreground hover:bg-secondary"
+                }`}>
+                {s === "" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Table */}
-      <div className="bg-[#141a22] border border-[#2a3441] rounded-xl overflow-hidden">
+        {/* Table Content */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-[#e85d04]" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : apps.length === 0 ? (
           <div className="text-center py-20">
-            <FileText className="h-10 w-10 text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-500">No applications found</p>
+            <FileText className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No applications found</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#2a3441] text-left">
-                <th className="px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Company</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Contact</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#2a3441]/50">
-              {apps.map(a => (
-                <tr key={a.id} className="hover:bg-[#1a222c] transition-colors cursor-pointer" onClick={() => openDetail(a.id)}>
-                  <td className="px-5 py-4">
-                    <div className="font-medium text-slate-200">{a.company_name}</div>
-                    <div className="text-xs text-slate-500">{a.email}</div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="text-slate-300">{a.contact_person}</div>
-                    {a.phone && <div className="text-xs text-slate-500">{a.phone}</div>}
-                  </td>
-                  <td className="px-5 py-4"><StatusBadge status={a.status} /></td>
-                  <td className="px-5 py-4 text-slate-400">{new Date(a.created_at).toLocaleDateString()}</td>
-                  <td className="px-5 py-4 text-right">
-                    <button className="p-2 rounded-lg hover:bg-[#2a3441] text-slate-400 hover:text-slate-200 transition-colors">
-                      <Eye className="h-4 w-4" />
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="table-header">
+                  <th className="text-left px-3 py-2">Company</th>
+                  <th className="text-left px-3 py-2">Contact</th>
+                  <th className="text-left px-3 py-2">Status</th>
+                  <th className="text-left px-3 py-2">Date</th>
+                  <th className="text-right px-3 py-2">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {apps.map(a => (
+                  <tr key={a.id} className="hover:bg-secondary/50 transition-colors cursor-pointer" onClick={() => openDetail(a.id)}>
+                    <td className="px-3 py-3">
+                      <p className="font-medium text-foreground">{a.company_name}</p>
+                      <p className="text-xs text-muted-foreground">{a.email}</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="font-medium">{a.contact_person}</p>
+                      {a.phone && <p className="text-xs text-muted-foreground">{a.phone}</p>}
+                    </td>
+                    <td className="px-3 py-3">
+                      <StatusBadge status={a.status} />
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      {new Date(a.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-sm transition-colors">
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+             <div className="text-xs text-muted-foreground">Showing page {page} of {totalPages}</div>
+             <div className="flex items-center gap-1">
+                <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}
+                  className="p-1 rounded border border-border text-muted-foreground hover:bg-secondary disabled:opacity-30">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages}
+                  className="p-1 rounded border border-border text-muted-foreground hover:bg-secondary disabled:opacity-30">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+             </div>
+          </div>
         )}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}
-            className="p-2 rounded-lg border border-[#2a3441] text-slate-400 hover:bg-[#1a222c] disabled:opacity-30">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
-          <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages}
-            className="p-2 rounded-lg border border-[#2a3441] text-slate-400 hover:bg-[#1a222c] disabled:opacity-30">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
     </div>
   );
 }
