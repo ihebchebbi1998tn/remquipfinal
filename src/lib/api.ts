@@ -439,49 +439,13 @@ export function unwrapPagination(response: ApiResponse<any> | undefined | null):
  * Same path shape as PHP (`publicPath` in uploads/products/cms routes).
  */
 export function resolveUploadImageUrl(imageUrl: string): string {
-  if (!imageUrl) return "";
-
-  // 1. Skip absolute URLs
+  if (!imageUrl) return '';
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
-
-  // 2. Skip local Vite assets or special schemes
-  if (
-    imageUrl.startsWith("data:") ||
-    imageUrl.startsWith("blob:") ||
-    imageUrl.startsWith("/src/") ||
-    imageUrl.startsWith("/assets/") ||
-    imageUrl.startsWith("@/") ||
-    /\.[a-f0-9]{8}\./.test(imageUrl)
-  ) {
-    return imageUrl;
-  }
-
-  // 3. Resolve backend-stored assets
-  const apiBase = API_BASE_URL.replace(/\/+$/, "");
-  let baseUrl: string = apiBase;
-  let basePrefix: string = "";
-
-  try {
-    // Attempt to parse domain and path from API_BASE_URL
-    const url = new URL(apiBase);
-    baseUrl = url.origin;
-    basePrefix = url.pathname.replace(/\/+$/, "");
-  } catch (e) {
-    // Fallback if URL parsing fails
-  }
-
-  let path = imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`;
-
-  // If the path already includes the base prefix (e.g. /remquip/backend),
-  // just prepend the origin to satisfy the absolute URL requirement without duplication.
-  if (basePrefix && basePrefix !== "" && path.startsWith(basePrefix)) {
-    return `${baseUrl}${path}`;
-  }
-
-  // Legacy fallback: strip /Backend if it exists (for old DB entries or specific routing)
-  path = path.replace(/^\/Backend(?=\/|$)/i, "");
-
-  return `${apiBase}${path}`;
+  const trimmed = API_BASE_URL.replace(/\/+$/, '');
+  let path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  // PHP stores `/Backend/uploads/...`; site URL is `/remquip/backend/uploads/...` (same folder as index.php)
+  path = path.replace(/^\/Backend(?=\/|$)/i, '');
+  return `${trimmed}${path}`;
 }
 
 /** Alias — documents and product images use the same `/Backend/uploads/...` base. */
@@ -1631,13 +1595,6 @@ class APIService {
     const formData = new FormData();
     formData.append('image', file);
     return this.request('POST', API_ENDPOINTS.CMS.IMAGES_UPLOAD, formData, {});
-  }
-
-  async uploadCategoryImage(file: File): Promise<ApiResponse<{ url: string }>> {
-    const formData = new FormData();
-    formData.append('file', file);
-    // Note: uploads.php handles 'file' parameter for /uploads/image
-    return this.request('POST', API_ENDPOINTS.UPLOADS.IMAGE, formData);
   }
 
   // ==================== ADMIN DASHBOARD (matches API_ENDPOINTS.DASHBOARD) ====================

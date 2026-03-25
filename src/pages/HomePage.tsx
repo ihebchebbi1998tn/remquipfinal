@@ -176,7 +176,7 @@ export default function HomePage() {
           const list = unwrapApiList<ProductCategory>(categoriesResponse, defaultCatalogCategories);
           const merged = list.map((cat) => {
             const img = String(cat.image_url ?? "").trim();
-            if (img && img !== "null") return cat;
+            if (img) return cat;
             return { ...cat, image_url: defaultImageBySlug[cat.slug] || cat.image_url };
           });
           setCategoriesList(merged);
@@ -345,7 +345,7 @@ export default function HomePage() {
               {cats[0] ? (
                 <Link key={cats[0].id} to={`/products/${cats[0].slug || ""}`} className="md:col-span-2 md:row-span-2 bg-muted/20 group relative overflow-hidden rounded-2xl min-h-[320px] md:min-h-0 border border-border/50 shadow-sm hover:shadow-2xl transition-all duration-500">
                   {cats[0].image_url && (
-                    <img src={resolveUploadImageUrl(cats[0].image_url)} alt={cats[0].name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-80 group-hover:scale-110 transition-transform duration-1000 ease-out" loading="lazy" />
+                    <img src={cats[0].image_url} alt={cats[0].name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-80 group-hover:scale-110 transition-transform duration-1000 ease-out" loading="lazy" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                   <div className="absolute inset-0 p-8 flex flex-col justify-end">
@@ -361,7 +361,7 @@ export default function HomePage() {
               {cats[1] ? (
                 <Link key={cats[1].id} to={`/products/${cats[1].slug || ""}`} className="md:col-span-2 md:row-span-1 bg-muted/20 group relative overflow-hidden rounded-2xl min-h-[240px] border border-border/50 shadow-sm hover:shadow-xl transition-all duration-500">
                   {cats[1].image_url && (
-                    <img src={resolveUploadImageUrl(cats[1].image_url)} alt={cats[1].name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 ease-out" loading="lazy" />
+                    <img src={cats[1].image_url} alt={cats[1].name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 ease-out" loading="lazy" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
                   <div className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-end">
@@ -375,7 +375,7 @@ export default function HomePage() {
               {cats.slice(2, 4).map((cat) => (
                 <Link key={cat.id} to={`/products/${cat.slug || ""}`} className="md:col-span-1 md:row-span-1 bg-muted/20 group relative overflow-hidden rounded-2xl min-h-[220px] border border-border/50 shadow-sm hover:shadow-md transition-all duration-500">
                   {cat.image_url && (
-                    <img src={resolveUploadImageUrl(cat.image_url)} alt={cat.name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700 ease-out" loading="lazy" />
+                    <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700 ease-out" loading="lazy" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
                   <div className="absolute inset-0 p-6 flex flex-col justify-end">

@@ -9,11 +9,10 @@ import {
   AlertCircle,
   ImageIcon,
   Languages,
-  Upload,
 } from "lucide-react";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { useAdminCategoriesList, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
-import { api, unwrapApiList, unwrapPagination, resolveUploadImageUrl, type ProductCategory } from "@/lib/api";
+import { api, unwrapApiList, unwrapPagination, resolveBackendUploadUrl, type ProductCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
@@ -98,10 +97,11 @@ export default function AdminCategories() {
   const rows = unwrapApiList<ProductCategory>(catRes, []);
   const pagination = unwrapPagination(catRes);
   const rowsWithDefaultImages = useMemo(() => {
-    return rows.map((cat) => {
-      const img = String(cat.image_url ?? "").trim();
-      if (img && img !== "null") return cat;
-      return { ...cat, image_url: defaultImageBySlug[cat.slug] || cat.image_url };
+    return rows.map((c) => {
+      const img = String(c.image_url ?? "").trim();
+      if (img) return c;
+      const fallback = defaultImageBySlug[c.slug] ?? "";
+      return { ...c, image_url: fallback };
     });
   }, [rows, defaultImageBySlug]);
 
@@ -338,102 +338,51 @@ export default function AdminCategories() {
             </div>
           )}
 
-          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-border">
-            <div className="space-y-3">
+          <div className="grid md:grid-cols-2 gap-4 pt-2 border-t border-border">
+            <div>
               <label className="block text-xs font-medium mb-1 flex items-center gap-1">
-                <ImageIcon className="h-3.5 w-3.5" /> Image
+                <ImageIcon className="h-3.5 w-3.5" /> Image URL
               </label>
-              
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-2">
-                  <input
-                    value={form.imageUrl}
-                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                    placeholder="https://… or /Backend/uploads/…"
-                    className="flex-1 px-3 py-2 border border-border rounded-sm text-sm font-mono text-xs"
-                  />
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const res = await api.uploadCategoryImage(file);
-                          if (res.success && res.data?.url) {
-                            setForm({ ...form, imageUrl: res.data.url });
-                            showSuccessToast("Upload", "Image uploaded successfully");
-                          }
-                        } catch (err) {
-                          showErrorToast("Upload", "Failed to upload image");
-                        }
-                      }}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    />
-                    <button type="button" className="admin-btn--secondary h-full px-3 flex items-center gap-2">
-                      <Upload className="h-3.5 w-3.5" /> Upload
-                    </button>
-                  </div>
-                </div>
-
-                {form.imageUrl && String(form.imageUrl).trim() !== "" && String(form.imageUrl).trim() !== "null" ? (
-                  <div className="relative group w-full aspect-video md:aspect-[2/1] bg-muted/20 border border-border rounded-sm overflow-hidden">
-                    <img
-                      src={resolveUploadImageUrl(String(form.imageUrl).trim())}
-                      alt="Category preview"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://placehold.co/600x300?text=Image+Not+Found';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button 
-                        type="button" 
-                        onClick={() => setForm({ ...form, imageUrl: "" })}
-                        className="bg-destructive text-destructive-foreground px-3 py-1.5 rounded-sm text-xs font-medium flex items-center gap-1.5"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Remove
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full aspect-video md:aspect-[2/1] bg-muted/10 border border-dashed border-border rounded-sm flex flex-col items-center justify-center text-muted-foreground gap-2">
-                    <ImageIcon className="h-8 w-8 opacity-20" />
-                    <span className="text-xs">No image selected</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium mb-1">Display order</label>
-                <input
-                  type="number"
-                  value={form.displayOrder}
-                  onChange={(e) => setForm({ ...form, displayOrder: parseInt(e.target.value, 10) || 0 })}
-                  className="w-full px-3 py-2 border border-border rounded-sm text-sm"
+              <input
+                value={form.imageUrl}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                placeholder="https://… or /Backend/uploads/…"
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm font-mono text-xs"
+              />
+              {form.imageUrl.trim() ? (
+                <img
+                  src={resolveBackendUploadUrl(form.imageUrl.trim())}
+                  alt="Category preview"
+                  className="mt-2 h-20 w-full object-cover rounded-sm border border-border bg-muted/20"
+                  loading="lazy"
                 />
-              </div>
-              {editingId && (
-                <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="cat-active"
-                    checked={form.isActive}
-                    onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                    className="rounded-sm border-border text-accent focus:ring-accent"
-                  />
-                  <label htmlFor="cat-active" className="text-sm font-medium">
-                    Active (visible on storefront)
-                  </label>
-                </div>
-              )}
+              ) : null}
             </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Display order</label>
+              <input
+                type="number"
+                value={form.displayOrder}
+                onChange={(e) => setForm({ ...form, displayOrder: parseInt(e.target.value, 10) || 0 })}
+                className="w-full px-3 py-2 border border-border rounded-sm text-sm"
+              />
+            </div>
+            {editingId && (
+              <div className="md:col-span-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="cat-active"
+                  checked={form.isActive}
+                  onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                />
+                <label htmlFor="cat-active" className="text-sm">
+                  Active (visible on storefront)
+                </label>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2 pt-4 border-t border-border">
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={() => void handleSubmit()}
@@ -443,16 +392,16 @@ export default function AdminCategories() {
               {(createMutation.isPending || updateMutation.isPending) && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
-              {editingId ? "Save Changes" : "Create Category"}
+              {editingId ? "Save" : "Create"}
             </button>
-            <button type="button" onClick={closeForm} className="px-6 py-2 border border-border rounded-sm text-sm hover:bg-muted transition-colors">
+            <button type="button" onClick={closeForm} className="px-6 py-2 border border-border rounded-sm text-sm">
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      <div className="overflow-x-auto border border-border rounded-sm bg-card">
+      <div className="overflow-x-auto border border-border rounded-sm">
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
@@ -466,14 +415,14 @@ export default function AdminCategories() {
           </thead>
           <tbody>
             {filtered.map((c) => (
-              <tr key={c.id} className="border-t border-border hover:bg-secondary/40 transition-colors">
+              <tr key={c.id} className="border-t border-border hover:bg-secondary/40">
                 <td className="p-3 text-muted-foreground">{c.display_order ?? 0}</td>
                 <td className="p-3 font-medium">{c.name}</td>
                 <td className="p-3 font-mono text-xs">{c.slug}</td>
                 <td className="p-3 hidden md:table-cell max-w-[200px] truncate text-xs text-muted-foreground">
-                  {c.image_url && String(c.image_url).trim() !== "null" ? (
+                  {c.image_url ? (
                     <img
-                      src={resolveUploadImageUrl(String(c.image_url))}
+                      src={resolveBackendUploadUrl(String(c.image_url))}
                       alt={c.name}
                       className="h-10 w-16 object-cover rounded-sm border border-border bg-muted/20"
                       loading="lazy"
@@ -482,31 +431,23 @@ export default function AdminCategories() {
                     "—"
                   )}
                 </td>
-                <td className="p-3">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                    (c.is_active === false || (c as any).is_active === 0) 
-                      ? "bg-destructive/10 text-destructive" 
-                      : "bg-success/10 text-success"
-                  }`}>
-                    {c.is_active === false || (c as any).is_active === 0 ? "Inactive" : "Active"}
-                  </span>
-                </td>
+                <td className="p-3">{c.is_active === false || (c as any).is_active === 0 ? "No" : "Yes"}</td>
                 <td className="p-3 text-right space-x-1">
                   <button
                     type="button"
                     onClick={() => void openEdit(c)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs bg-secondary hover:bg-muted transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs bg-secondary hover:bg-muted"
                   >
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm("Are you sure you want to delete this category?")) deleteMutation.mutate(c.id);
+                      if (confirm("Soft-delete this category?")) deleteMutation.mutate(c.id);
                     }}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs text-destructive hover:bg-destructive/10"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </td>
               </tr>
