@@ -89,6 +89,7 @@ export default function AdminCustomers() {
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [detailTab, setDetailTab] = useState<"activity" | "notes" | "tasks">("activity");
   const [newCustomer, setNewCustomer] = useState({
     company_name: "",
@@ -96,6 +97,13 @@ export default function AdminCustomers() {
     email: "",
     phone: "",
     create_account: true,
+  });
+  const [editForm, setEditForm] = useState({
+    company_name: "",
+    full_name: "",
+    email: "",
+    phone: "",
+    status: "active" as Customer["status"],
   });
   const importInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
@@ -127,10 +135,13 @@ export default function AdminCustomers() {
         setShowCreateModal(false);
         setNewCustomer({ company_name: "", full_name: "", email: "", phone: "", create_account: true });
         if (res?.data?.account_created || res?.account_created) {
-          showSuccessToast("Customer created and welcome email with credentials sent.");
+          showSuccessToast("Customers", "Customer created and welcome email with credentials sent.");
         } else {
-          showSuccessToast("Customer created successfully.");
+          showSuccessToast("Customers", "Customer created successfully.");
         }
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Customers", e instanceof Error ? e.message : "Failed to create customer");
       },
     }
   );
@@ -139,8 +150,13 @@ export default function AdminCustomers() {
     ({ id, data }: { id: string; data: any }) => api.updateCustomer(id, data),
     {
       onSuccess: () => {
+        showSuccessToast("Customers", "Customer updated successfully");
         queryClient.invalidateQueries({ queryKey: ['customers'] });
         queryClient.invalidateQueries({ queryKey: ['customer'] });
+        setShowEditModal(false);
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Customers", e instanceof Error ? e.message : "Failed to update customer");
       },
     }
   );
@@ -149,8 +165,12 @@ export default function AdminCustomers() {
     (id: string) => api.deleteCustomer(id),
     {
       onSuccess: () => {
+        showSuccessToast("Customers", "Customer deleted");
         queryClient.invalidateQueries({ queryKey: ['customers'] });
         setSelectedCustomerId(null);
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Customers", e instanceof Error ? e.message : "Delete failed");
       },
     }
   );
@@ -161,10 +181,10 @@ export default function AdminCustomers() {
     {
       onSuccess: (res, { customerId }) => {
         queryClient.invalidateQueries({ queryKey: ["customer", customerId, "documents"] });
-        showSuccessToast(res.message || "Document uploaded.");
+        showSuccessToast("Documents", res.message || "Document uploaded.");
       },
       onError: (e: unknown) => {
-        showErrorToast(e instanceof Error ? e.message : "Upload failed");
+        showErrorToast("Documents", e instanceof Error ? e.message : "Upload failed");
       },
     }
   );
@@ -175,10 +195,10 @@ export default function AdminCustomers() {
     {
       onSuccess: (res, { customerId }) => {
         queryClient.invalidateQueries({ queryKey: ["customer", customerId, "documents"] });
-        showSuccessToast(res.message || "Document removed.");
+        showSuccessToast("Documents", res.message || "Document removed.");
       },
       onError: (e: unknown) => {
-        showErrorToast(e instanceof Error ? e.message : "Delete failed");
+        showErrorToast("Documents", e instanceof Error ? e.message : "Delete failed");
       },
     }
   );
@@ -189,14 +209,14 @@ export default function AdminCustomers() {
       const d = res.data as { imported?: number; errors?: string[] } | undefined;
       const n = d?.imported ?? 0;
       const errs = d?.errors?.length ?? 0;
-      showSuccessToast(res.message || `Imported ${n} customer(s).`);
+      showSuccessToast("Import", res.message || `Imported ${n} customer(s).`);
       if (errs > 0) {
-        showErrorToast(`${errs} row(s) skipped (duplicate email or missing fields).`);
+        showErrorToast("Import", `${errs} row(s) skipped (duplicate email or missing fields).`);
         if (d?.errors?.length) console.warn('Customer import row errors:', d.errors);
       }
     },
     onError: (e: unknown) => {
-      showErrorToast(e instanceof Error ? e.message : 'Import failed');
+      showErrorToast("Import", e instanceof Error ? e.message : 'Import failed');
     },
   });
 
@@ -209,10 +229,10 @@ export default function AdminCustomers() {
         queryClient.invalidateQueries({ queryKey: ['customers'] });
         setNoteDraft("");
         setNoteIsInternal(true);
-        showSuccessToast("Note added");
+        showSuccessToast("Notes", "Note added");
       },
       onError: (e: unknown) => {
-        showErrorToast(e instanceof Error ? e.message : "Failed to add note");
+        showErrorToast("Notes", e instanceof Error ? e.message : "Failed to add note");
       },
     }
   );
@@ -305,6 +325,23 @@ export default function AdminCustomers() {
     createCustomerMutation.mutate(newCustomer);
   };
 
+  const handleEditCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCustomerId) return;
+    updateCustomerMutation.mutate({ id: selectedCustomerId, data: editForm });
+  };
+
+  const openEditModal = (c: Customer) => {
+    setEditForm({
+      company_name: c.company_name || "",
+      full_name: c.full_name || "",
+      email: c.email || "",
+      phone: c.phone || "",
+      status: c.status,
+    });
+    setShowEditModal(true);
+  };
+
   const handleToggleStatus = (customer: Customer) => {
     const newStatus = customer.status === "active" ? "inactive" : "active";
     updateCustomerMutation.mutate({
@@ -370,7 +407,7 @@ export default function AdminCustomers() {
                   const v = e.target.value || null;
                   updateCustomerMutation.mutate({ id: c.id, data: { assignedContactId: v } });
                 }}
-                disabled={contactsLoading || updateCustomerMutation.isLoading}
+                disabled={contactsLoading || updateCustomerMutation.isPending}
                 className="text-xs bg-background outline-none"
               >
                 <option value="">Unassigned</option>
@@ -381,7 +418,10 @@ export default function AdminCustomers() {
                 ))}
               </select>
             </div>
-            <button className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">
+            <button 
+              onClick={() => openEditModal(c)}
+              className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
+            >
               <Edit className="h-3.5 w-3.5" /> Edit
             </button>
             <a href={`mailto:${c.email}`} className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">
@@ -389,7 +429,7 @@ export default function AdminCustomers() {
             </a>
             <button 
               onClick={() => handleToggleStatus(c)}
-              disabled={updateCustomerMutation.isLoading}
+              disabled={updateCustomerMutation.isPending}
               className="px-3 py-2 border border-destructive text-destructive rounded-sm text-xs font-medium hover:bg-destructive/10 transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               {c.status === "active" ? <><Ban className="h-3.5 w-3.5" /> Deactivate</> : <><CheckCircle className="h-3.5 w-3.5" /> Activate</>}
@@ -400,10 +440,10 @@ export default function AdminCustomers() {
                   deleteCustomerMutation.mutate(c.id);
                 }
               }}
-              disabled={deleteCustomerMutation.isLoading}
+              disabled={deleteCustomerMutation.isPending}
               className="px-3 py-2 border border-border text-destructive rounded-sm text-xs font-medium hover:bg-destructive/10 transition-colors disabled:opacity-50"
             >
-              {deleteCustomerMutation.isLoading ? "Deleting…" : "Delete"}
+              {deleteCustomerMutation.isPending ? "Deleting…" : "Delete"}
             </button>
           </div>
         </div>
@@ -489,10 +529,10 @@ export default function AdminCustomers() {
                 <button
                   type="button"
                   onClick={() => documentInputRef.current?.click()}
-                  disabled={uploadDocumentMutation.isLoading}
+                  disabled={uploadDocumentMutation.isPending}
                   className="text-xs px-2.5 py-1.5 border border-border rounded-sm font-medium hover:bg-secondary transition-colors flex items-center gap-1 disabled:opacity-50"
                 >
-                  {uploadDocumentMutation.isLoading ? (
+                  {uploadDocumentMutation.isPending ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
                     <Upload className="h-3 w-3" />
@@ -532,7 +572,7 @@ export default function AdminCustomers() {
                       <button
                         type="button"
                         title="Remove document"
-                        disabled={deleteDocumentMutation.isLoading}
+                        disabled={deleteDocumentMutation.isPending}
                         onClick={() => {
                           if (!confirm("Remove this document from the customer record?")) return;
                           deleteDocumentMutation.mutate({ documentId: doc.id, customerId: c.id });
@@ -639,10 +679,10 @@ export default function AdminCustomers() {
                   </label>
                   <button
                     type="submit"
-                    disabled={addCustomerNoteMutation.isLoading || !noteDraft.trim()}
+                    disabled={addCustomerNoteMutation.isPending || !noteDraft.trim()}
                     className="btn-accent px-4 py-2 rounded-sm text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                   >
-                    <Plus className="h-4 w-4" /> {addCustomerNoteMutation.isLoading ? "Adding..." : "Add note"}
+                    <Plus className="h-4 w-4" /> {addCustomerNoteMutation.isPending ? "Adding..." : "Add note"}
                   </button>
                 </div>
               </form>
@@ -852,10 +892,10 @@ export default function AdminCustomers() {
                         {
                           onSuccess: () => {
                             setTaskDraft({ title: "", dueAtLocal: "", assignedTo: "", notes: "" });
-                            showSuccessToast("Task created");
+                            showSuccessToast("Tasks", "Task created");
                           },
                           onError: (err: unknown) => {
-                            showErrorToast(err instanceof Error ? err.message : "Failed to create task");
+                            showErrorToast("Tasks", err instanceof Error ? err.message : "Failed to create task");
                           },
                         }
                       );
@@ -907,10 +947,10 @@ export default function AdminCustomers() {
                     </div>
                     <button
                       type="submit"
-                      disabled={createTaskMutation.isLoading || !taskDraft.title.trim()}
+                      disabled={createTaskMutation.isPending || !taskDraft.title.trim()}
                       className="btn-accent px-4 py-2 rounded-sm text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                     >
-                      <Plus className="h-4 w-4" /> {createTaskMutation.isLoading ? "Creating..." : "Create task"}
+                      <Plus className="h-4 w-4" /> {createTaskMutation.isPending ? "Creating..." : "Create task"}
                     </button>
                   </form>
                 </div>
@@ -966,8 +1006,11 @@ export default function AdminCustomers() {
                               {t.status !== "done" ? (
                                 <button
                                   type="button"
-                                  disabled={updateTaskMutation.isLoading}
-                                  onClick={() => updateTaskMutation.mutate({ taskId: t.id, payload: { status: "done" } as any })}
+                                  disabled={updateTaskMutation.isPending}
+                                  onClick={() => updateTaskMutation.mutate({ taskId: t.id, payload: { status: "done" } as any }, {
+                                    onSuccess: () => showSuccessToast("Tasks", "Task marked as done"),
+                                    onError: (err: unknown) => showErrorToast("Tasks", err instanceof Error ? err.message : "Failed to update task")
+                                  })}
                                   className="px-2.5 py-1.5 border border-success text-success rounded-sm text-xs font-medium hover:bg-success/10 transition-colors"
                                 >
                                   <CheckCircle2 className="inline h-3.5 w-3.5 mr-1 -mt-0.5" /> Done
@@ -975,8 +1018,11 @@ export default function AdminCustomers() {
                               ) : (
                                 <button
                                   type="button"
-                                  disabled={updateTaskMutation.isLoading}
-                                  onClick={() => updateTaskMutation.mutate({ taskId: t.id, payload: { status: "open" } as any })}
+                                  disabled={updateTaskMutation.isPending}
+                                  onClick={() => updateTaskMutation.mutate({ taskId: t.id, payload: { status: "open" } as any }, {
+                                    onSuccess: () => showSuccessToast("Tasks", "Task reopened"),
+                                    onError: (err: unknown) => showErrorToast("Tasks", err instanceof Error ? err.message : "Failed to update task")
+                                  })}
                                   className="px-2.5 py-1.5 border border-border rounded-sm text-xs font-medium hover:bg-muted/40 transition-colors"
                                 >
                                   <Clock className="inline h-3.5 w-3.5 mr-1 -mt-0.5" /> Reopen
@@ -985,10 +1031,13 @@ export default function AdminCustomers() {
 
                               <button
                                 type="button"
-                                disabled={deleteTaskMutation.isLoading}
+                                disabled={deleteTaskMutation.isPending}
                                 onClick={() => {
                                   if (!confirm("Delete this task?")) return;
-                                  deleteTaskMutation.mutate(t.id);
+                                  deleteTaskMutation.mutate(t.id, {
+                                    onSuccess: () => showSuccessToast("Tasks", "Task deleted"),
+                                    onError: (err: unknown) => showErrorToast("Tasks", err instanceof Error ? err.message : "Failed to delete task")
+                                  });
                                 }}
                                 className="p-1.5 text-destructive hover:bg-destructive/10 rounded-sm disabled:opacity-50 transition-colors"
                                 title="Delete task"
@@ -1006,6 +1055,102 @@ export default function AdminCustomers() {
           )}
         </div>
 
+      </div>
+    );
+  }
+
+  // ── Edit Modal ──
+  if (showEditModal && selectedCustomerId) {
+    return (
+      <div className="space-y-6">
+        <button onClick={() => setShowEditModal(false)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Back to Details
+        </button>
+
+        <div className="dashboard-card max-w-2xl">
+          <h2 className="font-display font-bold text-lg md:text-xl mb-6">Edit Customer</h2>
+
+          <form onSubmit={handleEditCustomer} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Company Name</label>
+                <input
+                  type="text"
+                  value={editForm.company_name}
+                  onChange={(e) => setEditForm({ ...editForm, company_name: e.target.value })}
+                  placeholder="e.g., Acme Transport"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Contact Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                  placeholder="e.g., John Smith"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="e.g., john@acme.com"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Phone</label>
+                <input
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  placeholder="e.g., +1 (555) 000-0000"
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value as Customer["status"] })}
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={updateCustomerMutation.isPending}
+                className="btn-accent px-6 py-2 rounded-sm text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              >
+                {updateCustomerMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save Changes
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowEditModal(false)} 
+                className="px-6 py-2 border border-border rounded-sm text-sm font-medium hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     );
   }
@@ -1092,10 +1237,10 @@ export default function AdminCustomers() {
             <div className="flex gap-2 pt-2">
               <button
                 type="submit"
-                disabled={createCustomerMutation.isLoading}
+                disabled={createCustomerMutation.isPending}
                 className="btn-accent px-6 py-2 rounded-sm text-sm font-medium disabled:opacity-50 flex items-center gap-2"
               >
-                {createCustomerMutation.isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {createCustomerMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 {newCustomer.create_account ? "Create Customer & Send Email" : "Create Customer"}
               </button>
               <button 
@@ -1132,10 +1277,10 @@ export default function AdminCustomers() {
                 <button
                   type="button"
                   onClick={() => importInputRef.current?.click()}
-                  disabled={importCustomersMutation.isLoading}
+                  disabled={importCustomersMutation.isPending}
                   className="px-4 py-2 border border-border rounded-sm text-sm font-medium flex items-center gap-2 hover:bg-secondary transition-colors disabled:opacity-50"
                 >
-                  {importCustomersMutation.isLoading ? (
+                  {importCustomersMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Upload className="h-4 w-4" />
