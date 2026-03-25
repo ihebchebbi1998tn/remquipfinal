@@ -1358,6 +1358,25 @@ export default function AdminCustomers() {
                       >
                         <Eye className="h-3 w-3" /> View
                       </button>
+                      <button 
+                        onClick={() => handleToggleStatus(customer)}
+                        disabled={updateCustomerMutation.isPending}
+                        className="flex-1 text-xs py-1.5 border border-destructive text-destructive rounded-sm flex items-center justify-center gap-1 hover:bg-destructive/10 disabled:opacity-50"
+                      >
+                        {customer.status === "active" ? <Ban className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
+                        {customer.status === "active" ? "Deactivate" : "Activate"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm("Delete this customer?")) {
+                            deleteCustomerMutation.mutate(customer.id);
+                          }
+                        }}
+                        disabled={deleteCustomerMutation.isPending}
+                        className="p-1.5 border border-border text-destructive rounded-sm flex items-center justify-center disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1400,13 +1419,35 @@ export default function AdminCustomers() {
                   </td>
                   <td className="px-3 py-3"><span className={statusStyles[customer.status]}>{customer.status}</span></td>
                   <td className="px-3 py-3">
-                    <button 
-                      onClick={() => setSelectedCustomerId(customer.id)}
-                      className="p-1.5 hover:bg-secondary rounded-sm transition-colors" 
-                      title="View Details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button 
+                        onClick={() => setSelectedCustomerId(customer.id)}
+                        className="p-1.5 hover:bg-secondary rounded-sm transition-colors" 
+                        title="View Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleToggleStatus(customer)}
+                        disabled={updateCustomerMutation.isPending}
+                        className="p-1.5 hover:bg-secondary rounded-sm transition-colors text-destructive" 
+                        title={customer.status === "active" ? "Deactivate" : "Activate"}
+                      >
+                        {customer.status === "active" ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4 text-success" />}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (confirm("Delete this customer?")) {
+                            deleteCustomerMutation.mutate(customer.id);
+                          }
+                        }}
+                        disabled={deleteCustomerMutation.isPending}
+                        className="p-1.5 hover:bg-secondary rounded-sm transition-colors text-destructive" 
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
