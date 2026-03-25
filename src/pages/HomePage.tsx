@@ -176,7 +176,7 @@ export default function HomePage() {
           const list = unwrapApiList<ProductCategory>(categoriesResponse, defaultCatalogCategories);
           const merged = list.map((cat) => {
             const img = String(cat.image_url ?? "").trim();
-            if (img) return cat;
+            if (img && img !== "null") return cat;
             return { ...cat, image_url: defaultImageBySlug[cat.slug] || cat.image_url };
           });
           setCategoriesList(merged);
