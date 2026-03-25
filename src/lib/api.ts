@@ -478,7 +478,7 @@ export function resolveUploadImageUrl(imageUrl: string | null | undefined): stri
 
   // If the path already includes the base prefix (e.g. /remquip/backend),
   // just prepend the origin to satisfy the absolute URL requirement without duplication.
-  if (basePrefix && basePrefix !== "" && path.startsWith(basePrefix)) {
+  if (basePrefix && basePrefix !== "" && path.toLowerCase().startsWith(basePrefix.toLowerCase())) {
     return `${baseUrl}${path}`;
   }
 

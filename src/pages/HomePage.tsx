@@ -421,7 +421,7 @@ export default function HomePage() {
                     <div key={product.id} className="group relative flex flex-col bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-border/60">
                       <Link to={productDetailHref(product.id, product.slug)} className="block aspect-[4/3] overflow-hidden bg-muted/30 relative">
                         {product.image ? (
-                          <img src={product.image} alt={product.name} className={`w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal group-hover:scale-110 transition-transform duration-700 ease-out ${isOutOfStock ? "opacity-40 grayscale" : ""}`} loading="lazy" />
+                          <img src={product.image} alt={product.name} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out ${isOutOfStock ? "opacity-40 grayscale" : ""}`} loading="lazy" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground/30"><Package className="h-10 w-10 opacity-20" /></div>
                         )}

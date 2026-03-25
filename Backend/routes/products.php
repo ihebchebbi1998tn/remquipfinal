@@ -18,7 +18,7 @@ if ($method === 'GET' && $id === 'featured' && !$action) {
     try {
         $rows = $conn->fetchAll(
             "SELECT p.id, p.sku, p.name, p.description, p.base_price as price, c.slug as categorySlug,
-                    (SELECT image_url FROM remquip_product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image,
+                    (SELECT image_url FROM remquip_product_images WHERE product_id = p.id ORDER BY is_primary DESC, display_order ASC LIMIT 1) as image,
                     COALESCE(inv.quantity_available, 0) as stock
              FROM remquip_products p
              LEFT JOIN remquip_categories c ON p.category_id = c.id
@@ -104,7 +104,7 @@ if ($method === 'GET' && (!$id || $id === 'search' || ($id === 'category' && $ac
                        p.is_active,
                        CASE WHEN p.is_active = 1 THEN 'active' ELSE 'draft' END as status,
                        c.name as category, c.slug as categorySlug,
-                       (SELECT image_url FROM remquip_product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as image,
+                       (SELECT image_url FROM remquip_product_images WHERE product_id = p.id ORDER BY is_primary DESC, display_order ASC LIMIT 1) as image,
                        COALESCE(inv.quantity_available, 0) as stock,
                        COALESCE(inv.quantity_available, 0) as stock_quantity
                 FROM remquip_products p
