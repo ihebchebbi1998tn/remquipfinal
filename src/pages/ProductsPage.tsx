@@ -270,7 +270,7 @@ export default function ProductsPage() {
                         <img 
                            src={sf.image} 
                            alt={product.name} 
-                           className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out ${isOutOfStock ? "opacity-50 grayscale" : ""}`} 
+                           className={`w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal group-hover:scale-110 transition-transform duration-700 ease-out ${isOutOfStock ? "opacity-50 grayscale" : ""}`} 
                            loading="lazy" 
                         />
                       ) : (
