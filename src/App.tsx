@@ -56,6 +56,8 @@ const AdminAccess = lazy(() => import("@/pages/admin/AdminAccess"));
 const AdminSetupAdmins = lazy(() => import("@/pages/admin/AdminSetupAdmins"));
 const UserDashboard = lazy(() => import("@/pages/UserDashboard"));
 const AdminChat = lazy(() => import("@/pages/admin/AdminChat"));
+const AdminApplications = lazy(() => import("@/pages/admin/AdminApplications"));
+const CustomerApplicationPage = lazy(() => import("@/pages/CustomerApplicationPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -106,6 +108,9 @@ const App = () => (
                       <Route path="/about" element={<AboutPage />} />
                     </Route>
 
+                    {/* Public standalone pages (no store chrome) */}
+                    <Route path="/apply" element={<CustomerApplicationPage />} />
+
                     {/* Admin sign-in (no storefront chrome) — must be before /admin layout */}
                     <Route path="/admin/login" element={<LoginPage />} />
 
@@ -137,6 +142,7 @@ const App = () => (
                       <Route path="access"         element={<PermissionGate permission="canManageUsers"><AdminAccess /></PermissionGate>} />
                       <Route path="settings"       element={<PermissionGate permission="canEditSettings"><AdminSettings /></PermissionGate>} />
                       <Route path="chat"           element={<PermissionGate permission="canViewDashboard"><AdminChat /></PermissionGate>} />
+                      <Route path="applications"   element={<PermissionGate permission="canManageCustomers"><AdminApplications /></PermissionGate>} />
                     </Route>
 
                     <Route path="*" element={<NotFound />} />

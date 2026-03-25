@@ -41,10 +41,11 @@ const navGroups: NavGroup[] = [
   {
     label: "Sales",
     items: [
-      { label: "Orders",          icon: ShoppingBag,  path: "/admin/orders",    permission: "canManageOrders" },
-      { label: "Abandoned Carts", icon: ShoppingCart, path: "/admin/carts",     permission: "canManageOrders" },
-      { label: "Customers",       icon: Users,        path: "/admin/customers", permission: "canManageCustomers" },
-      { label: "Discounts",       icon: Tag,          path: "/admin/discounts", permission: "canManageDiscounts" },
+      { label: "Orders",          icon: ShoppingBag,  path: "/admin/orders",        permission: "canManageOrders" },
+      { label: "Abandoned Carts", icon: ShoppingCart, path: "/admin/carts",         permission: "canManageOrders" },
+      { label: "Customers",       icon: Users,        path: "/admin/customers",     permission: "canManageCustomers" },
+      { label: "Applications",    icon: FileText,     path: "/admin/applications",  permission: "canManageCustomers" },
+      { label: "Discounts",       icon: Tag,          path: "/admin/discounts",     permission: "canManageDiscounts" },
     ],
   },
   {

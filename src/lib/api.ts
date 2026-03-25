@@ -245,6 +245,44 @@ export interface CustomerAddress {
   created_at: string;
 }
 
+// Account Applications
+export interface AccountApplication {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  company_name: string;
+  neq_tva?: string;
+  contact_person: string;
+  contact_title?: string;
+  phone?: string;
+  email: string;
+  distributor_type?: string[];
+  distributor_type_other?: string;
+  num_trucks?: number;
+  num_trailers?: number;
+  billing_address?: string;
+  shipping_address?: string;
+  accounting_contact?: string;
+  accounting_phone?: string;
+  billing_email?: string;
+  payment_terms?: string;
+  payment_method?: string;
+  bank_reference?: string;
+  credit_limit_requested?: number;
+  supplier_ref_1?: string;
+  supplier_ref_2?: string;
+  parts_needed?: string;
+  special_requests?: string;
+  sales_representative?: string;
+  signatory_name?: string;
+  signatory_title?: string;
+  signature_date?: string;
+  signature_data?: string;
+  rejection_reason?: string;
+  approved_customer_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Orders
 export interface Order {
   id: string;
@@ -1716,6 +1754,35 @@ class APIService {
 
   async updateCartStatus(id: number | string, status: 'abandoned' | 'recovered' | 'completed'): Promise<ApiResponse> {
     return this.request('PATCH', API_ENDPOINTS.CARTS.UPDATE.replace(':id', String(id)), { status });
+  }
+
+  // ==================== ACCOUNT APPLICATIONS ====================
+
+  /** Public: submit a new account application. */
+  async submitAccountApplication(data: Partial<AccountApplication>): Promise<ApiResponse<{ id: string }>> {
+    return this.request('POST', API_ENDPOINTS.ACCOUNT_APPLICATIONS.SUBMIT, data, { skipAuthRedirect: true });
+  }
+
+  /** Public: get a submitted application by ID. */
+  async getAccountApplication(id: string): Promise<ApiResponse<AccountApplication>> {
+    return this.request('GET', API_ENDPOINTS.ACCOUNT_APPLICATIONS.GET.replace(':id', id), undefined, { skipAuthRedirect: true });
+  }
+
+  /** Admin: list applications with optional status filter. */
+  async getAccountApplications(page: number = 1, limit: number = 20, status?: string): Promise<PaginatedResponse<AccountApplication>> {
+    let endpoint = `${API_ENDPOINTS.ACCOUNT_APPLICATIONS.LIST}?page=${page}&limit=${limit}`;
+    if (status) endpoint += `&status=${status}`;
+    return normalizePaginated<AccountApplication>(await this.request('GET', endpoint));
+  }
+
+  /** Admin: approve an application (creates customer + user account). */
+  async approveAccountApplication(id: string): Promise<ApiResponse<{ id: string; customer_id: string; account_created: boolean }>> {
+    return this.request('PATCH', API_ENDPOINTS.ACCOUNT_APPLICATIONS.APPROVE.replace(':id', id));
+  }
+
+  /** Admin: reject an application with optional reason. */
+  async rejectAccountApplication(id: string, reason?: string): Promise<ApiResponse<{ id: string }>> {
+    return this.request('PATCH', API_ENDPOINTS.ACCOUNT_APPLICATIONS.REJECT.replace(':id', id), { reason });
   }
 
   // ==================== STATIC METHODS ====================

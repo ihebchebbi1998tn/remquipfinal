@@ -164,3 +164,58 @@ function remquip_tpl_welcome_customer(array $v): array
     $text = "Hi {$v['name']},\n\nYour REMQUIP account has been created.\n\nEmail: {$v['email']}\nPassword: {$v['password']}\n\nSign in at: {$v['login_url']}\n\nPlease change your password after first login.\n\n— REMQUIP";
     return ['html' => $html, 'text' => $text];
 }
+
+// =====================================================================
+// ACCOUNT APPLICATION EMAIL TEMPLATES
+// =====================================================================
+
+function remquip_tpl_application_received(array $v): array
+{
+    $name    = htmlspecialchars($v['name'] ?? 'there', ENT_QUOTES, 'UTF-8');
+    $company = htmlspecialchars($v['company'] ?? '', ENT_QUOTES, 'UTF-8');
+    $inner = '<p style="margin:0 0 16px;">Hi ' . $name . ',</p>'
+        . '<p style="margin:0 0 20px;">Thank you for submitting your account application'
+        . ($company !== '' ? ' for <strong>' . $company . '</strong>' : '') . '.</p>'
+        . '<p style="margin:0 0 16px;">Our team will review your application and get back to you shortly. You will receive another email once your application has been processed.</p>'
+        . '<p style="margin:24px 0 0;font-size:14px;">Thank you for choosing REMQUIP.</p>';
+    $html = remquip_email_layout('Application received', 'Application Received', $inner);
+    $text = "Hi {$v['name']},\n\nThank you for submitting your account application"
+        . (!empty($v['company']) ? " for {$v['company']}" : '') . ".\n\nOur team will review it and get back to you shortly.\n\n— REMQUIP";
+    return ['html' => $html, 'text' => $text];
+}
+
+function remquip_tpl_application_approved(array $v): array
+{
+    $name     = htmlspecialchars($v['name'] ?? 'there', ENT_QUOTES, 'UTF-8');
+    $company  = htmlspecialchars($v['company'] ?? '', ENT_QUOTES, 'UTF-8');
+    $loginUrl = htmlspecialchars($v['login_url'] ?? '#', ENT_QUOTES, 'UTF-8');
+    $inner = '<p style="margin:0 0 16px;">Hi ' . $name . ',</p>'
+        . '<p style="margin:0 0 20px;">Great news! Your account application'
+        . ($company !== '' ? ' for <strong>' . $company . '</strong>' : '')
+        . ' has been <strong style="color:#22c55e;">approved</strong>.</p>'
+        . '<p style="margin:0 0 16px;">Your customer account is now active. You can sign in to your portal to place orders, view invoices, and manage your account.</p>'
+        . '<p style="margin:24px 0;"><a href="' . $loginUrl . '" style="display:inline-block;padding:14px 28px;background:#e85d04;color:#0f1419;text-decoration:none;font-weight:700;border-radius:4px;">Access Your Account</a></p>'
+        . '<p style="margin:0;font-size:13px;color:#94a3b8;">If you have any questions, reply to this email or contact our sales team.</p>';
+    $html = remquip_email_layout('Account approved', 'Account Application Approved', $inner);
+    $text = "Hi {$v['name']},\n\nYour account application has been approved!\n\nSign in at: {$v['login_url']}\n\n— REMQUIP";
+    return ['html' => $html, 'text' => $text];
+}
+
+function remquip_tpl_application_admin_notification(array $v): array
+{
+    $company = htmlspecialchars($v['company'] ?? '', ENT_QUOTES, 'UTF-8');
+    $contact = htmlspecialchars($v['contact'] ?? '', ENT_QUOTES, 'UTF-8');
+    $email   = htmlspecialchars($v['email'] ?? '', ENT_QUOTES, 'UTF-8');
+    $phone   = htmlspecialchars($v['phone'] ?? '', ENT_QUOTES, 'UTF-8');
+    $inner = '<p style="margin:0 0 16px;">A new customer account application has been submitted and is awaiting your review.</p>'
+        . '<table role="presentation" cellspacing="0" cellpadding="8" style="width:100%;border-collapse:collapse;font-size:14px;">'
+        . '<tr><td style="border-bottom:1px solid #2a3441;color:#94a3b8;width:120px;">Company</td><td style="border-bottom:1px solid #2a3441;"><strong>' . $company . '</strong></td></tr>'
+        . '<tr><td style="border-bottom:1px solid #2a3441;color:#94a3b8;">Contact</td><td style="border-bottom:1px solid #2a3441;">' . $contact . '</td></tr>'
+        . '<tr><td style="border-bottom:1px solid #2a3441;color:#94a3b8;">Email</td><td style="border-bottom:1px solid #2a3441;">' . $email . '</td></tr>'
+        . ($phone !== '' ? '<tr><td style="color:#94a3b8;">Phone</td><td>' . $phone . '</td></tr>' : '')
+        . '</table>'
+        . '<p style="margin:24px 0 0;font-size:14px;">Log in to the admin dashboard to review and approve or reject this application.</p>';
+    $html = remquip_email_layout('New account application: ' . $company, 'New Account Application', $inner);
+    $text = "New account application\nCompany: {$v['company']}\nContact: {$v['contact']}\nEmail: {$v['email']}\nPhone: {$v['phone']}\n\nReview in admin dashboard.";
+    return ['html' => $html, 'text' => $text];
+}

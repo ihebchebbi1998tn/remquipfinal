@@ -285,4 +285,18 @@ export const API_ENDPOINTS = {
     /** POST - Create Stripe Checkout Session */
     CREATE_SESSION: '/stripe/create-checkout-session',
   },
+
+  // ==================== ACCOUNT APPLICATIONS ENDPOINTS ====================
+  ACCOUNT_APPLICATIONS: {
+    /** POST - Submit application (public) */
+    SUBMIT: '/account-applications',
+    /** GET - List applications (admin) */
+    LIST: '/account-applications',
+    /** GET - Get single application */
+    GET: '/account-applications/:id',
+    /** PATCH - Approve application (admin) */
+    APPROVE: '/account-applications/:id/approve',
+    /** PATCH - Reject application (admin) */
+    REJECT: '/account-applications/:id/reject',
+  },
 } as const;

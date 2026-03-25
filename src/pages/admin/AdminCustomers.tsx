@@ -1,4 +1,5 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Eye,
   Search,
@@ -27,6 +28,8 @@ import {
   CheckCircle2,
   XCircle,
   FolderOpen,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   useCustomers,
@@ -101,6 +104,16 @@ export default function AdminCustomers() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [detailTab, setDetailTab] = useState<"activity" | "notes" | "tasks">("activity");
+  const [linkCopied, setLinkCopied] = useState(false);
+  
+  const copyFormLink = () => {
+    const url = `${window.location.origin}/apply`;
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  };
+
   const [newCustomer, setNewCustomer] = useState({
     company_name: "",
     full_name: "",
@@ -1277,6 +1290,14 @@ export default function AdminCustomers() {
             subtitle={pagination ? `${pagination.total} total customers` : undefined}
             actions={
               <div className="flex flex-wrap items-center gap-2 self-start">
+                <button
+                  type="button"
+                  onClick={copyFormLink}
+                  className="px-4 py-2 border border-border rounded-sm text-sm font-medium flex items-center gap-2 hover:bg-secondary transition-colors"
+                >
+                  {linkCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                  {linkCopied ? "Form Link Copied!" : "Copy Form Link"}
+                </button>
                 <input
                   ref={importInputRef}
                   type="file"
