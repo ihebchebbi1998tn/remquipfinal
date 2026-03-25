@@ -43,7 +43,7 @@ if ($method === 'POST' && $uploadType === 'image' && !$action) {
         }
         
         // Create upload directory if needed
-        $uploadDir = UPLOAD_DIR . '/images';
+        $uploadDir = UPLOAD_DIR . '/products_images';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
@@ -51,7 +51,7 @@ if ($method === 'POST' && $uploadType === 'image' && !$action) {
         // Generate unique filename
         $filename = 'IMG-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
         $filepath = $uploadDir . '/' . $filename;
-        $publicPath = '/Backend/uploads/images/' . $filename;
+        $publicPath = '/Backend/uploads/products_images/' . $filename;
         
         // Move uploaded file
         if (!move_uploaded_file($file['tmp_name'], $filepath)) {

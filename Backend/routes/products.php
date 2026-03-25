@@ -420,13 +420,13 @@ if ($method === 'POST' && $imgProductId && ($rs[1] ?? '') === 'images' && !isset
         if (!in_array($ext, ALLOWED_IMAGE_EXT, true)) {
             ResponseHelper::sendError('Invalid extension', 400);
         }
-        $uploadDir = UPLOAD_DIR . '/images';
+        $uploadDir = UPLOAD_DIR . '/products_images';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
         $filename = 'PRD-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
         $filepath = $uploadDir . '/' . $filename;
-        $publicPath = '/Backend/uploads/images/' . $filename;
+        $publicPath = '/Backend/uploads/products_images/' . $filename;
         if (!move_uploaded_file($file['tmp_name'], $filepath)) {
             ResponseHelper::sendError('Failed to save file', 500);
         }

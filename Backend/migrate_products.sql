@@ -1,6 +1,6 @@
 -- REMQUIP PRODUCT DATA MIGRATION
 -- Direct SQL script to replace all product and category data.
--- IMAGE URLs POINT TO: /uploads/product_images/
+-- IMAGE URLs POINT TO: /Backend/uploads/products_images/
 
 SET FOREIGN_KEY_CHECKS = 0;
 
