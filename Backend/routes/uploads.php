@@ -43,15 +43,21 @@ if ($method === 'POST' && $uploadType === 'image' && !$action) {
         }
         
         // Create upload directory if needed
-        $uploadDir = UPLOAD_DIR . '/products_images';
+        $type = $_POST['type'] ?? 'products';
+        // Sanitize type
+        $type = preg_replace('/[^a-z0-9_-]/i', '', $type);
+        if (!$type) $type = 'products';
+        
+        $uploadDir = UPLOAD_DIR . '/' . $type . '_images';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
         
         // Generate unique filename
-        $filename = 'IMG-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $prefix = strtoupper(substr($type, 0, 3));
+        $filename = $prefix . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
         $filepath = $uploadDir . '/' . $filename;
-        $publicPath = '/Backend/uploads/products_images/' . $filename;
+        $publicPath = '/Backend/uploads/' . $type . '_images/' . $filename;
         
         // Move uploaded file
         if (!move_uploaded_file($file['tmp_name'], $filepath)) {

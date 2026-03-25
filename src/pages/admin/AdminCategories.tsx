@@ -9,6 +9,7 @@ import {
   AlertCircle,
   ImageIcon,
   Languages,
+  Upload,
 } from "lucide-react";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { useAdminCategoriesList, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
@@ -29,6 +30,8 @@ export default function AdminCategories() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [langTab, setLangTab] = useState<string>("en");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const { data: storefront } = useStorefrontRates();
   const supportedLocales = (storefront as { data?: { supported_locales?: string[] } } | undefined)?.data?.supported_locales ?? ["en", "fr"];
@@ -208,6 +211,29 @@ export default function AdminCategories() {
     });
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'categories');
+      
+      const res = await api.request('POST', '/uploads/image', formData);
+      if (res.success && res.data?.url) {
+        setForm(prev => ({ ...prev, imageUrl: res.data.url }));
+        showSuccessToast("Upload", "Image uploaded successfully");
+      }
+    } catch (err) {
+      showErrorToast("Upload", err instanceof Error ? err.message : "Failed to upload image");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   if (isLoading) {
     return <AdminPageLoading message="Loading categories" />;
   }
@@ -349,6 +375,37 @@ export default function AdminCategories() {
                 placeholder="https://… or /Backend/uploads/…"
                 className="w-full px-3 py-2 border border-border rounded-sm text-sm font-mono text-xs"
               />
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-muted border border-border rounded-sm text-xs font-medium transition-colors"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  {isUploading ? "Uploading..." : "Upload Image"}
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                {form.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, imageUrl: "" })}
+                    className="text-xs text-destructive hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               {form.imageUrl.trim() ? (
                 <img
                   src={resolveBackendUploadUrl(form.imageUrl.trim())}
