@@ -162,7 +162,7 @@ export default function Header() {
             </div>
 
             {/* 2. Primary Desktop Navigation */}
-            <nav className="hidden lg:flex flex-1 justify-center gap-4 xl:gap-8 items-center h-full relative z-10" aria-label="Main">
+            <nav className="hidden lg:flex items-center gap-4 xl:gap-8 h-full relative z-10 ml-6 xl:ml-10" aria-label="Main">
               <Link to="/products" className={navLinkClass("/products")}>
                 {t("nav.products")}
                 <span className={`absolute bottom-0 left-0 w-full h-[3px] rounded-t-full bg-accent transform origin-bottom transition-transform duration-300 ${path.startsWith("/products") ? "scale-y-100" : "scale-y-0 group-hover:scale-y-100"}`} />
@@ -178,7 +178,7 @@ export default function Header() {
             </nav>
 
             {/* 3. Search & Utilities (Right Side) */}
-            <div className="flex flex-1 lg:flex-none shrink-0 justify-end gap-3 sm:gap-4 md:gap-5 lg:gap-6 items-center relative z-20">
+            <div className="flex flex-1 shrink-0 justify-end gap-3 sm:gap-4 md:gap-5 lg:gap-6 items-center relative z-20">
               {/* Search - Hidden on small mobile, shown as pill on md+ */}
               <div className="hidden md:block flex-1 min-w-0 md:w-56 lg:w-48 xl:w-72">
                 <HeaderSearch />
@@ -194,7 +194,7 @@ export default function Header() {
                     onClick={(e) => { e.stopPropagation(); setLangOpen(!langOpen); setCurrOpen(false); }}
                     className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors"
                   >
-                    <FlagIcon country={langFlag} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
+                    <FlagIcon country={langFlag as any} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
                     <span className="opacity-90">{lang === "en" ? "EN" : "FR"}</span>
                     <ChevronDown className="h-3 w-3 opacity-60 ml-0.5" strokeWidth={3} />
                   </button>
@@ -206,7 +206,7 @@ export default function Header() {
                           onClick={() => { setLang(loc); setLangOpen(false); }}
                           className="flex items-center gap-3 w-full text-left px-3 py-2.5 text-sm font-semibold rounded-lg hover:bg-accent/10 hover:text-accent transition-colors"
                         >
-                          <FlagIcon country={localeFlag(loc)} className="w-5 h-3.5 rounded-[2px]" />
+                          <FlagIcon country={localeFlag(loc) as any} className="w-5 h-3.5 rounded-[2px]" />
                           {localeLabel(loc)}
                         </button>
                       ))}
