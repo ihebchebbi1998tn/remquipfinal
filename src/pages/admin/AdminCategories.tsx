@@ -9,10 +9,11 @@ import {
   AlertCircle,
   ImageIcon,
   Languages,
+  Upload,
 } from "lucide-react";
 import { localeLabel } from "@/contexts/LanguageContext";
 import { useAdminCategoriesList, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
-import { api, unwrapApiList, unwrapPagination, resolveBackendUploadUrl, type ProductCategory } from "@/lib/api";
+import { api, unwrapApiList, unwrapPagination, resolveUploadImageUrl, type ProductCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
@@ -97,11 +98,10 @@ export default function AdminCategories() {
   const rows = unwrapApiList<ProductCategory>(catRes, []);
   const pagination = unwrapPagination(catRes);
   const rowsWithDefaultImages = useMemo(() => {
-    return rows.map((c) => {
-      const img = String(c.image_url ?? "").trim();
-      if (img) return c;
-      const fallback = defaultImageBySlug[c.slug] ?? "";
-      return { ...c, image_url: fallback };
+    return rows.map((cat) => {
+      const img = String(cat.image_url ?? "").trim();
+      if (img && img !== "null") return cat;
+      return { ...cat, image_url: defaultImageBySlug[cat.slug] || cat.image_url };
     });
   }, [rows, defaultImageBySlug]);
 
@@ -337,26 +337,72 @@ export default function AdminCategories() {
               </div>
             </div>
           )}
-
           <div className="grid md:grid-cols-2 gap-4 pt-2 border-t border-border">
-            <div>
+            <div className="space-y-3">
               <label className="block text-xs font-medium mb-1 flex items-center gap-1">
-                <ImageIcon className="h-3.5 w-3.5" /> Image URL
+                <ImageIcon className="h-3.5 w-3.5" /> Image
               </label>
-              <input
-                value={form.imageUrl}
-                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                placeholder="https://… or /Backend/uploads/…"
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm font-mono text-xs"
-              />
-              {form.imageUrl.trim() ? (
-                <img
-                  src={resolveBackendUploadUrl(form.imageUrl.trim())}
-                  alt="Category preview"
-                  className="mt-2 h-20 w-full object-cover rounded-sm border border-border bg-muted/20"
-                  loading="lazy"
-                />
-              ) : null}
+              
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <input
+                    value={form.imageUrl}
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                    placeholder="https://… or /Backend/uploads/…"
+                    className="flex-1 px-3 py-2 border border-border rounded-sm text-sm font-mono text-xs"
+                  />
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const res = await api.uploadCategoryImage(file);
+                          if (res.success && res.data?.url) {
+                            setForm({ ...form, imageUrl: res.data.url });
+                            showSuccessToast("Upload", "Image uploaded successfully");
+                          }
+                        } catch (err) {
+                          showErrorToast("Upload", "Failed to upload image");
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    />
+                    <button type="button" className="admin-btn--secondary h-full px-3 flex items-center gap-2">
+                      <Upload className="h-3.5 w-3.5" /> Upload
+                    </button>
+                  </div>
+                </div>
+
+                {form.imageUrl && String(form.imageUrl).trim() !== "" && String(form.imageUrl).trim() !== "null" ? (
+                  <div className="relative group w-full aspect-video md:aspect-[2/1] bg-muted/20 border border-border rounded-sm overflow-hidden">
+                    <img
+                      src={resolveUploadImageUrl(String(form.imageUrl).trim())}
+                      alt="Category preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/600x300?text=Image+Not+Found';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button 
+                        type="button" 
+                        onClick={() => setForm({ ...form, imageUrl: "" })}
+                        className="bg-destructive text-destructive-foreground px-3 py-1.5 rounded-sm text-xs font-medium flex items-center gap-1.5"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full aspect-video md:aspect-[2/1] bg-muted/10 border border-dashed border-border rounded-sm flex flex-col items-center justify-center text-muted-foreground gap-2">
+                    <ImageIcon className="h-8 w-8 opacity-20" />
+                    <span className="text-xs">No image selected</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium mb-1">Display order</label>

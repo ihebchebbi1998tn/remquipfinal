@@ -1633,6 +1633,13 @@ class APIService {
     return this.request('POST', API_ENDPOINTS.CMS.IMAGES_UPLOAD, formData, {});
   }
 
+  async uploadCategoryImage(file: File): Promise<ApiResponse<{ url: string }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    // Note: uploads.php handles 'file' parameter for /uploads/image
+    return this.request('POST', API_ENDPOINTS.UPLOADS.IMAGE, formData);
+  }
+
   // ==================== ADMIN DASHBOARD (matches API_ENDPOINTS.DASHBOARD) ====================
 
   async getDashboardStats(): Promise<ApiResponse<Record<string, number>>> {
