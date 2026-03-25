@@ -116,13 +116,13 @@ export default function AdminSettings() {
     return (
       <button
         type="button"
-        disabled={patchBulk.isLoading}
+        disabled={patchBulk.isPending}
         onClick={() => saveKeys(section, keys)}
         className="admin-btn--primary px-5 py-2 mt-2"
       >
         {saved === section ? (
           <><CheckCircle className="h-4 w-4" /> Saved!</>
-        ) : patchBulk.isLoading ? (
+        ) : patchBulk.isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           <><Save className="h-4 w-4" /> Save changes</>
@@ -288,10 +288,10 @@ export default function AdminSettings() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploadReg.isLoading}
+            disabled={uploadReg.isPending}
             className="admin-btn--secondary mb-4"
           >
-            {uploadReg.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {uploadReg.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             Upload file
           </button>
           {filesLoading ? (
@@ -320,7 +320,7 @@ export default function AdminSettings() {
                     <button
                       type="button"
                       title="Remove"
-                      disabled={deleteReg.isLoading}
+                      disabled={deleteReg.isPending}
                       onClick={() => {
                         if (!confirm("Remove this file from the registry and disk?")) return;
                         deleteReg.mutate(id, {

@@ -73,11 +73,11 @@ export default function AdminCMS() {
     const lng = parseFloat(mapForm.longitude);
     const zoom = parseInt(mapForm.zoom, 10);
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      showErrorToast("Enter valid latitude and longitude");
+      showErrorToast("CMS", "Enter valid latitude and longitude");
       return;
     }
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      showErrorToast("Coordinates out of range");
+      showErrorToast("CMS", "Coordinates out of range");
       return;
     }
     try {
@@ -88,9 +88,9 @@ export default function AdminCMS() {
         marker_title: mapForm.marker_title.trim() || null,
         address_line: mapForm.address_line.trim() || null,
       });
-      showSuccessToast("Contact map updated");
+      showSuccessToast("CMS", "Contact map updated");
     } catch {
-      showErrorToast("Failed to save contact map");
+      showErrorToast("CMS", "Failed to save contact map");
     }
   };
 
@@ -102,9 +102,13 @@ export default function AdminCMS() {
     (data: any) => api.createCMSPage(data),
     {
       onSuccess: () => {
+        showSuccessToast("CMS", "Page created");
         queryClient.invalidateQueries({ queryKey: ['cms'] });
         setShowForm(false);
         resetForm();
+      },
+      onError: (e: unknown) => {
+        showErrorToast("CMS", e instanceof Error ? e.message : "Failed to create page");
       },
     }
   );
@@ -113,10 +117,14 @@ export default function AdminCMS() {
     ({ id, data }: { id: string; data: any }) => api.updateCMSPage(id, data),
     {
       onSuccess: () => {
+        showSuccessToast("CMS", "Page updated");
         queryClient.invalidateQueries({ queryKey: ['cms'] });
         setShowForm(false);
         setEditingId(null);
         resetForm();
+      },
+      onError: (e: unknown) => {
+        showErrorToast("CMS", e instanceof Error ? e.message : "Failed to update page");
       },
     }
   );
@@ -125,7 +133,11 @@ export default function AdminCMS() {
     (id: string) => api.deleteCMSPage(id),
     {
       onSuccess: () => {
+        showSuccessToast("CMS", "Page deleted");
         queryClient.invalidateQueries({ queryKey: ['cms'] });
+      },
+      onError: (e: unknown) => {
+        showErrorToast("CMS", e instanceof Error ? e.message : "Delete failed");
       },
     }
   );
@@ -532,10 +544,10 @@ export default function AdminCMS() {
               <button
                 type="button"
                 onClick={() => void handleSubmit()}
-                disabled={createPageMutation.isLoading || updatePageMutation.isLoading}
+                disabled={createPageMutation.isPending || updatePageMutation.isPending}
                 className="btn-accent px-6 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50"
               >
-                {(createPageMutation.isLoading || updatePageMutation.isLoading) && (
+                {(createPageMutation.isPending || updatePageMutation.isPending) && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
                 {editingId ? "Update Page" : "Create Page"}
@@ -595,7 +607,7 @@ export default function AdminCMS() {
                 </button>
                 <button 
                   onClick={() => handleDelete(page.id)}
-                  disabled={deletePageMutation.isLoading}
+                  disabled={deletePageMutation.isPending}
                   className="px-3 py-1.5 border border-destructive rounded-sm text-destructive text-xs hover:bg-destructive/10 disabled:opacity-50"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -625,7 +637,7 @@ export default function AdminCMS() {
                   <td className="px-3 py-3">
                     <button 
                       onClick={() => handleToggleStatus(page)}
-                      disabled={updatePageMutation.isLoading}
+                      disabled={updatePageMutation.isPending}
                       className="cursor-pointer disabled:opacity-50"
                     >
                       <span className={page.status === "published" ? "badge-success" : "badge-warning"}>{page.status}</span>
@@ -650,7 +662,7 @@ export default function AdminCMS() {
                       </button>
                       <button 
                         onClick={() => handleDelete(page.id)}
-                        disabled={deletePageMutation.isLoading}
+                        disabled={deletePageMutation.isPending}
                         className="p-1.5 hover:bg-secondary rounded-sm transition-colors text-destructive disabled:opacity-50"
                       >
                         <Trash2 className="h-4 w-4" />

@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 export default function AdminInventory() {
   const [page, setPage] = useState(1);
@@ -55,11 +56,15 @@ export default function AdminInventory() {
       { productId, quantity: adjustQuantity, reason: adjustReason },
       {
         onSuccess: () => {
+          showSuccessToast("Inventory", "Stock adjusted successfully");
           queryClient.invalidateQueries({ queryKey: ['products'] });
           queryClient.invalidateQueries({ queryKey: ['inventory'] });
           setAdjustingProduct(null);
           setAdjustQuantity(0);
           setAdjustReason("");
+        },
+        onError: (e: unknown) => {
+          showErrorToast("Inventory", e instanceof Error ? e.message : "Adjustment failed");
         },
       }
     );
@@ -220,10 +225,10 @@ export default function AdminInventory() {
                         <div className="flex gap-2">
                           <button 
                             onClick={() => handleAdjustInventory(p.id)}
-                            disabled={adjustInventoryMutation.isLoading}
+                            disabled={adjustInventoryMutation.isPending}
                             className="flex-1 btn-accent px-3 py-1.5 rounded text-xs disabled:opacity-50"
                           >
-                            {adjustInventoryMutation.isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                            {adjustInventoryMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
                           </button>
                           <button onClick={() => { setAdjustingProduct(null); setAdjustQuantity(0); setAdjustReason(""); }} className="flex-1 px-3 py-1.5 border border-border rounded text-xs hover:bg-secondary">Cancel</button>
                         </div>
@@ -293,10 +298,10 @@ export default function AdminInventory() {
                           />
                           <button 
                             onClick={() => handleAdjustInventory(p.id)}
-                            disabled={adjustInventoryMutation.isLoading}
+                            disabled={adjustInventoryMutation.isPending}
                             className="px-2 py-1 btn-accent rounded text-xs disabled:opacity-50"
                           >
-                            {adjustInventoryMutation.isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                            {adjustInventoryMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
                           </button>
                           <button onClick={() => { setAdjustingProduct(null); setAdjustQuantity(0); setAdjustReason(""); }} className="px-2 py-1 border border-border rounded text-xs hover:bg-secondary">Cancel</button>
                         </div>

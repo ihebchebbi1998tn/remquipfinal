@@ -3,6 +3,7 @@ import { Plus, Search, Edit, Trash2, Copy, Tag, Percent, DollarSign, Calendar, C
 import { useDiscounts, useApiMutation } from "@/hooks/useApi";
 import { api, Discount, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
@@ -50,9 +51,13 @@ export default function AdminDiscounts() {
     (data: any) => api.createDiscount(data),
     {
       onSuccess: () => {
+        showSuccessToast("Discounts", "Discount code created");
         queryClient.invalidateQueries({ queryKey: ['discounts'] });
         setShowForm(false);
         resetForm();
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Discounts", e instanceof Error ? e.message : "Failed to create discount");
       },
     }
   );
@@ -61,10 +66,14 @@ export default function AdminDiscounts() {
     ({ id, data }: { id: string; data: any }) => api.updateDiscount(id, data),
     {
       onSuccess: () => {
+        showSuccessToast("Discounts", "Discount code updated");
         queryClient.invalidateQueries({ queryKey: ['discounts'] });
         setShowForm(false);
         setEditingId(null);
         resetForm();
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Discounts", e instanceof Error ? e.message : "Failed to update discount");
       },
     }
   );
@@ -73,7 +82,11 @@ export default function AdminDiscounts() {
     (id: string) => api.deleteDiscount(id),
     {
       onSuccess: () => {
+        showSuccessToast("Discounts", "Discount code deleted");
         queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Discounts", e instanceof Error ? e.message : "Delete failed");
       },
     }
   );
@@ -308,10 +321,10 @@ export default function AdminDiscounts() {
             <div className="flex items-end">
               <button 
                 onClick={handleSubmit} 
-                disabled={createDiscountMutation.isLoading || updateDiscountMutation.isLoading}
+                disabled={createDiscountMutation.isPending || updateDiscountMutation.isPending}
                 className="admin-btn--primary w-full py-2.5"
               >
-                {(createDiscountMutation.isLoading || updateDiscountMutation.isLoading) ? (
+                {(createDiscountMutation.isPending || updateDiscountMutation.isPending) ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <CheckCircle className="h-4 w-4" />
@@ -384,7 +397,7 @@ export default function AdminDiscounts() {
                     <div className="flex gap-2 pt-2">
                       <button onClick={() => copyToClipboard(d.code)} className="admin-btn--secondary flex-1 text-xs py-1.5"><Copy className="h-3 w-3" /> Copy</button>
                       <button onClick={() => handleEdit(d)} className="admin-btn--primary flex-1 text-xs py-1.5"><Edit className="h-3 w-3" /> Edit</button>
-                      <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isLoading} className="admin-btn--danger px-3 py-1.5 text-xs"><Trash2 className="h-3 w-3" /></button>
+                      <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isPending} className="admin-btn--danger px-3 py-1.5 text-xs"><Trash2 className="h-3 w-3" /></button>
                     </div>
                   </div>
                 )}
@@ -445,8 +458,8 @@ export default function AdminDiscounts() {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => copyToClipboard(d.code)} className="admin-btn--ghost p-1.5" title="Copy Code"><Copy className="h-4 w-4" /></button>
                         <button onClick={() => handleEdit(d)} className="admin-btn--ghost p-1.5" title="Edit"><Edit className="h-4 w-4" /></button>
-                        <button onClick={() => handleToggleStatus(d)} disabled={updateDiscountMutation.isLoading} className="admin-btn--ghost p-1.5" title={d.is_active ? "Disable" : "Enable"}>{d.is_active ? <X className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}</button>
-                        <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isLoading} className="admin-btn--danger p-1.5 border-0" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => handleToggleStatus(d)} disabled={updateDiscountMutation.isPending} className="admin-btn--ghost p-1.5" title={d.is_active ? "Disable" : "Enable"}>{d.is_active ? <X className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}</button>
+                        <button onClick={() => handleDelete(d.id)} disabled={deleteDiscountMutation.isPending} className="admin-btn--danger p-1.5 border-0" title="Delete"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>

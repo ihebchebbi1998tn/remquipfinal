@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 const statusStyles: Record<string, string> = {
   pending: "badge-warning",
@@ -185,8 +186,12 @@ export default function AdminOrders() {
     ({ id, status }: { id: string; status: string }) => api.updateOrderStatus(id, status as Order['status']),
     {
       onSuccess: () => {
+        showSuccessToast("Orders", "Order status updated");
         queryClient.invalidateQueries({ queryKey: ['orders'] });
         queryClient.invalidateQueries({ queryKey: ['order'] });
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Orders", e instanceof Error ? e.message : "Failed to update status");
       },
     }
   );
@@ -195,8 +200,12 @@ export default function AdminOrders() {
     ({ orderId, note }: { orderId: string; note: string }) => api.addOrderNote(orderId, note),
     {
       onSuccess: () => {
+        showSuccessToast("Orders", "Note added to order");
         queryClient.invalidateQueries({ queryKey: ['order'] });
         setNewNote("");
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Orders", e instanceof Error ? e.message : "Failed to add note");
       },
     }
   );
@@ -348,10 +357,10 @@ export default function AdminOrders() {
               <div className="flex items-end gap-2">
                 <button 
                   onClick={() => handleShipOrder(selectedOrder.id)} 
-                  disabled={updateOrderStatusMutation.isLoading}
+                  disabled={updateOrderStatusMutation.isPending}
                   className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex-1 disabled:opacity-50"
                 >
-                  {updateOrderStatusMutation.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark Shipped"}
+                  {updateOrderStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark Shipped"}
                 </button>
                 <button onClick={() => setShowShipment(null)} className="px-3 py-2 border border-border rounded-sm text-sm hover:bg-secondary">Cancel</button>
               </div>
@@ -372,7 +381,7 @@ export default function AdminOrders() {
                   {i > 0 && <div className={`h-0.5 flex-1 min-w-4 ${i <= currentIdx ? "bg-accent" : "bg-border"}`} />}
                   <button
                     onClick={() => handleStatusChange(selectedOrder.id, s)}
-                    disabled={updateOrderStatusMutation.isLoading}
+                    disabled={updateOrderStatusMutation.isPending}
                     className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-sm text-xs font-medium whitespace-nowrap transition-colors disabled:opacity-50 ${
                       isCurrent ? "bg-accent text-accent-foreground" : isActive ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground hover:text-foreground"
                     }`}
@@ -494,10 +503,10 @@ export default function AdminOrders() {
             />
             <button 
               onClick={handleAddNote} 
-              disabled={addOrderNoteMutation.isLoading || !newNote.trim()}
+              disabled={addOrderNoteMutation.isPending || !newNote.trim()}
               className="btn-accent px-4 py-2 rounded-sm text-sm font-medium disabled:opacity-50"
             >
-              {addOrderNoteMutation.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+              {addOrderNoteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
             </button>
           </div>
         </div>
@@ -546,21 +555,21 @@ export default function AdminOrders() {
           <span className="text-sm font-medium">{selectedOrders.size} selected</span>
           <button 
             onClick={() => handleBulkStatusChange("processing")} 
-            disabled={updateOrderStatusMutation.isLoading}
+            disabled={updateOrderStatusMutation.isPending}
             className="px-3 py-1.5 border border-border rounded-sm text-xs font-medium hover:bg-secondary disabled:opacity-50"
           >
             → Processing
           </button>
           <button 
             onClick={() => handleBulkStatusChange("shipped")} 
-            disabled={updateOrderStatusMutation.isLoading}
+            disabled={updateOrderStatusMutation.isPending}
             className="px-3 py-1.5 border border-border rounded-sm text-xs font-medium hover:bg-secondary disabled:opacity-50"
           >
             → Shipped
           </button>
           <button 
             onClick={() => handleBulkStatusChange("delivered")} 
-            disabled={updateOrderStatusMutation.isLoading}
+            disabled={updateOrderStatusMutation.isPending}
             className="px-3 py-1.5 border border-border rounded-sm text-xs font-medium hover:bg-secondary disabled:opacity-50"
           >
             → Delivered

@@ -6,7 +6,7 @@ import { Download, Search, Briefcase, Eye, Ban, CheckCircle, Clock } from "lucid
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { api } from "@/lib/api";
-import { toast } from "@/hooks/use-toast";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 // Helper components
@@ -39,18 +39,11 @@ export default function AdminCarts() {
         api.updateCartStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin_carts'] });
-      toast({
-        title: "Status Updated",
-        description: "Cart status has been updated successfully.",
-      });
+      showSuccessToast("Carts", "Cart status updated successfully.");
       setSelectedCart(null);
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update cart status.",
-        variant: "destructive"
-      });
+    onError: (e: unknown) => {
+      showErrorToast("Carts", e instanceof Error ? e.message : "Failed to update cart status.");
     }
   });
 

@@ -15,6 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 const statusStyles: Record<string, string> = {
   active: "badge-success",
@@ -49,8 +50,12 @@ export default function AdminProducts() {
     (id: string) => api.deleteProduct(id),
     {
       onSuccess: () => {
+        showSuccessToast("Products", "Product deleted");
         queryClient.invalidateQueries({ queryKey: ['products'] });
         setSelectedProducts(new Set());
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Products", e instanceof Error ? e.message : "Delete failed");
       },
     }
   );
@@ -59,7 +64,11 @@ export default function AdminProducts() {
     ({ id, data }: { id: string; data: any }) => api.updateProduct(id, data),
     {
       onSuccess: () => {
+        showSuccessToast("Products", "Product updated");
         queryClient.invalidateQueries({ queryKey: ['products'] });
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Products", e instanceof Error ? e.message : "Update failed");
       },
     }
   );

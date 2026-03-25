@@ -14,6 +14,7 @@ import { localeLabel } from "@/contexts/LanguageContext";
 import { useAdminCategoriesList, useApiMutation, useStorefrontRates } from "@/hooks/useApi";
 import { api, unwrapApiList, unwrapPagination, resolveBackendUploadUrl, type ProductCategory } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { categories as defaultCatalogCategories } from "@/config/products";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -60,8 +61,12 @@ export default function AdminCategories() {
 
   const createMutation = useApiMutation((payload: Record<string, unknown>) => api.createCategory(payload as any), {
     onSuccess: () => {
+      showSuccessToast("Categories", "Category created successfully");
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       closeForm();
+    },
+    onError: (e: unknown) => {
+      showErrorToast("Categories", e instanceof Error ? e.message : "Failed to create category");
     },
   });
 
@@ -69,14 +74,24 @@ export default function AdminCategories() {
     ({ id, payload }: { id: string; payload: Record<string, unknown> }) => api.updateCategory(id, payload as any),
     {
       onSuccess: () => {
+        showSuccessToast("Categories", "Category updated successfully");
         queryClient.invalidateQueries({ queryKey: ["categories"] });
         closeForm();
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Categories", e instanceof Error ? e.message : "Failed to update category");
       },
     }
   );
 
   const deleteMutation = useApiMutation((id: string) => api.deleteCategory(id), {
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categories"] }),
+    onSuccess: () => {
+      showSuccessToast("Categories", "Category deleted");
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (e: unknown) => {
+      showErrorToast("Categories", e instanceof Error ? e.message : "Delete failed");
+    },
   });
 
   const rows = unwrapApiList<ProductCategory>(catRes, []);
@@ -371,10 +386,10 @@ export default function AdminCategories() {
             <button
               type="button"
               onClick={() => void handleSubmit()}
-              disabled={createMutation.isLoading || updateMutation.isLoading}
+              disabled={createMutation.isPending || updateMutation.isPending}
               className="btn-accent px-6 py-2 rounded-sm text-sm font-medium disabled:opacity-50 flex items-center gap-2"
             >
-              {(createMutation.isLoading || updateMutation.isLoading) && (
+              {(createMutation.isPending || updateMutation.isPending) && (
                 <Loader2 className="h-4 w-4 animate-spin" />
               )}
               {editingId ? "Save" : "Create"}

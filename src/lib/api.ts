@@ -365,13 +365,13 @@ export function unwrapApiList<T>(response: ApiResponse<any> | undefined | null, 
   return fallback;
 }
 
-export function unwrapPagination(response: ApiResponse<any> | undefined | null) {
+export function unwrapPagination(response: ApiResponse<any> | undefined | null): { total: number; pages: number; limit: number } | undefined {
   if (!response) return undefined;
   const top = (response as PaginatedResponse<unknown>).pagination;
-  if (top) return top;
+  if (top) return top as any;
   const d = response.data;
   if (d && typeof d === 'object' && !Array.isArray(d) && 'pagination' in d) {
-    return (d as { pagination?: Record<string, unknown> }).pagination;
+    return (d as { pagination?: any }).pagination;
   }
   return undefined;
 }

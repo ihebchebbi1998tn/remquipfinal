@@ -8,13 +8,14 @@ import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 
-type UserRole = "admin" | "manager" | "user";
+type UserRole = "admin" | "manager" | "user" | "super_admin";
 type UserStatus = "active" | "inactive" | "suspended";
 
 const roleColors: Record<UserRole, string> = {
   admin: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   manager: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   user: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+  super_admin: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
 };
 
 const statusStyles: Record<string, string> = {
@@ -48,9 +49,13 @@ export default function AdminUsers() {
     (data: any) => api.createUser(data),
     {
       onSuccess: () => {
+        showSuccessToast("Users", "User created successfully");
         queryClient.invalidateQueries({ queryKey: ['users'] });
         setShowForm(false);
         setFormData({ full_name: "", email: "", password: "", role: "user" });
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Users", e instanceof Error ? e.message : "Failed to create user");
       },
     }
   );
@@ -59,10 +64,14 @@ export default function AdminUsers() {
     ({ id, data }: { id: string; data: any }) => api.updateUser(id, data),
     {
       onSuccess: () => {
+        showSuccessToast("Users", "User updated successfully");
         queryClient.invalidateQueries({ queryKey: ['users'] });
         setShowForm(false);
         setEditingId(null);
         setFormData({ full_name: "", email: "", password: "", role: "user" });
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Users", e instanceof Error ? e.message : "Failed to update user");
       },
     }
   );
@@ -71,8 +80,12 @@ export default function AdminUsers() {
     (id: string) => api.deleteUser(id),
     {
       onSuccess: () => {
+        showSuccessToast("Users", "User deleted");
         queryClient.invalidateQueries({ queryKey: ['users'] });
         setSelectedUser(null);
+      },
+      onError: (e: unknown) => {
+        showErrorToast("Users", e instanceof Error ? e.message : "Delete failed");
       },
     }
   );
@@ -83,14 +96,14 @@ export default function AdminUsers() {
       const d = res.data as { imported?: number; errors?: string[] } | undefined;
       const n = d?.imported ?? 0;
       const errs = d?.errors?.length ?? 0;
-      showSuccessToast(res.message || `Imported ${n} user(s).`);
+      showSuccessToast("Users", res.message || `Imported ${n} user(s).`);
       if (errs > 0) {
-        showErrorToast(`${errs} row(s) skipped (duplicate email or validation).`);
+        showErrorToast("Users", `${errs} row(s) skipped (duplicate email or validation).`);
         if (d?.errors?.length) console.warn('User import row errors:', d.errors);
       }
     },
     onError: (e: unknown) => {
-      showErrorToast(e instanceof Error ? e.message : 'Import failed');
+      showErrorToast("Users", e instanceof Error ? e.message : 'Import failed');
     },
   });
 
@@ -200,10 +213,10 @@ export default function AdminUsers() {
           <button
             type="button"
             onClick={() => importInputRef.current?.click()}
-            disabled={importUsersMutation.isLoading}
+            disabled={importUsersMutation.isPending}
             className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
           >
-            {importUsersMutation.isLoading ? (
+            {importUsersMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Upload className="h-4 w-4" />
@@ -264,10 +277,10 @@ export default function AdminUsers() {
             <div className="flex gap-2">
               <button
                 onClick={handleCreateUser}
-                disabled={createUserMutation.isLoading || updateUserMutation.isLoading}
+                disabled={createUserMutation.isPending || updateUserMutation.isPending}
                 className="flex-1 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {(createUserMutation.isLoading || updateUserMutation.isLoading) && (
+                {(createUserMutation.isPending || updateUserMutation.isPending) && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
                 {editingId ? "Update User" : "Create User"}
@@ -366,7 +379,7 @@ export default function AdminUsers() {
                     e.stopPropagation();
                     handleToggleStatus(user);
                   }}
-                  disabled={updateUserMutation.isLoading}
+                  disabled={updateUserMutation.isPending}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs border border-border rounded hover:bg-secondary transition-colors disabled:opacity-50"
                 >
                   {user.status === "active" ? (
@@ -386,7 +399,7 @@ export default function AdminUsers() {
                     e.stopPropagation();
                     handleDeleteUser(user.id);
                   }}
-                  disabled={deleteUserMutation.isLoading}
+                  disabled={deleteUserMutation.isPending}
                   className="px-2 py-1.5 text-xs border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="h-3 w-3" />
