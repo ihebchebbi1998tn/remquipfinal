@@ -81,7 +81,7 @@ type SiteHeaderCms = {
   professional_email?: string;
 };
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Shield, Truck, Wrench, CheckCircle, Package, Users, BarChart3, ShieldCheck, PackageCheck,
 };
 
@@ -162,7 +162,7 @@ export default function HomePage() {
         try {
           const featuredResponse = await api.getFeaturedProducts();
           if (featuredResponse.data) {
-            const products = featuredResponse.data.map((row) => apiProductToStorefront(row as Record<string, unknown>));
+            const products = (featuredResponse.data as any[]).map((row) => apiProductToStorefront(row));
             // Shuffle and pick 8
             const shuffled = [...products].sort(() => Math.random() - 0.5);
             setFeaturedProducts(shuffled.slice(0, 8));
@@ -174,12 +174,31 @@ export default function HomePage() {
         try {
           const categoriesResponse = await api.getCategories(1, 100, { locale: lang });
           const list = unwrapApiList<ProductCategory>(categoriesResponse, defaultCatalogCategories);
+          
           const merged = list.map((cat) => {
             const img = String(cat.image_url ?? "").trim();
             if (img) return cat;
-            return { ...cat, image_url: defaultImageBySlug[cat.slug] || cat.image_url };
+
+            // Try fuzzy match with defaults if no uploaded image
+            const defaultMatch = defaultCatalogCategories.find(d => 
+              d.slug === cat.slug || 
+              (cat.slug && d.slug && (cat.slug.includes(d.slug) || d.slug.includes(cat.slug))) ||
+              (cat.name && d.name && (cat.name.toLowerCase().includes(d.name.toLowerCase()) || d.name.toLowerCase().includes(cat.name.toLowerCase())))
+            );
+
+            return { ...cat, image_url: defaultMatch?.image_url || cat.image_url };
           });
-          setCategoriesList(merged);
+          
+          // Sort to prioritize categories with images, then by display order
+          const sorted = [...merged].sort((a, b) => {
+            const hasA = Boolean(a.image_url);
+            const hasB = Boolean(b.image_url);
+            if (hasA && !hasB) return -1;
+            if (!hasA && hasB) return 1;
+            return (a.display_order ?? 99) - (b.display_order ?? 99);
+          });
+
+          setCategoriesList(sorted);
         } catch { setCategoriesList(defaultCatalogCategories); }
       } catch {}
     };

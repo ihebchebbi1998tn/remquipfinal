@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 
 /** Minimum time the branded loader stays visible when opening `/` (chunk load + this delay run in parallel). */
-const MIN_LANDING_LOAD_MS = 5000;
+const MIN_LANDING_LOAD_MS = 3000;
 
 /**
  * Gates the public homepage: keeps the fullscreen REMQUIP loader for at least {@link MIN_LANDING_LOAD_MS}
