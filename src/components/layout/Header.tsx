@@ -115,7 +115,7 @@ export default function Header() {
   const navLinkClass = (to: string, exact?: boolean) => {
     const active = exact ? path === to : path === to || (to !== "/" && path.startsWith(to));
     return `relative whitespace-nowrap px-2 py-6 text-[14px] font-bold tracking-wide transition-colors group ${
-      active ? "text-accent" : isScrolled ? "text-[#1f354d]/80 hover:text-[#1f354d]" : "text-white/80 hover:text-white"
+      active ? "text-accent" : "text-white/80 hover:text-white"
     }`;
   };
 
@@ -134,7 +134,7 @@ export default function Header() {
 
   return (
     <>
-      <header className={`sticky top-0 z-[100] w-full transition-all duration-300 ${isScrolled ? 'bg-background/80 backdrop-blur-xl shadow-md border-b border-border/50' : 'bg-background border-b border-border/20'}`} role="banner">
+      <header className={`sticky top-0 z-[100] w-full transition-all duration-300 ${isScrolled ? 'bg-[#1f354d]/90 backdrop-blur-xl shadow-lg border-b border-white/10' : 'bg-[#1f354d] border-b border-white/5'}`} role="banner">
         
         <AnnouncementBar 
           announcement={announcement}
@@ -157,7 +157,7 @@ export default function Header() {
                     className="h-9 sm:h-10 lg:h-11 w-auto max-w-[140px] object-contain transition-transform group-hover:scale-105 duration-300"
                   />
                 ) : null}
-                <span className={`font-display font-black tracking-widest text-foreground uppercase truncate ${logoUrl ? "hidden sm:block text-sm lg:text-base" : "text-lg lg:text-xl"}`}>
+                <span className={`font-display font-black tracking-widest text-white uppercase truncate ${logoUrl ? "hidden sm:block text-sm lg:text-base" : "text-lg lg:text-xl"}`}>
                   {brandName}
                 </span>
               </Link>
@@ -194,9 +194,7 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setLangOpen(!langOpen); setCurrOpen(false); }}
-                    className={`flex items-center justify-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold transition-all duration-300 ${
-                      isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                    }`}
+                    className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold transition-all duration-300 text-white/80 hover:bg-white/10"
                   >
                     <FlagIcon country={langFlag as any} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
                     <span className="opacity-90">{lang === "en" ? "EN" : "FR"}</span>
@@ -223,9 +221,7 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setCurrOpen(!currOpen); setLangOpen(false); }}
-                    className={`flex items-center justify-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold transition-all duration-300 ${
-                      isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                    }`}
+                    className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold transition-all duration-300 text-white/80 hover:bg-white/10"
                   >
                     <FlagIcon country={currFlag} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
                     <span className="opacity-90">{currency}</span>
@@ -250,29 +246,21 @@ export default function Header() {
                 {/* Account */}
                 <div className="hidden sm:block">
                 {ADMIN_NO_AUTH ? (
-                  <Link to="/admin" className={`flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 ${
-                    isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                  }`} title={t("nav.admin")}>
+                  <Link to="/admin" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.admin")}>
                     <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
                   </Link>
                 ) : isAuthenticated && user ? (
                   (user.role === "admin" || user.role === "super_admin" || user.role === "manager") ? (
-                    <Link to="/admin" className={`flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 ${
-                      isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                    }`} title={t("nav.admin")}>
-                      <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
-                    </Link>
+                  <Link to="/admin" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.admin")}>
+                    <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
+                  </Link>
                   ) : (
-                    <Link to="/account" className={`flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 ${
-                      isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                    }`} title={t("nav.account")}>
+                    <Link to="/account" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.account")}>
                       <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
                     </Link>
                   )
                 ) : (
-                  <Link to="/login" className={`flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 ${
-                    isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                  }`} title={t("nav.signin")}>
+                   <Link to="/login" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.signin")}>
                     <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
                   </Link>
                 )}
@@ -281,9 +269,7 @@ export default function Header() {
                 {/* Cart */}
                 <Link
                   to="/cart"
-                  className={`relative flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 group ${
-                    isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                  }`}
+                   className="relative flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 group text-white/80 hover:bg-white/10"
                   aria-label="Cart"
                 >
                   <ShoppingCart className="h-[22px] w-[22px] group-hover:scale-110 transition-transform" strokeWidth={2.5} />
@@ -298,9 +284,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setMobileOpen(!mobileOpen)}
-                  className={`md:hidden flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 ${
-                    isScrolled ? "text-[#1f354d] hover:bg-[#1f354d]/5" : "text-white/80 hover:bg-white/10"
-                  }`}
+                   className="md:hidden flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10"
                   aria-label={mobileOpen ? t("nav.menu.close") : t("nav.menu.open")}
                 >
                   {mobileOpen ? <X className="h-6 w-6" strokeWidth={2.5} /> : <Menu className="h-6 w-6" strokeWidth={2.5} />}
