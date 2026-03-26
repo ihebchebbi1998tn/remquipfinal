@@ -55,7 +55,7 @@ if ($method === 'GET' && (!$id || $id === 'search')) {
         
         $customers = $conn->fetchAll(
             "SELECT c.id, c.company_name, c.contact_person, c.contact_person AS full_name,
-                    c.email, c.phone, c.customer_type, c.status, c.total_orders, c.total_spent, c.created_at, c.updated_at
+                    c.email, c.phone, c.customer_type, c.status, c.category, c.total_orders, c.total_spent, c.created_at, c.updated_at
                     , c.assigned_contact_id
              FROM remquip_customers c
              WHERE $whereClause
@@ -126,9 +126,9 @@ if ($method === 'POST' && $id === 'contact-leads') {
 
         $conn->execute(
             "INSERT INTO remquip_customers
-              (id, company_name, contact_person, email, phone, customer_type, status, address, city, province, postal_code, country, tax_number, assigned_contact_id)
+              (id, company_name, contact_person, email, phone, customer_type, status, address, city, province, postal_code, country, tax_number, assigned_contact_id, category)
              VALUES
-              (:id, :companyName, :contactPerson, :email, :phone, :type, 'inactive', :address, :city, :province, :postalCode, :country, :taxNumber, :assignedContactId)",
+              (:id, :companyName, :contactPerson, :email, :phone, :type, 'inactive', :address, :city, :province, :postalCode, :country, :taxNumber, :assignedContactId, 'lead')",
             [
                 'id' => $customerId,
                 'companyName' => $companyName,
@@ -289,11 +289,11 @@ if ($method === 'POST' && !$id) {
             "INSERT INTO remquip_customers
               (id, company_name, contact_person, email, phone, customer_type, address, city, province, postal_code, country, tax_number, assigned_contact_id,
                neq_tva, contact_title, distributor_type, num_trucks, num_trailers, billing_address, shipping_address,
-               accounting_contact, accounting_phone, billing_email, payment_terms, payment_method, credit_limit, sales_representative)
+               accounting_contact, accounting_phone, billing_email, payment_terms, payment_method, credit_limit, sales_representative, category)
              VALUES
               (:id, :companyName, :contactPerson, :email, :phone, :type, :address, :city, :province, :postalCode, :country, :taxNumber, :assignedContactId,
                :neqTva, :contactTitle, :distributorType, :numTrucks, :numTrailers, :billingAddress, :shippingAddress,
-               :accountingContact, :accountingPhone, :billingEmail, :paymentTerms, :paymentMethod, :creditLimit, :salesRep)",
+               :accountingContact, :accountingPhone, :billingEmail, :paymentTerms, :paymentMethod, :creditLimit, :salesRep, :category)",
             [
                 'id' => $customerId,
                 'companyName' => $companyName,
@@ -322,6 +322,7 @@ if ($method === 'POST' && !$id) {
                 'paymentMethod' => $data['payment_method'] ?? $data['paymentMethod'] ?? null,
                 'creditLimit' => isset($data['credit_limit']) || isset($data['creditLimit']) ? (float)($data['credit_limit'] ?? $data['creditLimit']) : null,
                 'salesRep' => $data['sales_representative'] ?? $data['salesRepresentative'] ?? null,
+                'category' => $data['category'] ?? 'lead',
             ]
         );
 
@@ -448,6 +449,10 @@ if (($method === 'PATCH' || $method === 'PUT') && $id && !$action) {
             $params['tax_number'] = $tax;
         }
 
+        if (isset($data['category'])) {
+            $updates[] = 'category = :category';
+            $params['category'] = $data['category'];
+        }
         $assigned = $data['assigned_contact_id'] ?? $data['assignedContactId'] ?? null;
         if (array_key_exists('assigned_contact_id', $data) || array_key_exists('assignedContactId', $data)) {
             $updates[] = 'assigned_contact_id = :assigned_contact_id';

@@ -1005,5 +1005,90 @@ function remquip_notify_order_status_changed($conn, $orderId, $prevStatus, $newS
     remquip_notify_order_status_to_customer($conn, $orderId, $newStatus);
 }
 
+/**
+ * Send the offer/quote to the customer via email.
+ * $customMessage: optional personalised note added above the items table.
+ * $customSubject: optional subject line override.
+ */
+function remquip_notify_offer_sent($conn, $offerId, $customMessage = null, $customSubject = null) {
+    $row = $conn->fetch(
+        'SELECT o.offer_number, o.subtotal, o.discount, o.shipping, o.tax, o.total, o.valid_until,
+                o.notes,
+                c.email, c.contact_person, c.company_name
+         FROM remquip_offers o
+         INNER JOIN remquip_customers c ON c.id = o.customer_id AND c.deleted_at IS NULL
+         WHERE o.id = :id AND o.deleted_at IS NULL',
+        ['id' => $offerId]
+    );
+    if (!$row || empty($row['email'])) {
+        return false;
+    }
+    $to = filter_var($row['email'], FILTER_VALIDATE_EMAIL);
+    if (!$to) {
+        return false;
+    }
+
+    $items = $conn->fetchAll(
+        'SELECT product_name AS name, sku, quantity, unit_price, line_total FROM remquip_offer_items WHERE offer_id = :id',
+        ['id' => $offerId]
+    );
+
+    $customerName = trim(($row['contact_person'] ?? '') . ' ' . ($row['company_name'] ?? ''));
+    if ($customerName === '') $customerName = $to;
+
+    $tpl = remquip_tpl_offer_sent_customer([
+        'customer_name'  => $customerName,
+        'offer_number'   => $row['offer_number'],
+        'valid_until'    => $row['valid_until'] ? date('F j, Y', strtotime($row['valid_until'])) : null,
+        'subtotal'       => $row['subtotal'],
+        'discount'       => $row['discount'],
+        'shipping'       => $row['shipping'],
+        'tax'            => $row['tax'],
+        'total'          => $row['total'],
+        'items'          => $items,
+        'custom_message' => $customMessage,
+    ]);
+
+    $subject = $customSubject ?: ('REMQUIP: Your Quote ' . $row['offer_number']);
+    return remquip_send_customer_mail($conn, $to, $subject, $tpl['html'], $tpl['text']);
+}
+
+/**
+ * Notify the customer that their accepted offer has been converted to an order.
+ */
+function remquip_notify_order_from_offer($conn, $orderId, $offerNumber) {
+    $row = $conn->fetch(
+        'SELECT o.order_number, o.total,
+                c.email, c.contact_person, c.company_name
+         FROM remquip_orders o
+         INNER JOIN remquip_customers c ON c.id = o.customer_id AND c.deleted_at IS NULL
+         WHERE o.id = :id AND o.deleted_at IS NULL',
+        ['id' => $orderId]
+    );
+    if (!$row || empty($row['email'])) {
+        return false;
+    }
+    $to = filter_var($row['email'], FILTER_VALIDATE_EMAIL);
+    if (!$to) {
+        return false;
+    }
+
+    $customerName = trim(($row['contact_person'] ?? '') . ' ' . ($row['company_name'] ?? ''));
+    if ($customerName === '') $customerName = $to;
+
+    $tpl = remquip_tpl_order_from_offer_customer([
+        'customer_name' => $customerName,
+        'offer_number'  => $offerNumber,
+        'order_number'  => $row['order_number'],
+        'total'         => $row['total'],
+    ]);
+
+    return remquip_send_customer_mail(
+        $conn, $to,
+        'REMQUIP: Order ' . $row['order_number'] . ' confirmed',
+        $tpl['html'], $tpl['text']
+    );
+}
+
 // Initialize on include
 Logger::init();

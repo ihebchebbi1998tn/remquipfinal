@@ -24,6 +24,7 @@ type ProductEditForm = {
   price: number;
   wholesalePrice: number;
   stock: number;
+  minimumStock: number;
   status: ProductStatus;
   weightLbs: number;
   compatibility: string[];
@@ -62,6 +63,7 @@ function emptyForm(categories: ProductCategory[]): ProductEditForm {
     price: 0,
     wholesalePrice: 0,
     stock: 0,
+    minimumStock: 0,
     status: "draft",
     weightLbs: 0,
     compatibility: [],
@@ -107,6 +109,7 @@ function mapApiToForm(p: Record<string, unknown>, categories: ProductCategory[])
     price: Number(p.base_price ?? p.price ?? 0),
     wholesalePrice: Number(p.cost_price ?? p.wholesale_price ?? 0),
     stock: Math.max(0, Number(p.stock ?? p.stock_quantity ?? 0)),
+    minimumStock: Math.max(0, Number(p.minimum_stock ?? 0)),
     status,
     weightLbs: Number(details.weightLbs ?? 0),
     compatibility: compat,
@@ -261,6 +264,7 @@ export default function AdminProductEdit() {
         status: form.status,
         stock: form.stock,
         stock_quantity: form.stock,
+        minimum_stock: form.minimumStock,
         initialStock: form.stock,
       };
 
@@ -741,14 +745,25 @@ export default function AdminProductEdit() {
 
           <div className="dashboard-card space-y-4">
             <h3 className="font-display font-bold text-sm uppercase text-muted-foreground">Inventory</h3>
-            <div>
-              <label className="block text-sm font-medium mb-1">Stock Quantity</label>
-              <input
-                type="number"
-                value={form.stock}
-                onChange={(e) => updateField("stock", parseInt(e.target.value, 10) || 0)}
-                className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Stock Quantity</label>
+                <input
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => updateField("stock", parseInt(e.target.value, 10) || 0)}
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Minimum Stock Alert</label>
+                <input
+                  type="number"
+                  value={form.minimumStock}
+                  onChange={(e) => updateField("minimumStock", parseInt(e.target.value, 10) || 0)}
+                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Weight (lbs)</label>

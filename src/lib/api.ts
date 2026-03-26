@@ -137,6 +137,7 @@ export interface Product {
   category_id: string;
   category?: string;
   stock_quantity: number;
+  minimum_stock?: number;
   is_featured: boolean;
   status: 'active' | 'draft' | 'archived';
   image?: string;
@@ -226,6 +227,7 @@ export interface Customer {
   parts_needed?: string | null;
   special_requests?: string | null;
   sales_representative?: string | null;
+  category: "lead" | "customer";
 }
 
 export interface CustomerNote {

@@ -264,13 +264,13 @@ if (($method === 'PATCH' || $method === 'POST') && $id && $action === 'approve')
                status, address, tax_number, neq_tva, distributor_type, num_trucks, num_trailers,
                shipping_address, accounting_contact, accounting_phone, billing_email,
                payment_terms, payment_method, bank_reference, credit_limit,
-               supplier_ref_1, supplier_ref_2, parts_needed, special_requests, sales_representative)
+               supplier_ref_1, supplier_ref_2, parts_needed, special_requests, sales_representative, category)
              VALUES
               (:id, :company_name, :contact_person, :contact_title, :email, :phone, :customer_type,
                'active', :billing_address, :neq_tva, :neq_tva2, :distributor_type, :num_trucks, :num_trailers,
                :shipping_address, :accounting_contact, :accounting_phone, :billing_email,
                :payment_terms, :payment_method, :bank_reference, :credit_limit,
-               :supplier_ref_1, :supplier_ref_2, :parts_needed, :special_requests, :sales_representative)",
+               :supplier_ref_1, :supplier_ref_2, :parts_needed, :special_requests, :sales_representative, 'lead')",
             [
                 'id'                   => $customerId,
                 'company_name'         => $app['company_name'],

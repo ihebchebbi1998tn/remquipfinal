@@ -77,6 +77,8 @@ const statusStyles: Record<string, string> = {
   active: "badge-success",
   inactive: "badge-warning",
   suspended: "badge-warning",
+  lead: "bg-blue-100 text-blue-700 border-blue-200",
+  customer: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 function toNumber(v: unknown): number {
@@ -92,6 +94,7 @@ export default function AdminCustomers() {
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customerId || null);
 
@@ -132,6 +135,7 @@ export default function AdminCustomers() {
     ap_contact_email: "",
     ap_phone: "",
     payment_method: "",
+    category: "lead" as Customer["category"],
     create_account: true,
   });
 
@@ -141,6 +145,7 @@ export default function AdminCustomers() {
     email: "",
     phone: "",
     status: "active" as Customer["status"],
+    category: "lead" as Customer["category"],
   });
 
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -179,6 +184,7 @@ export default function AdminCustomers() {
           ap_contact_email: "",
           ap_phone: "",
           payment_method: "",
+          category: "lead" as Customer["category"],
           create_account: true,
         });
         showSuccessToast("Customers", "Customer created successfully.");
@@ -311,7 +317,9 @@ export default function AdminCustomers() {
 
   const filtered = customers.filter((c: Customer) => {
     const s = search.toLowerCase();
-    return !search || c.company_name?.toLowerCase().includes(s) || c.full_name?.toLowerCase().includes(s) || c.email.toLowerCase().includes(s);
+    const matchesSearch = !search || c.company_name?.toLowerCase().includes(s) || c.full_name?.toLowerCase().includes(s) || c.email.toLowerCase().includes(s);
+    const matchesCategory = categoryFilter === "all" || c.category === categoryFilter;
+    return matchesSearch && matchesCategory;
   });
 
   const handleToggleStatus = (customer: Customer) => {
@@ -320,7 +328,14 @@ export default function AdminCustomers() {
   };
 
   const openEditModal = (c: Customer) => {
-    setEditForm({ company_name: c.company_name || "", full_name: c.full_name || "", email: c.email || "", phone: c.phone || "", status: c.status });
+    setEditForm({ 
+      company_name: c.company_name || "", 
+      full_name: c.full_name || "", 
+      email: c.email || "", 
+      phone: c.phone || "", 
+      status: c.status,
+      category: c.category || "lead"
+    });
     setShowEditModal(true);
   };
 
@@ -581,6 +596,17 @@ export default function AdminCustomers() {
               <div><label className="block text-sm font-medium mb-1">Company</label><input value={editForm.company_name} onChange={e => setEditForm({...editForm, company_name: e.target.value})} className="w-full p-2 border border-border rounded-sm bg-background text-sm" /></div>
               <div><label className="block text-sm font-medium mb-1">Contact Name *</label><input required value={editForm.full_name} onChange={e => setEditForm({...editForm, full_name: e.target.value})} className="w-full p-2 border border-border rounded-sm bg-background text-sm" /></div>
               <div className="md:col-span-2"><label className="block text-sm font-medium mb-1">Email *</label><input required type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full p-2 border border-border rounded-sm bg-background text-sm" /></div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">Category</label>
+                <select 
+                  value={editForm.category} 
+                  onChange={e => setEditForm({...editForm, category: e.target.value as any})} 
+                  className="w-full p-2 border border-border rounded-sm bg-background text-sm"
+                >
+                  <option value="lead">Lead</option>
+                  <option value="customer">Customer</option>
+                </select>
+              </div>
             </div>
             <button type="submit" className="btn-accent w-full py-2.5 rounded-sm font-medium">Save Changes</button>
           </form>
@@ -614,6 +640,15 @@ export default function AdminCustomers() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customers..." className="w-full pl-10 pr-4 py-2 border border-border rounded-sm text-sm" />
           </div>
+          <select 
+            value={categoryFilter} 
+            onChange={e => setCategoryFilter(e.target.value)}
+            className="p-2 border border-border rounded-sm text-sm bg-background"
+          >
+            <option value="all">All Categories</option>
+            <option value="lead">Leads</option>
+            <option value="customer">Customers</option>
+          </select>
         </div>
 
         <div className="overflow-x-auto">
@@ -622,6 +657,7 @@ export default function AdminCustomers() {
               <tr className="table-header border-b border-border">
                 <th className="text-left py-3 px-4">Company / Name</th>
                 <th className="text-left py-3 px-4">Email / Phone</th>
+                <th className="text-center py-3 px-4">Category</th>
                 <th className="text-right py-3 px-4">Orders</th>
                 <th className="text-right py-3 px-4">Spent</th>
                 <th className="text-center py-3 px-4">Status</th>
@@ -638,6 +674,11 @@ export default function AdminCustomers() {
                   <td className="py-4 px-4">
                     <p>{c.email}</p>
                     {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
+                  </td>
+                  <td className="py-4 px-4 text-center">
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase border ${statusStyles[c.category || "lead"]}`}>
+                      {c.category || "lead"}
+                    </span>
                   </td>
                   <td className="py-4 px-4 text-right font-medium">{c.total_orders || 0}</td>
                   <td className="py-4 px-4 text-right font-medium">C${(c.total_spent || 0).toLocaleString()}</td>

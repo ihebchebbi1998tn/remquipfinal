@@ -327,6 +327,11 @@ if ($method === 'POST' && $id && $action === 'convert') {
             );
         }
 
+        // Email the customer to confirm their order
+        try {
+            remquip_notify_order_from_offer($conn, $orderId, $offer['offer_number']);
+        } catch (Exception $_) { /* non-fatal */ }
+
         Logger::info('Offer converted to order', ['offer_id' => $id, 'order_id' => $orderId, 'order_number' => $orderNumber]);
         ResponseHelper::sendSuccess(
             ['id' => $orderId, 'order_number' => $orderNumber, 'offer_id' => $id],
@@ -336,6 +341,42 @@ if ($method === 'POST' && $id && $action === 'convert') {
     } catch (Exception $e) {
         Logger::error('Convert offer error', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Failed to convert offer to order', 500);
+    }
+}
+
+// ── POST /offers/:id/send — email the offer to the customer ──
+if ($method === 'POST' && $id && $action === 'send') {
+    Auth::requireAuth('admin');
+    try {
+        $data          = json_decode(file_get_contents('php://input'), true) ?? [];
+        $customMessage = !empty($data['message']) ? trim($data['message']) : null;
+        $customSubject = !empty($data['subject']) ? trim($data['subject']) : null;
+
+        $offer = $conn->fetch(
+            "SELECT id, status FROM remquip_offers WHERE id = :id AND deleted_at IS NULL",
+            ['id' => $id]
+        );
+        if (!$offer) { ResponseHelper::sendError('Offer not found', 404); }
+
+        $sent = remquip_notify_offer_sent($conn, $id, $customMessage, $customSubject);
+
+        // Auto-advance status from draft → sent when emailing the customer
+        if ($offer['status'] === 'draft') {
+            $conn->execute(
+                "UPDATE remquip_offers SET status = 'sent', updated_at = NOW() WHERE id = :id",
+                ['id' => $id]
+            );
+        }
+
+        if ($sent) {
+            Logger::info('Offer emailed to customer', ['offer_id' => $id]);
+            ResponseHelper::sendSuccess(['sent' => true], 'Offer sent to customer successfully');
+        } else {
+            ResponseHelper::sendError('Failed to send email — check SMTP configuration', 500);
+        }
+    } catch (Exception $e) {
+        Logger::error('Send offer email error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to send offer email', 500);
     }
 }
 

@@ -106,7 +106,8 @@ if ($method === 'GET' && (!$id || $id === 'search' || ($id === 'category' && $ac
                        c.name as category, c.slug as categorySlug,
                        (SELECT image_url FROM remquip_product_images WHERE product_id = p.id ORDER BY is_primary DESC, display_order ASC LIMIT 1) as image,
                        COALESCE(inv.quantity_available, 0) as stock,
-                       COALESCE(inv.quantity_available, 0) as stock_quantity
+                       COALESCE(inv.quantity_available, 0) as stock_quantity,
+                       COALESCE(p.minimum_stock, 0) as minimum_stock
                 FROM remquip_products p
                 LEFT JOIN remquip_categories c ON p.category_id = c.id
                 LEFT JOIN remquip_inventory inv ON p.id = inv.product_id
@@ -257,8 +258,8 @@ if ($method === 'POST' && !$id) {
         
         $productId = $conn->fetch('SELECT UUID() AS u')['u'];
         $conn->execute(
-            "INSERT INTO remquip_products (id, sku, name, category_id, description, details, base_price, cost_price, is_active)
-             VALUES (:id, :sku, :name, :categoryId, :description, :details, :basePrice, :costPrice, 1)",
+            "INSERT INTO remquip_products (id, sku, name, category_id, description, details, base_price, cost_price, minimum_stock, is_active)
+             VALUES (:id, :sku, :name, :categoryId, :description, :details, :basePrice, :costPrice, :minStock, 1)",
             [
                 'id' => $productId,
                 'sku' => strtoupper($data['sku']),
@@ -267,7 +268,8 @@ if ($method === 'POST' && !$id) {
                 'description' => $data['description'] ?? '',
                 'details' => json_encode($data['details'] ?? []),
                 'basePrice' => (float)$data['basePrice'],
-                'costPrice' => isset($data['costPrice']) ? (float)$data['costPrice'] : null
+                'costPrice' => isset($data['costPrice']) ? (float)$data['costPrice'] : null,
+                'minStock'  => isset($data['minimum_stock']) ? (int)$data['minimum_stock'] : 0
             ]
         );
 
@@ -349,6 +351,10 @@ if (($method === 'PATCH' || $method === 'PUT') && $id && !$action) {
         if (isset($data['status'])) {
             $updates[] = "is_active = :isActive";
             $params['isActive'] = $data['status'] === 'active' ? 1 : 0;
+        }
+        if (array_key_exists('minimum_stock', $data)) {
+            $updates[] = "minimum_stock = :minStock";
+            $params['minStock'] = (int)$data['minimum_stock'];
         }
 
         $didSomething = false;

@@ -297,18 +297,20 @@ if ($method === 'POST' && !$id) {
             "INSERT INTO remquip_orders (id, customer_id, order_number, subtotal, tax, shipping, total, payment_status, payment_method, status, shipping_address, notes)
              VALUES (:id, :customerId, :orderNumber, :subtotal, :tax, :shipping, :total, 'pending', :paymentMethod, 'pending', :shippingAddress, :notes)",
             [
-                'id' => $orderId,
-                'customerId' => $customerId,
-                'orderNumber' => $orderNumber,
-                'subtotal' => $subtotal,
-                'tax' => $tax,
-                'shipping' => $shipping,
-                'total' => $total,
-                'paymentMethod' => $paymentMethod,
-                'shippingAddress' => json_encode($shipAddr),
                 'notes' => $notes,
             ]
         );
+
+        // Promote Lead to Customer upon their first purchase
+        try {
+            $conn->execute(
+                "UPDATE remquip_customers SET category = 'customer', updated_at = NOW() WHERE id = :id AND category = 'lead'",
+                ['id' => $customerId]
+            );
+        } catch (Exception $promotErr) {
+            Logger::warning('Failed to promote lead to customer', ['error' => $promotErr->getMessage(), 'customer_id' => $customerId]);
+        }
+
         // Store billing_address separately — column added via migrate_orders_billing_address.sql.
         // Wrapped in try/catch so order creation never fails if migration hasn't run yet.
         if (!empty($billAddr)) {
@@ -480,6 +482,68 @@ if ($method === 'DELETE' && $id && !$action) {
     } catch (Exception $e) {
         Logger::error('Delete order error', ['error' => $e->getMessage()]);
         ResponseHelper::sendError('Failed to delete order', 500);
+    }
+}
+
+// ── POST /orders/:id/send — email the customer about this order ──
+if ($method === 'POST' && $id && $action === 'send') {
+    Auth::requireAuth('admin');
+    try {
+        $data          = json_decode(file_get_contents('php://input'), true) ?? [];
+        $emailType     = trim($data['email_type'] ?? 'status');   // 'status' | 'confirmation' | 'custom'
+        $customMessage = !empty($data['message']) ? trim($data['message']) : null;
+        $customSubject = !empty($data['subject']) ? trim($data['subject']) : null;
+
+        $row = $conn->fetch(
+            'SELECT o.order_number, o.status, o.total,
+                    c.email, c.contact_person, c.company_name
+             FROM remquip_orders o
+             INNER JOIN remquip_customers c ON c.id = o.customer_id AND c.deleted_at IS NULL
+             WHERE o.id = :id AND o.deleted_at IS NULL',
+            ['id' => $id]
+        );
+        if (!$row) { ResponseHelper::sendError('Order not found', 404); }
+
+        $to = filter_var($row['email'], FILTER_VALIDATE_EMAIL);
+        if (!$to) { ResponseHelper::sendError('Customer has no valid email address', 422); }
+
+        $orderNumber = $row['order_number'];
+
+        if ($emailType === 'custom' && $customMessage) {
+            // Custom freeform email using the status template as base
+            $subject = $customSubject ?: ('REMQUIP: Regarding Order ' . $orderNumber);
+            $tpl = remquip_tpl_order_status_customer([
+                'order_number' => $orderNumber,
+                'status'       => $customMessage,
+            ]);
+            // Override inner content with freeform message
+            $name = trim(($row['contact_person'] ?? '') . ' ' . ($row['company_name'] ?? ''));
+            if ($name === '') $name = $to;
+            $innerHtml = '<p style="margin:0 0 16px;">Dear ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ',</p>'
+                . '<p style="margin:0 0 16px;white-space:pre-wrap;">' . htmlspecialchars($customMessage, ENT_QUOTES, 'UTF-8') . '</p>'
+                . '<p style="margin:24px 0 0;font-size:14px;">If you have questions, reply to this email or contact our team.</p>';
+            $html = remquip_email_layout(
+                'Regarding order ' . $orderNumber,
+                'Message from REMQUIP',
+                $innerHtml
+            );
+            $sent = remquip_send_customer_mail($conn, $to, $subject, $html, $customMessage);
+        } else {
+            // Status notification email
+            $subject = $customSubject ?: ('REMQUIP: Order ' . $orderNumber . ' — ' . $row['status']);
+            $tpl  = remquip_tpl_order_status_customer(['order_number' => $orderNumber, 'status' => $row['status']]);
+            $sent = remquip_send_customer_mail($conn, $to, $subject, $tpl['html'], $tpl['text']);
+        }
+
+        if ($sent) {
+            Logger::info('Order email sent to customer', ['order_id' => $id, 'type' => $emailType]);
+            ResponseHelper::sendSuccess(['sent' => true], 'Email sent to customer successfully');
+        } else {
+            ResponseHelper::sendError('Failed to send email — check SMTP configuration', 500);
+        }
+    } catch (Exception $e) {
+        Logger::error('Send order email error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to send order email', 500);
     }
 }
 

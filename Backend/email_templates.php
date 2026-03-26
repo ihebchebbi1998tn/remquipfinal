@@ -201,6 +201,110 @@ function remquip_tpl_application_approved(array $v): array
     return ['html' => $html, 'text' => $text];
 }
 
+// =====================================================================
+// OFFER / QUOTE EMAIL TEMPLATES
+// =====================================================================
+
+/**
+ * Send a quote/offer to the customer.
+ * $v keys: offer_number, customer_name, valid_until, total, items (array of name+qty+price),
+ *          custom_message (optional personalised note from admin), subtotal, discount, shipping, tax
+ */
+function remquip_tpl_offer_sent_customer(array $v): array
+{
+    $name    = htmlspecialchars($v['customer_name'] ?? 'Valued Customer', ENT_QUOTES, 'UTF-8');
+    $num     = htmlspecialchars($v['offer_number']  ?? '',                ENT_QUOTES, 'UTF-8');
+    $valid   = !empty($v['valid_until']) ? htmlspecialchars($v['valid_until'], ENT_QUOTES, 'UTF-8') : null;
+    $total   = htmlspecialchars(number_format((float)($v['total'] ?? 0), 2), ENT_QUOTES, 'UTF-8');
+    $sub     = number_format((float)($v['subtotal']  ?? 0), 2);
+    $disc    = number_format((float)($v['discount']  ?? 0), 2);
+    $ship    = number_format((float)($v['shipping']  ?? 0), 2);
+    $tax     = number_format((float)($v['tax']       ?? 0), 2);
+    $custom  = !empty($v['custom_message'])
+        ? '<div style="margin:0 0 24px;padding:16px 20px;background:#141a22;border-left:3px solid #e85d04;border-radius:0 6px 6px 0;">'
+          . '<p style="margin:0;font-size:14px;color:#e2e8f0;white-space:pre-wrap;">'
+          . htmlspecialchars($v['custom_message'], ENT_QUOTES, 'UTF-8') . '</p></div>'
+        : '';
+
+    // Line items table
+    $rows = '';
+    if (!empty($v['items']) && is_array($v['items'])) {
+        foreach ($v['items'] as $item) {
+            $iname  = htmlspecialchars($item['name'] ?? 'Item',               ENT_QUOTES, 'UTF-8');
+            $isku   = !empty($item['sku']) ? '<div style="font-size:11px;color:#64748b;">' . htmlspecialchars($item['sku'], ENT_QUOTES, 'UTF-8') . '</div>' : '';
+            $iqty   = (int)($item['quantity']   ?? 1);
+            $iup    = number_format((float)($item['unit_price'] ?? 0), 2);
+            $ilt    = number_format((float)($item['line_total'] ?? ($item['quantity'] * $item['unit_price'] ?? 0)), 2);
+            $rows  .= '<tr>'
+                . '<td style="padding:10px 8px;border-bottom:1px solid #2a3441;">' . $iname . $isku . '</td>'
+                . '<td style="padding:10px 8px;border-bottom:1px solid #2a3441;text-align:center;">' . $iqty . '</td>'
+                . '<td style="padding:10px 8px;border-bottom:1px solid #2a3441;text-align:right;">$' . $iup . '</td>'
+                . '<td style="padding:10px 8px;border-bottom:1px solid #2a3441;text-align:right;font-weight:600;">$' . $ilt . '</td>'
+                . '</tr>';
+        }
+    }
+
+    $totalsRows = '<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#94a3b8;font-size:13px;">Subtotal</td><td style="padding:6px 8px;text-align:right;">$' . $sub . '</td></tr>';
+    if ((float)$disc > 0) {
+        $totalsRows .= '<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#94a3b8;font-size:13px;">Discount</td><td style="padding:6px 8px;text-align:right;color:#22c55e;">-$' . $disc . '</td></tr>';
+    }
+    if ((float)$ship > 0) {
+        $totalsRows .= '<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#94a3b8;font-size:13px;">Shipping</td><td style="padding:6px 8px;text-align:right;">$' . $ship . '</td></tr>';
+    }
+    if ((float)$tax > 0) {
+        $totalsRows .= '<tr><td colspan="3" style="padding:6px 8px;text-align:right;color:#94a3b8;font-size:13px;">Tax</td><td style="padding:6px 8px;text-align:right;">$' . $tax . '</td></tr>';
+    }
+    $totalsRows .= '<tr><td colspan="3" style="padding:10px 8px;text-align:right;font-weight:700;font-size:15px;border-top:2px solid #2a3441;">TOTAL</td>'
+        . '<td style="padding:10px 8px;text-align:right;font-weight:700;font-size:15px;color:#e85d04;border-top:2px solid #2a3441;">$' . $total . '</td></tr>';
+
+    $inner = '<p style="margin:0 0 16px;">Dear ' . $name . ',</p>'
+        . '<p style="margin:0 0 20px;">Please find attached your quote <strong style="color:#e85d04;">' . $num . '</strong>'
+        . ($valid ? ', valid until <strong>' . $valid . '</strong>' : '') . '.</p>'
+        . $custom
+        . ($rows !== '' ? '<table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;">'
+            . '<thead><tr style="background:#141a22;">'
+            . '<th style="padding:10px 8px;text-align:left;color:#94a3b8;font-weight:600;">Item</th>'
+            . '<th style="padding:10px 8px;text-align:center;color:#94a3b8;font-weight:600;width:50px;">Qty</th>'
+            . '<th style="padding:10px 8px;text-align:right;color:#94a3b8;font-weight:600;width:90px;">Unit</th>'
+            . '<th style="padding:10px 8px;text-align:right;color:#94a3b8;font-weight:600;width:90px;">Total</th>'
+            . '</tr></thead><tbody>' . $rows . '</tbody><tfoot>' . $totalsRows . '</tfoot></table>' : '')
+        . '<p style="margin:24px 0 8px;font-size:14px;">To accept this quote or if you have any questions, please reply to this email or contact our sales team.</p>'
+        . '<p style="margin:0;font-size:13px;color:#94a3b8;">Thank you for choosing REMQUIP.</p>';
+
+    $html = remquip_email_layout('Quote ' . $num . ' from REMQUIP', 'Your Quote from REMQUIP', $inner);
+    $text = "Dear {$v['customer_name']},\n\nPlease find your quote {$num}"
+        . ($valid ? " (valid until {$valid})" : '') . " for a total of \${$total}.\n\n"
+        . (!empty($v['custom_message']) ? $v['custom_message'] . "\n\n" : '')
+        . "To accept or if you have questions, reply to this email.\n\n— REMQUIP";
+    return ['html' => $html, 'text' => $text];
+}
+
+/**
+ * Notify customer their accepted quote has been converted to an order.
+ * $v keys: customer_name, offer_number, order_number, total
+ */
+function remquip_tpl_order_from_offer_customer(array $v): array
+{
+    $name   = htmlspecialchars($v['customer_name'] ?? 'Valued Customer', ENT_QUOTES, 'UTF-8');
+    $ofnum  = htmlspecialchars($v['offer_number']  ?? '',                ENT_QUOTES, 'UTF-8');
+    $ornum  = htmlspecialchars($v['order_number']  ?? '',                ENT_QUOTES, 'UTF-8');
+    $total  = htmlspecialchars(number_format((float)($v['total'] ?? 0), 2), ENT_QUOTES, 'UTF-8');
+
+    $inner = '<p style="margin:0 0 16px;">Dear ' . $name . ',</p>'
+        . '<p style="margin:0 0 20px;">Great news! Your accepted quote <strong style="color:#e85d04;">' . $ofnum . '</strong> has been confirmed and an order has been created.</p>'
+        . '<table role="presentation" cellspacing="0" cellpadding="10" style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;background:#141a22;border-radius:6px;">'
+        . '<tr><td style="color:#94a3b8;width:120px;">Quote #</td><td>' . $ofnum . '</td></tr>'
+        . '<tr><td style="color:#94a3b8;">Order #</td><td><strong style="color:#f8fafc;">' . $ornum . '</strong></td></tr>'
+        . '<tr><td style="color:#94a3b8;">Total</td><td><strong style="color:#e85d04;">$' . $total . '</strong></td></tr>'
+        . '</table>'
+        . '<p style="margin:0 0 16px;font-size:14px;">Our team will be in touch with you shortly to confirm the next steps for your order.</p>'
+        . '<p style="margin:0;font-size:13px;color:#94a3b8;">Thank you for your business with REMQUIP.</p>';
+
+    $html = remquip_email_layout('Order ' . $ornum . ' confirmed — REMQUIP', 'Your Order is Confirmed', $inner);
+    $text = "Dear {$v['customer_name']},\n\nYour quote {$ofnum} has been converted to order {$ornum} for a total of \${$total}.\n\nWe will be in touch shortly.\n\n— REMQUIP";
+    return ['html' => $html, 'text' => $text];
+}
+
 function remquip_tpl_application_admin_notification(array $v): array
 {
     $company = htmlspecialchars($v['company'] ?? '', ENT_QUOTES, 'UTF-8');

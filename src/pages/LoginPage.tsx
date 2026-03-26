@@ -40,9 +40,15 @@ export default function LoginPage() {
     return <RemquipLoadingScreen variant="fullscreen" message="Loading secure portal..." />;
   }
 
-  if (isAdminLogin && isAuthenticated && user && isStaffRole(user.role)) {
-    const dest = redirectParam?.startsWith("/admin") ? redirectParam : "/admin";
-    return <Navigate to={dest} replace />;
+  if (isAuthenticated && user) {
+    if (isStaffRole(user.role)) {
+      const dest = redirectParam?.startsWith("/admin") ? redirectParam : "/admin";
+      return <Navigate to={dest} replace />;
+    } else {
+      const safeDest = (path: string | null) => (path?.startsWith("/admin") ? null : path);
+      const dest = safeDest(redirectParam) || "/account";
+      return <Navigate to={dest} replace />;
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,28 +74,26 @@ export default function LoginPage() {
 
       if (isAdminLogin) {
         if (!isStaffRole(u.role)) {
-          setError(t("auth.admin_access_denied"));
+          setError(t("auth.admin_access_denied") || "Access Denied. Administrator privileges required.");
           return;
         }
         const dest = redirectParam?.startsWith("/admin") ? redirectParam : fromPath?.startsWith("/admin") ? fromPath : "/admin";
         navigate(dest, { replace: true });
         return;
-      }
-
-      if (fromPath?.startsWith("/admin") || redirectParam?.startsWith("/admin")) {
+      } else {
+        // Enforce customer-only access on the generic /login page
         if (isStaffRole(u.role)) {
-          const dest = fromPath?.startsWith("/admin") ? fromPath : redirectParam!;
-          navigate(dest, { replace: true });
+          setError("Administrator accounts must use the secure operator portal (/admin/login) to sign in.");
           return;
         }
-        setError(t("auth.admin_access_denied"));
+        
+        // Prevent redirecting a customer to an admin route somehow
+        const safeDest = (path: string | null) => (path?.startsWith("/admin") ? null : path);
+        
+        const dest = safeDest(fromPath) || safeDest(redirectParam) || "/account";
+        navigate(dest, { replace: true });
         return;
       }
-
-      if (fromPath) { navigate(fromPath, { replace: true }); return; }
-      if (redirectParam) { navigate(redirectParam, { replace: true }); return; }
-      
-      navigate("/account", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed. Please verify your credentials.");
     } finally {

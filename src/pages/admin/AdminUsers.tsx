@@ -112,6 +112,9 @@ export default function AdminUsers() {
 
   // Filter users locally (in case server-side filtering isn't available)
   const filtered = users.filter((u: User) => {
+    // Hide general 'user' role from Admin Users management (they are customers managed in CRM)
+    if (u.role === 'user') return false;
+
     const matchesSearch = !search || 
       u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
       u.email.toLowerCase().includes(search.toLowerCase());

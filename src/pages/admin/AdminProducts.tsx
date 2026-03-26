@@ -231,8 +231,9 @@ export default function AdminProducts() {
           {filtered.map((product: Product) => {
             const isExpanded = expandedProduct === product.id;
             const thumb = productListThumb(product);
+            const isLowStock = product.stock_quantity <= (product.minimum_stock || 0);
             return (
-              <div key={product.id} className="border border-border rounded-xl overflow-hidden">
+              <div key={product.id} className={`border border-border rounded-xl overflow-hidden ${isLowStock ? 'bg-red-50/50 dark:bg-red-950/20' : ''}`}>
                 <button onClick={() => setExpandedProduct(isExpanded ? null : product.id)} className="w-full p-3 text-left flex items-center gap-3 hover:bg-muted/20 transition-colors">
                   {thumb ? (
                     <img src={thumb} alt="" className="w-12 h-12 rounded-lg object-cover bg-secondary flex-shrink-0 shadow-sm" />
@@ -256,7 +257,12 @@ export default function AdminProducts() {
                       <span className="text-muted-foreground">Wholesale</span>
                       <span className="font-medium">C${toNumber(product.wholesale_price ?? product.price).toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Stock</span><span className={`font-medium ${product.stock_quantity < 50 ? "text-warning" : ""}`}>{product.stock_quantity}</span></div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Stock</span>
+                      <span className={`font-medium ${isLowStock ? "text-red-600 dark:text-red-400 font-bold" : ""}`}>
+                        {product.stock_quantity}
+                      </span>
+                    </div>
                     <div className="flex gap-2 pt-2">
                       <Link to={`/admin/products/${product.id}/view`} className="admin-btn--secondary flex-1 text-xs py-1.5"><Eye className="h-3 w-3" /> View</Link>
                       <Link to={`/admin/products/${product.id}/logs`} className="admin-btn--secondary flex-1 text-xs py-1.5"><ClipboardList className="h-3 w-3" /> Logs</Link>
@@ -297,8 +303,13 @@ export default function AdminProducts() {
             <tbody className="divide-y divide-border">
               {filtered.map((product: Product) => {
                 const thumb = productListThumb(product);
+                const isLowStock = product.stock_quantity <= (product.minimum_stock || 0);
+                const rowBg = selectedProducts.has(product.id) 
+                  ? "bg-accent/5" 
+                  : isLowStock ? "bg-red-50/70 dark:bg-red-950/30" : "";
+                  
                 return (
-                  <tr key={product.id} className={`hover:bg-muted/30 transition-colors ${selectedProducts.has(product.id) ? "bg-accent/5" : ""}`}>
+                  <tr key={product.id} className={`hover:bg-muted/30 transition-colors ${rowBg}`}>
                     <td className="px-3 py-3">
                       <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => toggleSelect(product.id)} className="rounded-sm border-border accent-accent" />
                     </td>
@@ -316,7 +327,7 @@ export default function AdminProducts() {
                     <td className="px-3 py-3 text-sm">{product.category || "Uncategorized"}</td>
                     <td className="px-3 py-3 text-right font-semibold">C${toNumber(product.price).toFixed(2)}</td>
                     <td className="px-3 py-3 text-right text-muted-foreground">C${toNumber(product.wholesale_price ?? product.price).toFixed(2)}</td>
-                    <td className={`px-3 py-3 text-right font-semibold ${product.stock_quantity < 50 ? "text-warning" : ""}`}>{product.stock_quantity}</td>
+                    <td className={`px-3 py-3 text-right ${isLowStock ? "text-red-600 dark:text-red-400 font-bold" : "font-semibold"}`}>{product.stock_quantity}</td>
                     <td className="px-3 py-3"><span className={statusStyles[product.status]}>{product.status}</span></td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
