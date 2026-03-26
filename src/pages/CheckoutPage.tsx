@@ -119,7 +119,7 @@ export default function CheckoutPage() {
         if (sessionId) {
           const stripe = await stripePromise;
           if (stripe) {
-            const { error } = await stripe.redirectToCheckout({ sessionId });
+            const { error } = await (stripe as any).redirectToCheckout({ sessionId });
             if (error) {
               console.error("Stripe routing error:", error);
               throw new Error(error.message);

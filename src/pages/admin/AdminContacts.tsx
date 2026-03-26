@@ -133,7 +133,7 @@ export default function AdminContacts() {
     }
   };
 
-  const isMutating = createMutation.isLoading || updateMutation.isLoading;
+  const isMutating = createMutation.isPending || updateMutation.isPending;
 
   if (isLoading) {
     return <AdminPageLoading message="Loading admin contacts" />;
@@ -278,7 +278,7 @@ export default function AdminContacts() {
               className="admin-btn--primary px-6"
             >
               {isMutating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-              {editingId ? (updateMutation.isLoading ? "Saving..." : "Save Changes") : createMutation.isLoading ? "Creating..." : "Create Contact"}
+              {editingId ? (updateMutation.isPending ? "Saving..." : "Save Changes") : createMutation.isPending ? "Creating..." : "Create Contact"}
             </button>
             <button type="button" onClick={closeForm} className="admin-btn--secondary px-6">
               Cancel
@@ -310,7 +310,7 @@ export default function AdminContacts() {
                 <button type="button" onClick={() => openEdit(c)} className="admin-btn--ghost p-1.5"><Pencil className="h-3.5 w-3.5" /></button>
                 <button
                   type="button"
-                  disabled={deleteMutation.isLoading}
+                  disabled={deleteMutation.isPending}
                   onClick={() => { if (confirm("Delete this admin contact?")) deleteMutation.mutate(c.id); }}
                   className="admin-btn--danger p-1.5 border-0"
                 ><Trash2 className="h-3.5 w-3.5" /></button>
@@ -377,7 +377,7 @@ export default function AdminContacts() {
                     </button>
                     <button
                       type="button"
-                      disabled={deleteMutation.isLoading}
+                      disabled={deleteMutation.isPending}
                       onClick={() => {
                         if (!confirm("Delete this admin contact?")) return;
                         deleteMutation.mutate(c.id);

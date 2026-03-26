@@ -32,7 +32,7 @@ export type HeroCtaContent = {
 
 type ResolvedSlide = { src: string; alt: string; caption: string };
 
-const HERO_SECONDARY_ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+const HERO_SECONDARY_ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number | string }>> = {
   Truck,
   Package,
   Wrench,

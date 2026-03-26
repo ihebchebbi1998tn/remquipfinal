@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Plus, Search, Grid3x3, User, AlertCircle, Eye, Edit, Trash2, Copy } from "lucide-react";
 import { AdminUser, AdminPage, AccessRecord } from "@/types/admin";
 import { useUsers, useAllPermissions, useUpdateUserPermissions } from "@/hooks/useApi";
-import { api, unwrapApiList, type User } from "@/lib/api";
+import { api, unwrapApiList, type User as ApiUser } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageLoading } from "@/components/admin/AdminPageState";
@@ -35,7 +35,7 @@ export default function AdminAccess() {
   const { data: permissionsResponse, isLoading: isLoadingPermissions } = useAllPermissions();
   const updatePermissionsMutation = useUpdateUserPermissions();
 
-  const rawUsers = unwrapApiList<User>(usersResponse, []);
+  const rawUsers = unwrapApiList<ApiUser>(usersResponse, []) as any[];
   const users: AdminUser[] = useMemo(
     () =>
       rawUsers.map((u) => ({
@@ -370,9 +370,9 @@ export default function AdminAccess() {
                       <td key={`${user.id}-${page.id}`} className="p-2 text-center">
                         {access ? (
                           <div className="flex items-center justify-center gap-1">
-                            {access.canView && <Eye className="h-3.5 w-3.5 text-success" title="View" />}
-                            {access.canEdit && <Edit className="h-3.5 w-3.5 text-info" title="Edit" />}
-                            {access.canDelete && <Trash2 className="h-3.5 w-3.5 text-destructive" title="Delete" />}
+                            {access.canView && <Eye className="h-3.5 w-3.5 text-success" />}
+                            {access.canEdit && <Edit className="h-3.5 w-3.5 text-info" />}
+                            {access.canDelete && <Trash2 className="h-3.5 w-3.5 text-destructive" />}
                             <button
                               onClick={() => handleRevokeAccess(user.id, page.id)}
                               className="ml-1 text-xs px-1.5 py-0.5 rounded bg-destructive/20 text-destructive hover:bg-destructive/30 transition-colors"

@@ -57,7 +57,7 @@ export function HeaderSearch({ onMobileClose, isMobile = false }: HeaderSearchPr
         if (cancelled) return;
         const rows = unwrapApiList<Product>(res as ApiResponse<unknown>, []);
         setSearchResults(
-          rows.slice(0, 6).map((row) => apiProductToStorefront(row as Record<string, unknown>))
+          rows.slice(0, 6).map((row) => apiProductToStorefront(row as unknown as Record<string, unknown>))
         );
       } catch {
         if (!cancelled) setSearchResults([]);

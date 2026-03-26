@@ -12,7 +12,7 @@ import { api, ApiResponse, PaginatedResponse, type ContactMapPayload, type Landi
  * Hook for GET requests
  */
 export function useApiQuery<T = any>(
-  queryKey: string[],
+  queryKey: (string | number)[],
   queryFn: () => Promise<ApiResponse<T>>,
   options?: Omit<UseQueryOptions<ApiResponse<T>>, 'queryKey' | 'queryFn'>
 ) {
@@ -32,11 +32,11 @@ export function useApiMutation<TData = any, TError = any, TVariables = any>(
   mutationFn: (variables: TVariables) => Promise<ApiResponse<TData>>,
   options?: Omit<UseMutationOptions<ApiResponse<TData>, TError, TVariables>, 'mutationFn'>
 ) {
-  const { onSuccess, ...rest } = options ?? {};
+  const { onSuccess, ...rest } = options ?? {} as any;
   return useMutation({
     mutationFn,
     ...rest,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data: any, variables: any, context: any) => {
       onSuccess?.(data, variables, context);
     },
   });

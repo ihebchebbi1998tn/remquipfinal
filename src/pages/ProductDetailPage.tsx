@@ -28,7 +28,7 @@ export default function ProductDetailPage() {
   const { data: productResponse, isLoading, isError } = useProduct(param);
   const { data: productsResponse } = useProducts(1, 100);
 
-  const raw = productResponse?.data as Record<string, unknown> | undefined;
+  const raw = productResponse?.data as unknown as Record<string, unknown> | undefined;
   const product = useMemo(() => (raw ? apiProductToStorefront(raw) : null), [raw]);
 
   const listRows = unwrapApiList<Product>(productsResponse, []);
@@ -37,12 +37,12 @@ export default function ProductDetailPage() {
     if (!product?.category_id) return [] as StorefrontProduct[];
     return listRows
       .filter((row) => {
-        const id = String((row as Record<string, unknown>).id ?? "");
-        const cid = String((row as Record<string, unknown>).category_id ?? "");
+        const id = String((row as unknown as Record<string, unknown>).id ?? "");
+        const cid = String((row as unknown as Record<string, unknown>).category_id ?? "");
         return cid === product.category_id && id !== product.id;
       })
       .slice(0, 4)
-      .map((row) => apiProductToStorefront(row as Record<string, unknown>));
+      .map((row) => apiProductToStorefront(row as unknown as Record<string, unknown>));
   }, [listRows, product]);
 
   const images = useMemo(() => {

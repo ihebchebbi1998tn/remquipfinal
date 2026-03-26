@@ -436,7 +436,7 @@ export default function UserDashboard() {
                                     <Archive className="h-16 w-16 text-muted-foreground/30 mb-6" />
                                     <h3 className="font-display font-black text-lg uppercase tracking-widest mb-2">No Manifests Detected</h3>
                                     <p className="text-sm text-muted-foreground font-medium max-w-xs mx-auto mb-8">Initiate equipment procurement via the marketplace.</p>
-                                    <Navigate to="/products" className="bg-foreground text-background px-8 py-4 rounded-xl font-display font-black uppercase tracking-[0.2em] text-[10px] hover:bg-accent transition-colors">Browse Stock</Navigate>
+                                    <a href="/products" className="bg-foreground text-background px-8 py-4 rounded-xl font-display font-black uppercase tracking-[0.2em] text-[10px] hover:bg-accent transition-colors inline-block">Browse Stock</a>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
@@ -619,11 +619,11 @@ export default function UserDashboard() {
                                     </div>
                                     <div className="group relative">
                                         <label className="absolute -top-3 left-4 bg-card px-2 text-[10px] font-display font-black uppercase tracking-widest text-muted-foreground transition-colors z-10">First Name Identifier</label>
-                                        <input type="text" value={user.first_name || ''} disabled className="w-full bg-muted/20 border-2 border-border/60 rounded-xl px-4 py-4 text-sm font-bold text-foreground opacity-60 cursor-not-allowed" />
+                                        <input type="text" value={(user as any).first_name || ''} disabled className="w-full bg-muted/20 border-2 border-border/60 rounded-xl px-4 py-4 text-sm font-bold text-foreground opacity-60 cursor-not-allowed" />
                                     </div>
                                     <div className="group relative">
                                         <label className="absolute -top-3 left-4 bg-card px-2 text-[10px] font-display font-black uppercase tracking-widest text-muted-foreground transition-colors z-10">Last Name Identifier</label>
-                                        <input type="text" value={user.last_name || ''} disabled className="w-full bg-muted/20 border-2 border-border/60 rounded-xl px-4 py-4 text-sm font-bold text-foreground opacity-60 cursor-not-allowed" />
+                                        <input type="text" value={(user as any).last_name || ''} disabled className="w-full bg-muted/20 border-2 border-border/60 rounded-xl px-4 py-4 text-sm font-bold text-foreground opacity-60 cursor-not-allowed" />
                                     </div>
                                 </div>
                             </div>

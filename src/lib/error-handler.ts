@@ -237,8 +237,8 @@ export function logError(error: ApiError): void {
   console.error('[REMQUIP API ERROR]', logData);
 
   // Could also send to analytics/monitoring service
-  if (typeof window !== 'undefined' && window.__REMQUIP_ANALYTICS__) {
-    window.__REMQUIP_ANALYTICS__.logError(logData);
+  if (typeof window !== 'undefined' && (window as any).__REMQUIP_ANALYTICS__) {
+    (window as any).__REMQUIP_ANALYTICS__.logError(logData);
   }
 }
 

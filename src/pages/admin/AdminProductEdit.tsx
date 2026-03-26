@@ -149,7 +149,7 @@ export default function AdminProductEdit() {
   } = useAdminCategoriesList();
 
   const categories = unwrapApiList<ProductCategory>(categoriesResponse, []);
-  const raw = productResponse?.data as Record<string, unknown> | undefined;
+  const raw = productResponse?.data as unknown as Record<string, unknown> | undefined;
 
   const [form, setForm] = useState<ProductEditForm>(() => emptyForm([]));
   const [specRows, setSpecRows] = useState<SpecRow[]>([{ id: "spec-empty-0", key: "", value: "" }]);

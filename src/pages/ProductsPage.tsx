@@ -37,8 +37,8 @@ export default function ProductsPage() {
   const { data: productsResponse, isLoading: isLoadingProducts } = useProducts(1, 100);
   const { data: categoriesResponse, isLoading: isLoadingCategories } = useCategories(lang);
   
-  const apiProducts: Product[] = unwrapApiList<Product>(productsResponse, products);
-  const categoriesList: ProductCategory[] = unwrapApiList<ProductCategory>(categoriesResponse, categories);
+  const apiProducts: Product[] = unwrapApiList<Product>(productsResponse, products as any);
+  const categoriesList: ProductCategory[] = unwrapApiList<ProductCategory>(categoriesResponse, categories as any);
   const isLoading = isLoadingProducts || isLoadingCategories;
 
   const category = categorySlug ? categoriesList.find((c) => c.slug === categorySlug) || categories.find((c) => c.slug === categorySlug) : null;
@@ -46,7 +46,7 @@ export default function ProductsPage() {
 
   const filtered = useMemo(() => {
     const productList = apiProducts.length > 0 ? apiProducts : products;
-    let list = categorySlug ? productList.filter((p) => p.category_id === category?.id || (p as any).categorySlug === categorySlug) : [...productList];
+    let list = categorySlug ? productList.filter((p) => (p as any).category_id === category?.id || (p as any).categorySlug === categorySlug) : [...productList];
 
     const q = (searchQuery || searchFromUrl).toLowerCase().trim();
     if (q.length >= 2) {
@@ -260,7 +260,7 @@ export default function ProductsPage() {
             ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 xl:gap-8 auto-rows-fr">
               {filtered.map((product) => {
-                const sf = apiProductToStorefront(product as Record<string, unknown>);
+                const sf = apiProductToStorefront(product as unknown as Record<string, unknown>);
                 const isOutOfStock = sf.stock === 0;
                 
                 return (

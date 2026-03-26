@@ -57,7 +57,7 @@ export default function AdminOffers() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Sales Offers"
-        description="Create and manage quotes, proposals, and convert them to orders."
+        subtitle="Create and manage quotes, proposals, and convert them to orders."
         icon={FileText}
         actions={
           <button
@@ -258,7 +258,7 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this offer? This cannot be undone.")) return;
     try {
-      await deleteMutation.mutateAsync();
+      await deleteMutation.mutateAsync(undefined as any);
       showSuccessToast("Success", "Offer deleted successfully");
       onBack();
     } catch (e) {
@@ -556,7 +556,7 @@ function CreateOfferModal({ onClose, onSuccess }: { onClose: () => void; onSucce
   const { data: custData } = useCustomers(1, 50);
   const customers = Array.isArray(custData?.data) ? custData.data : (custData?.data as any)?.items || [];
   
-  const { data: prodData } = useSearchProducts(productSearch, 10);
+  const { data: prodData } = useSearchProducts(productSearch);
   const productResults = Array.isArray(prodData?.data) ? prodData.data : (prodData?.data as any)?.items || [];
 
   const handleAddProduct = (product: any) => {

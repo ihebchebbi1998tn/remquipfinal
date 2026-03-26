@@ -86,9 +86,9 @@ export default function AdminProductDetail() {
     );
   }
 
-  const p = productQ.data.data as Record<string, unknown>;
+  const p = productQ.data.data as unknown as Record<string, unknown>;
   const stats = statsQ.data?.data;
-  const history: Record<string, unknown>[] = Array.isArray(historyQ.data?.data) ? historyQ.data.data as Record<string, unknown>[] : [];
+  const history: Record<string, unknown>[] = Array.isArray(historyQ.data?.data) ? historyQ.data.data as unknown as Record<string, unknown>[] : [];
   const recentOrders: Record<string, unknown>[] = Array.isArray(stats?.recent_orders) ? stats.recent_orders : [];
 
   const primaryImage = (p.images as { image_url: string; is_primary: number }[] | undefined)
@@ -250,7 +250,7 @@ export default function AdminProductDetail() {
                       ["Added",     p.created_at ? fmtDate(String(p.created_at)) : "—"],
                     ].map(([k, v]) => (
                       <div key={String(k)} className="flex justify-between gap-4 py-1 border-b border-border/50 last:border-0">
-                        <dt className="text-muted-foreground">{k}</dt>
+                        <dt className="text-muted-foreground">{String(k)}</dt>
                         <dd className="font-medium text-right">{String(v ?? "—")}</dd>
                       </div>
                     ))}

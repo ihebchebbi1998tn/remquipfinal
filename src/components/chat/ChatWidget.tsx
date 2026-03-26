@@ -30,7 +30,7 @@ const chatApi = (path: string, opts?: RequestInit) => {
 
 /* ── Component ─────────────────────────────────────────────── */
 export function ChatWidget() {
-  const { t, language } = useLanguage();
+  const { t, lang: language } = useLanguage();
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<"intro" | "chat">("intro");
   const [name, setName] = useState("");

@@ -57,7 +57,7 @@ export default function AdminOverview() {
         try {
           const statsResponse = await api.getDashboardStats();
           if (statsResponse.data) {
-            setStats(statsResponse.data as DashboardStats);
+            setStats(statsResponse.data as unknown as DashboardStats);
           }
         } catch { /* Use defaults */ }
 
@@ -155,7 +155,7 @@ export default function AdminOverview() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
-            {recentOrders.map((order) => (
+            {recentOrders.map((order: any) => (
               <div key={order.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export default function AdminOverview() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {recentOrders.map((order) => (
+                {recentOrders.map((order: any) => (
                   <tr key={order.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-3 py-3 font-medium text-sm">{order.id}</td>
                     <td className="px-3 py-3 text-sm truncate max-w-[200px]">{order.customer}</td>

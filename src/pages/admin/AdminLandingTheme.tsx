@@ -7,7 +7,7 @@ import { showSuccessToast, showErrorToast } from "@/lib/toast";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageLoading } from "@/components/admin/AdminPageState";
 
-const PRESET_VAR_NAMES = new Set(LANDING_COLOR_PRESETS.map((p) => p.varName));
+const PRESET_VAR_NAMES = new Set(LANDING_COLOR_PRESETS.map((p) => p.varName as string));
 
 const DEFAULT_LANDING_FONT_HEADING_STACK = "'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif";
 const DEFAULT_LANDING_FONT_BODY_STACK = "'Inter', system-ui, sans-serif";

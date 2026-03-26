@@ -95,7 +95,7 @@ function generateId(): string {
  */
 export function showSuccessToast(
   title: string,
-  message: string,
+  message?: string,
   options?: {
     duration?: number;
     details?: Record<string, any>;
@@ -106,7 +106,7 @@ export function showSuccessToast(
     id: generateId(),
     type: 'success',
     title,
-    message,
+    message: message ?? '',
     duration: options?.duration || 4000,
     details: options?.details,
     timestamp: new Date().toISOString(),
@@ -119,7 +119,7 @@ export function showSuccessToast(
  */
 export function showErrorToast(
   title: string,
-  message: string,
+  message?: string,
   options?: {
     duration?: number;
     details?: Record<string, any>;
@@ -130,10 +130,11 @@ export function showErrorToast(
     id: generateId(),
     type: 'error',
     title,
-    message,
+    message: message ?? '',
     duration: options?.duration || 6000,
     details: options?.details,
     action: options?.action,
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -142,7 +143,7 @@ export function showErrorToast(
  */
 export function showWarningToast(
   title: string,
-  message: string,
+  message?: string,
   options?: {
     duration?: number;
     details?: Record<string, any>;
@@ -153,10 +154,11 @@ export function showWarningToast(
     id: generateId(),
     type: 'warning',
     title,
-    message,
+    message: message ?? '',
     duration: options?.duration || 5000,
     details: options?.details,
     action: options?.action,
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -165,7 +167,7 @@ export function showWarningToast(
  */
 export function showInfoToast(
   title: string,
-  message: string,
+  message?: string,
   options?: {
     duration?: number;
     details?: Record<string, any>;
@@ -176,10 +178,11 @@ export function showInfoToast(
     id: generateId(),
     type: 'info',
     title,
-    message,
+    message: message ?? '',
     duration: options?.duration || 4000,
     details: options?.details,
     action: options?.action,
+    timestamp: new Date().toISOString(),
   });
 }
 

@@ -1,7 +1,7 @@
 import React from "react";
 
 interface FlagIconProps {
-  country: "ca" | "us" | "eu" | "fr";
+  country: string;
   className?: string;
 }
 
