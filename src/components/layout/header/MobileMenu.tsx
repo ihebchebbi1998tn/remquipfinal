@@ -78,31 +78,14 @@ export function MobileMenu({ isOpen, onClose, canEditHeader, mobileOverlayTop }:
 
         {/* Account & Setup */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Account */}
           <div className="bg-card/60 rounded-2xl border border-border/50 p-2 shadow-sm flex flex-col justify-center backdrop-blur-sm">
-            {ADMIN_NO_AUTH ? (
-              <Link to="/admin" onClick={onClose} className="flex flex-col items-center justify-center gap-2 py-4 px-2 text-sm font-bold text-foreground hover:text-accent rounded-xl transition-colors group">
+            {isAuthenticated && user ? (
+              <Link to="/account" onClick={onClose} className="flex flex-col items-center justify-center gap-2 py-4 px-2 text-sm font-bold text-foreground hover:text-accent rounded-xl transition-colors group">
                 <div className="p-2 rounded-full bg-secondary group-hover:bg-accent/10 transition-colors">
                   <User className="h-5 w-5" strokeWidth={2} />
                 </div>
-                <span>{t("nav.admin")}</span>
+                <span>{t("nav.account")}</span>
               </Link>
-            ) : isAuthenticated && user ? (
-              (user.role === "admin" || user.role === "super_admin" || user.role === "manager") ? (
-                <Link to="/admin" onClick={onClose} className="flex flex-col items-center justify-center gap-2 py-4 px-2 text-sm font-bold text-foreground hover:text-accent rounded-xl transition-colors group">
-                  <div className="p-2 rounded-full bg-secondary group-hover:bg-accent/10 transition-colors">
-                    <User className="h-5 w-5" strokeWidth={2} />
-                  </div>
-                  <span>{t("nav.admin")}</span>
-                </Link>
-              ) : (
-                <Link to="/account" onClick={onClose} className="flex flex-col items-center justify-center gap-2 py-4 px-2 text-sm font-bold text-foreground hover:text-accent rounded-xl transition-colors group">
-                  <div className="p-2 rounded-full bg-secondary group-hover:bg-accent/10 transition-colors">
-                    <User className="h-5 w-5" strokeWidth={2} />
-                  </div>
-                  <span>{t("nav.account")}</span>
-                </Link>
-              )
             ) : (
               <Link to="/login" onClick={onClose} className="flex flex-col items-center justify-center gap-2 py-4 px-2 text-sm font-bold text-foreground hover:text-accent rounded-xl transition-colors group">
                 <div className="p-2 rounded-full bg-secondary group-hover:bg-accent/10 transition-colors">

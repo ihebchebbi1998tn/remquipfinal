@@ -3,13 +3,14 @@ import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, Warehouse, ShoppingBag, ShoppingCart, Users, FileText,
   BarChart3, Settings, ChevronLeft, Menu, X, Tag, Shield, Layers, LayoutTemplate,
-  Phone, MessageCircle, LogOut, ExternalLink,
+  Phone, MessageCircle, LogOut, ExternalLink, Globe,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage, localeLabel, localeFlag } from "@/contexts/LanguageContext";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { usePermissions, AdminPermissions } from "@/hooks/usePermissions";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
+import FlagIcon from "@/components/FlagIcon";
 
 type NavItem = {
   labelKey: string;
@@ -92,7 +93,8 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const { user, isLoading, isAuthenticated, logout } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang, setLang, supportedLocales } = useLanguage();
+  const [langOpen, setLangOpen] = useState(false);
   const { canAccess } = usePermissions();
 
   // Show loading state while checking auth
@@ -284,6 +286,37 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Language switcher */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <Globe className="h-4 w-4" />
+                <FlagIcon country={localeFlag(lang)} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
+                <span className="hidden sm:inline text-xs font-bold uppercase">{lang}</span>
+              </button>
+              {langOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-xl p-1.5 min-w-[150px] z-50 animate-in fade-in slide-in-from-top-2">
+                    {supportedLocales.map((loc) => (
+                      <button
+                        key={loc}
+                        onClick={() => { setLang(loc); setLangOpen(false); }}
+                        className={`flex items-center gap-3 w-full text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          lang === loc ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+                        }`}
+                      >
+                        <FlagIcon country={localeFlag(loc)} className="w-5 h-3.5 rounded-[2px]" />
+                        {localeLabel(loc)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <AdminGlobalSearch />
           </div>
         </header>

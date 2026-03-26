@@ -384,5 +384,7 @@
   "footer.description": "Proveedor de piezas y equipos para camiones pesados. La confianza de flotas en toda América del Norte. Diseñado para operadores exigentes.",
   "footer.faq": "Preguntas Frecuentes",
   "footer.tagline": "Diseñado para escalar",
-  "close": "Cerrar"
+  "close": "Cerrar",
+  "header.sales_email_label": "Correo de ventas",
+  "header.professional_email_label": "Correo profesional"
 }

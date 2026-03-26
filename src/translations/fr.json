@@ -384,5 +384,7 @@
   "footer.description": "Fournisseur de pièces et équipements pour camions lourds. La confiance des flottes à travers l'Amérique du Nord. Conçu pour les opérateurs exigeants.",
   "footer.faq": "FAQ",
   "footer.tagline": "Conçu pour l'envergure",
-  "close": "Fermer"
+  "close": "Fermer",
+  "header.sales_email_label": "Courriel ventes",
+  "header.professional_email_label": "Courriel professionnel"
 }

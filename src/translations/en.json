@@ -384,5 +384,7 @@
   "footer.description": "Heavy-duty truck parts and equipment supplier. Trusted by fleets across North America. Built for demanding operators.",
   "footer.faq": "FAQ",
   "footer.tagline": "Engineered for scale",
-  "close": "Close"
+  "close": "Close",
+  "header.sales_email_label": "Sales Email",
+  "header.professional_email_label": "Professional Email"
 }

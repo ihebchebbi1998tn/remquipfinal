@@ -8,6 +8,11 @@
 // Require authentication for all user endpoints
 $auth = Auth::requireAuth();
 
+// Helper: check if user has admin-level role (admin OR super_admin)
+function isAdminRole(string $role): bool {
+    return in_array($role, ['admin', 'super_admin'], true);
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $userId = $id ?? null;
 $subAction = $action ?? null;
@@ -37,7 +42,7 @@ if ($method === 'GET' && $userId === 'profile') {
 // GET /users/:userId/orders — B2B orders where customer email matches user email
 // =====================================================================
 if ($method === 'GET' && $userId && $userId !== 'profile' && $userId !== 'import' && $subAction === 'orders') {
-    if ($auth['user_id'] !== $userId && $auth['role'] !== 'admin') {
+    if ($auth['user_id'] !== $userId && !isAdminRole($auth['role'])) {
         ResponseHelper::sendError('Forbidden', 403);
     }
     try {
@@ -76,7 +81,7 @@ if ($method === 'GET' && $userId && $userId !== 'profile' && $userId !== 'import
 // GET ALL USERS (Admin only)
 // =====================================================================
 if ($method === 'GET' && !$userId) {
-    if ($auth['role'] !== 'admin') {
+    if (!isAdminRole($auth['role'])) {
         ResponseHelper::sendError('Only admins can list users', 403);
     }
     
@@ -150,7 +155,7 @@ if ($method === 'GET' && !$userId) {
 // CREATE USER (Admin only)
 // =====================================================================
 if ($method === 'POST' && !$userId) {
-    if ($auth['role'] !== 'admin') {
+    if (!isAdminRole($auth['role'])) {
         ResponseHelper::sendError('Only admins can create users', 403);
     }
     
@@ -226,7 +231,7 @@ if ($method === 'GET' && $userId && $userId !== 'profile' && $userId !== 'import
         }
         
         // Users can only see their own data, admins can see anyone
-        if ($auth['user_id'] !== $userId && $auth['role'] !== 'admin') {
+        if ($auth['user_id'] !== $userId && !isAdminRole($auth['role'])) {
             ResponseHelper::sendError('You do not have permission to view this user', 403);
         }
         
@@ -242,7 +247,7 @@ if ($method === 'GET' && $userId && $userId !== 'profile' && $userId !== 'import
 // PUT/PATCH /users/:id/password
 // =====================================================================
 if (($method === 'PUT' || $method === 'PATCH') && $userId && $userId !== 'profile' && $subAction === 'password') {
-    if ($auth['user_id'] !== $userId && $auth['role'] !== 'admin') {
+    if ($auth['user_id'] !== $userId && !isAdminRole($auth['role'])) {
         ResponseHelper::sendError('You can only change your own password', 403);
     }
     $data = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -280,7 +285,7 @@ if (($method === 'PUT' || $method === 'PATCH') && $userId && $userId !== 'profil
 // =====================================================================
 if (($method === 'PATCH' || $method === 'PUT') && $userId && $userId !== 'profile' && $subAction !== 'password' && $subAction !== 'import') {
     // Users can update their own profile, admins can update anyone
-    if ($auth['user_id'] !== $userId && $auth['role'] !== 'admin') {
+    if ($auth['user_id'] !== $userId && !isAdminRole($auth['role'])) {
         ResponseHelper::sendError('You do not have permission to update this user', 403);
     }
     
@@ -347,7 +352,7 @@ if (($method === 'PATCH' || $method === 'PUT') && $userId && $userId !== 'profil
 // DELETE USER (Soft delete)
 // =====================================================================
 if ($method === 'DELETE' && $userId && $userId !== 'import' && $userId !== 'profile') {
-    if ($auth['role'] !== 'admin') {
+    if (!isAdminRole($auth['role'])) {
         ResponseHelper::sendError('Only admins can delete users', 403);
     }
     
@@ -372,7 +377,7 @@ if ($method === 'DELETE' && $userId && $userId !== 'import' && $userId !== 'prof
 // POST /users/import - Bulk import users from CSV/JSON (Admin only)
 // =====================================================================
 if ($method === 'POST' && $userId === 'import') {
-    if ($auth['role'] !== 'admin') {
+    if (!isAdminRole($auth['role'])) {
         ResponseHelper::sendError('Only admins can import users', 403);
     }
     

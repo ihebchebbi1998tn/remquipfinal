@@ -243,24 +243,15 @@ export default function Header() {
                   )}
                 </div>
 
-                {/* Account */}
+                {/* Account — always points to /login (guest) or /account (logged-in user).
+                    Admins reach /admin via direct URL, not from the storefront icon. */}
                 <div className="hidden sm:block">
-                {ADMIN_NO_AUTH ? (
-                  <Link to="/admin" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.admin")}>
+                {isAuthenticated && user ? (
+                  <Link to="/account" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.account")}>
                     <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
                   </Link>
-                ) : isAuthenticated && user ? (
-                  (user.role === "admin" || user.role === "super_admin" || user.role === "manager") ? (
-                  <Link to="/admin" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.admin")}>
-                    <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
-                  </Link>
-                  ) : (
-                    <Link to="/account" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.account")}>
-                      <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
-                    </Link>
-                  )
                 ) : (
-                   <Link to="/login" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.signin")}>
+                  <Link to="/login" className="flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 text-white/80 hover:bg-white/10" title={t("nav.signin")}>
                     <User className="h-[22px] w-[22px]" strokeWidth={2.5} />
                   </Link>
                 )}

@@ -244,7 +244,7 @@ export default function HomePage() {
             </div>
             <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
             <div className="flex items-center gap-2 font-display text-[10px] font-bold uppercase tracking-widest text-white hover:text-accent transition-colors">
-               <span className="text-[#94a3b8]">Professional Email:</span>
+               <span className="text-[#94a3b8]">{t("header.professional_email_label")}:</span>
                <a href={`mailto:${siteHeaderCms.professional_email || "info@remquip.ca"}`}>
                  {siteHeaderCms.professional_email || "info@remquip.ca"}
                </a>
