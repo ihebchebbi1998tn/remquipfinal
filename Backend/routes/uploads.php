@@ -47,6 +47,12 @@ if ($method === 'POST' && $uploadType === 'image' && !$action) {
         // Sanitize type
         $type = preg_replace('/[^a-z0-9_-]/i', '', $type);
         if (!$type) $type = 'products';
+
+        // Custom handling for signature uploads which might come from public form
+        if ($type === 'signatures') {
+            // We allow public signature uploads if needed, or stick to admin if preferred.
+            // For now, let's keep it consistent.
+        }
         
         $uploadDir = UPLOAD_DIR . '/' . $type . '_images';
         if (!is_dir($uploadDir)) {
@@ -137,15 +143,20 @@ if ($method === 'POST' && $uploadType === 'contract' && !$action) {
         }
         
         // Create upload directory
-        $uploadDir = UPLOAD_DIR . '/contracts';
+        $type = $_POST['type'] ?? 'contracts';
+        $type = preg_replace('/[^a-z0-9_-]/i', '', $type);
+        if (!$type) $type = 'contracts';
+
+        $uploadDir = UPLOAD_DIR . '/' . $type;
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
         
         // Generate unique filename
-        $filename = 'CONTRACT-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $prefix = strtoupper(substr($type, 0, 4));
+        $filename = $prefix . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
         $filepath = $uploadDir . '/' . $filename;
-        $publicPath = '/Backend/uploads/contracts/' . $filename;
+        $publicPath = '/Backend/uploads/' . $type . '/' . $filename;
         
         // Move uploaded file
         if (!move_uploaded_file($file['tmp_name'], $filepath)) {

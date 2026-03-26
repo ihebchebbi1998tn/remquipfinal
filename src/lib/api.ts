@@ -1436,6 +1436,24 @@ class APIService {
     return this.request('DELETE', `offers/${offerId}/documents/${documentId}`);
   }
 
+  async uploadSignature(file: File): Promise<ApiResponse<{ url: string }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'signatures');
+    return this.request('POST', 'uploads/image', formData);
+  }
+
+  async uploadApplicationPdf(file: Blob, companyName: string): Promise<ApiResponse<{ url: string }>> {
+    const formData = new FormData();
+    formData.append('file', file, `Application_${companyName.replace(/\s+/g, '_')}.pdf`);
+    formData.append('type', 'applications');
+    return this.request('POST', 'uploads/file', formData);
+  }
+
+  async approveApplication(id: string, pdfUrl?: string): Promise<ApiResponse> {
+    return this.request('PATCH', `account-applications/${id}/approve`, { pdf_url: pdfUrl });
+  }
+
   /** B2B orders for a user where customer email matches user email (Backend: users.php). */
   async getOrdersByUserId(
     userId: string,

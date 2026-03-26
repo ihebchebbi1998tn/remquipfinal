@@ -38,6 +38,7 @@ interface FormData {
   signatory_name: string;
   signatory_title: string;
   signature_date: string;
+  signature_url: string;
 }
 
 const INITIAL_FORM: FormData = {
@@ -50,6 +51,7 @@ const INITIAL_FORM: FormData = {
   parts_needed: "", special_requests: "", sales_representative: "",
   signatory_name: "", signatory_title: "",
   signature_date: new Date().toISOString().slice(0, 10),
+  signature_url: "",
 };
 
 const STEPS = [
@@ -121,7 +123,9 @@ export default function CustomerApplicationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadingSignature, setUploadingSignature] = useState(false);
   const sigRef = useRef<SignatureCanvas | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = useCallback((field: keyof FormData, value: string | string[]) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -139,7 +143,7 @@ export default function CustomerApplicationPage() {
     }
     if (s === 5) {
       if (!form.signatory_name.trim()) e.signatory_name = "Required";
-      if (!signatureData) e.signature = "Please sign the form";
+      if (!signatureData && !form.signature_url) e.signature = "Please sign or upload a signature";
     }
     return e;
   };
@@ -150,6 +154,27 @@ export default function CustomerApplicationPage() {
     setStep(Math.min(step + 1, STEPS.length - 1));
   };
   const goBack = () => setStep(Math.max(step - 1, 0));
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingSignature(true);
+    setErrors(prev => ({ ...prev, signature: "" }));
+    try {
+      const res = await api.uploadSignature(file);
+      if (res.data?.url) {
+        set("signature_url", res.data.url);
+        // Clear manual signature if an image is uploaded
+        sigRef.current?.clear();
+        setSignatureData(null);
+      }
+    } catch (err: any) {
+      setErrors(prev => ({ ...prev, signature: "Upload failed: " + (err.userMessage || "Error") }));
+    } finally {
+      setUploadingSignature(false);
+    }
+  };
 
   const handleSubmit = async () => {
     const errs = validateStep(step);
@@ -472,23 +497,51 @@ export default function CustomerApplicationPage() {
               </FormField>
 
               <FormField label="Signature" required>
-                <div className="border-2 border-border/60 rounded-xl overflow-hidden bg-white shadow-sm hover:border-border transition-colors">
-                  <SignatureCanvas
-                    ref={sigRef}
-                    penColor="#090a0f"
-                    canvasProps={{ className: "w-full", style: { height: 180, width: "100%" } }}
-                    onEnd={() => {
-                      if (sigRef.current) setSignatureData(sigRef.current.toDataURL("image/png"));
-                    }}
-                  />
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Drawing Canvas */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">A. Signer ici / Draw Signature</p>
+                    <div className="border-2 border-border/60 rounded-xl overflow-hidden bg-white shadow-sm hover:border-border transition-colors">
+                      <SignatureCanvas
+                        ref={sigRef}
+                        penColor="#090a0f"
+                        canvasProps={{ className: "w-full", style: { height: 180, width: "100%" } }}
+                        onBegin={() => set("signature_url", "")} // Clear upload if start drawing
+                        onEnd={() => {
+                          if (sigRef.current) setSignatureData(sigRef.current.toDataURL("image/png"));
+                        }}
+                      />
+                    </div>
+                    <button type="button" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => { sigRef.current?.clear(); setSignatureData(null); }}>
+                      Clear Drawing
+                    </button>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">B. Téléverser image / Upload Image</p>
+                    <div className={`border-2 border-dashed rounded-xl h-[180px] flex flex-col items-center justify-center p-4 transition-all ${form.signature_url ? 'border-success bg-success/5' : 'border-border/60 hover:border-accent hover:bg-accent/5'}`}>
+                      {uploadingSignature ? (
+                        <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                      ) : form.signature_url ? (
+                        <>
+                          <img src={form.signature_url} alt="Signature" className="max-h-[120px] object-contain mb-2" />
+                          <button type="button" onClick={() => set("signature_url", "")} className="text-destructive font-bold text-[10px] uppercase tracking-widest hover:underline">Remove</button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-3 rounded-full bg-accent/10 text-accent mb-2 hover:bg-accent/20 transition-all">
+                            <PenTool className="h-6 w-6" />
+                          </button>
+                          <p className="text-xs font-medium text-muted-foreground text-center">PNG, JPG allowed</p>
+                        </>
+                      )}
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleSignatureUpload} />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 mt-3">
-                  <button type="button" className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => { sigRef.current?.clear(); setSignatureData(null); }}>
-                    Clear Signature
-                  </button>
-                  {errors.signature && <p className="text-xs font-bold text-destructive">{errors.signature}</p>}
-                </div>
+                {errors.signature && <p className="text-xs font-bold text-destructive mt-3">{errors.signature}</p>}
               </FormField>
             </>
           )}

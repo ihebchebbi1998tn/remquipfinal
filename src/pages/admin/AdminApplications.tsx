@@ -7,6 +7,9 @@ import {
   Phone, Clock, AlertCircle, Filter
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import ApplicationPdfTemplate from "@/components/ApplicationPdfTemplate";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -49,6 +52,7 @@ export default function AdminApplications() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [approvalResult, setApprovalResult] = useState<{ email?: string | null; password?: string | null; company?: string } | null>(null);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -74,11 +78,58 @@ export default function AdminApplications() {
     } catch { /* ignore */ } finally { setDetailLoading(false); }
   };
 
+  const generatePdfBlob = async (): Promise<Blob | null> => {
+    if (!pdfRef.current) return null;
+    try {
+      const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      return pdf.output("blob");
+    } catch (err) {
+      console.error("PDF Generation error", err);
+      return null;
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!selected) return;
+    setActionLoading(true);
+    const blob = await generatePdfBlob();
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Application_${selected.company_name.replace(/\s+/g, "_")}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } else {
+      alert("Failed to generate PDF");
+    }
+    setActionLoading(false);
+  };
+
   const handleApprove = async () => {
     if (!selected) return;
     setActionLoading(true);
     try {
-      const res = await api.approveAccountApplication(selected.id);
+      let pdfUrl = undefined;
+      
+      // Silent PDF Generation & Upload
+      const blob = await generatePdfBlob();
+      if (blob) {
+        try {
+          const uploadRes = await api.uploadApplicationPdf(blob, selected.company_name);
+          pdfUrl = uploadRes.data?.url;
+        } catch (uploadErr) {
+          console.error("Failed to upload application PDF during approval", uploadErr);
+        }
+      }
+
+      const res = await api.approveApplication(selected.id, pdfUrl);
       
       if (res.data?.account_created && res.data.generated_password) {
         setApprovalResult({
@@ -142,6 +193,10 @@ export default function AdminApplications() {
                   className="px-4 py-2 border border-destructive text-destructive rounded-sm text-sm font-medium hover:bg-destructive/10 transition-colors disabled:opacity-50 flex items-center gap-2">
                   <X className="h-4 w-4" /> Reject
                 </button>
+                <button onClick={handleDownloadPdf} disabled={actionLoading}
+                  className="px-4 py-2 border border-border text-foreground rounded-sm text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50 flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Download PDF
+                </button>
                 <button onClick={handleApprove} disabled={actionLoading}
                   className="btn-accent px-4 py-2 rounded-sm text-sm font-medium flex items-center gap-2 disabled:opacity-50">
                   {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -149,7 +204,20 @@ export default function AdminApplications() {
                 </button>
               </div>
             )}
+            {a.status !== "pending" && (
+              <button onClick={handleDownloadPdf} disabled={actionLoading}
+                className="px-4 py-2 border border-border text-foreground rounded-sm text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-50 flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Download Form PDF
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Hidden Template for PDF Generation */}
+        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+           <div ref={pdfRef}>
+             <ApplicationPdfTemplate data={a} signatureData={a.signature_data} />
+           </div>
         </div>
 
         {/* Sections */}
@@ -211,11 +279,11 @@ export default function AdminApplications() {
             <InfoRow label="Signatory" value={a.signatory_name} />
             <InfoRow label="Title" value={a.signatory_title} />
             <InfoRow label="Date" value={a.signature_date} />
-            {a.signature_data && (
+            { (a.signature_data || a.signature_url) && (
               <div className="mt-3">
                 <p className="text-xs text-muted-foreground mb-2">Signature:</p>
                 <div className="bg-white rounded-lg p-3 inline-block border border-border">
-                  <img src={a.signature_data} alt="Signature" className="h-20 object-contain" />
+                  <img src={a.signature_url || a.signature_data} alt="Signature" className="h-20 object-contain" />
                 </div>
               </div>
             )}

@@ -58,7 +58,7 @@ if ($method === 'POST' && !$id) {
                accounting_contact, accounting_phone, billing_email, payment_terms, payment_method,
                bank_reference, credit_limit_requested, supplier_ref_1, supplier_ref_2,
                parts_needed, special_requests, sales_representative,
-               signatory_name, signatory_title, signature_date, signature_data)
+               signatory_name, signatory_title, signature_date, signature_data, signature_url)
              VALUES
               (:id, :company_name, :neq_tva, :contact_person, :contact_title, :phone, :email,
                :distributor_type, :distributor_type_other, :num_trucks, :num_trailers,
@@ -66,7 +66,7 @@ if ($method === 'POST' && !$id) {
                :accounting_contact, :accounting_phone, :billing_email, :payment_terms, :payment_method,
                :bank_reference, :credit_limit_requested, :supplier_ref_1, :supplier_ref_2,
                :parts_needed, :special_requests, :sales_representative,
-               :signatory_name, :signatory_title, :signature_date, :signature_data)",
+               :signatory_name, :signatory_title, :signature_date, :signature_data, :signature_url)",
             [
                 'id'                     => $appId,
                 'company_name'           => $companyName,
@@ -97,6 +97,7 @@ if ($method === 'POST' && !$id) {
                 'signatory_title'        => $data['signatory_title'] ?? null,
                 'signature_date'         => $data['signature_date'] ?? null,
                 'signature_data'         => $data['signature_data'] ?? null,
+                'signature_url'          => $data['signature_url'] ?? null,
             ]
         );
 
@@ -226,6 +227,9 @@ if ($method === 'GET' && (!$id || $id === 'list')) {
 if (($method === 'PATCH' || $method === 'POST') && $id && $action === 'approve') {
     Auth::requireAuth('admin');
     try {
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $pdfUrl = $data['pdf_url'] ?? null;
+
         $app = $conn->fetch(
             "SELECT * FROM remquip_account_applications WHERE id = :id",
             ['id' => $id]
@@ -324,9 +328,27 @@ if (($method === 'PATCH' || $method === 'POST') && $id && $action === 'approve')
 
         // Mark application as approved
         $conn->execute(
-            "UPDATE remquip_account_applications SET status = 'approved', approved_customer_id = :cid, updated_at = NOW() WHERE id = :id",
-            ['cid' => $customerId, 'id' => $id]
+            "UPDATE remquip_account_applications SET status = 'approved', approved_customer_id = :cid, pdf_url = :pdf, updated_at = NOW() WHERE id = :id",
+            ['cid' => $customerId, 'pdf' => $pdfUrl, 'id' => $id]
         );
+
+        // Attach PDF to customer documents if provided
+        if ($pdfUrl) {
+            try {
+                $conn->execute(
+                    "INSERT INTO remquip_customer_documents (id, customer_id, file_url, file_name, document_type, uploaded_by)
+                     VALUES (UUID(), :cid, :url, :name, 'application_form', :by)",
+                    [
+                        'cid' => $customerId,
+                        'url' => $pdfUrl,
+                        'name' => 'Customer_Account_Application_' . str_replace(' ', '_', $app['company_name']) . '.pdf',
+                        'by' => isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'admin_review'
+                    ]
+                );
+            } catch (Exception $docErr) {
+                Logger::warning('Failed to attach application PDF to customer', ['error' => $docErr->getMessage()]);
+            }
+        }
 
         // Send welcome email
         try {
