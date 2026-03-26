@@ -483,5 +483,77 @@ if ($method === 'DELETE' && $id && !$action) {
     }
 }
 
+// ── GET /orders/:id/documents — list documents ──
+if ($method === 'GET' && $id && $action === 'documents') {
+    Auth::requireAuth('admin');
+    try {
+        $docs = $conn->fetchAll(
+            "SELECT id, file_url, file_name, document_type, uploaded_by, created_at FROM remquip_order_documents WHERE order_id = :id ORDER BY created_at DESC",
+            ['id' => $id]
+        );
+        ResponseHelper::sendSuccess($docs, 'Order documents retrieved');
+    } catch (Exception $e) {
+        Logger::error('Get order documents error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to retrieve documents', 500);
+    }
+}
+
+// ── POST /orders/:id/documents — upload document ──
+if ($method === 'POST' && $id && $action === 'documents') {
+    Auth::requireAuth('admin');
+    try {
+        if (empty($_FILES['file'])) { ResponseHelper::sendError('No file uploaded', 400); }
+        $file = $_FILES['file'];
+        if ($file['error'] !== UPLOAD_ERR_OK) { ResponseHelper::sendError('File upload error', 400); }
+        if ($file['size'] > 10 * 1024 * 1024) { ResponseHelper::sendError('File too large (max 10MB)', 400); }
+
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowed = ['pdf','doc','docx','xls','xlsx','csv','jpg','jpeg','png','gif','webp'];
+        if (!in_array($ext, $allowed, true)) { ResponseHelper::sendError('File type not allowed', 400); }
+
+        $uploadDir = __DIR__ . '/../uploads/order_documents/';
+        if (!is_dir($uploadDir)) { mkdir($uploadDir, 0755, true); }
+
+        $safeName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file['name']);
+        $dest = $uploadDir . $safeName;
+        if (!move_uploaded_file($file['tmp_name'], $dest)) { ResponseHelper::sendError('Failed to save file', 500); }
+
+        $fileUrl = '/Backend/uploads/order_documents/' . $safeName;
+        $tok = Auth::getToken();
+        $payload = $tok ? Auth::verifyToken($tok) : null;
+        $uploader = 'Admin';
+        if ($payload && !empty($payload['user_id'])) {
+            $u = $conn->fetch('SELECT full_name FROM remquip_users WHERE id = :id', ['id' => $payload['user_id']]);
+            if ($u && !empty($u['full_name'])) $uploader = $u['full_name'];
+        }
+
+        $docType = $_POST['document_type'] ?? 'attachment';
+        $docId = $conn->fetch('SELECT UUID() AS u')['u'];
+        $conn->execute(
+            "INSERT INTO remquip_order_documents (id, order_id, file_url, file_name, document_type, uploaded_by) VALUES (:id, :oid, :url, :fname, :dtype, :by)",
+            ['id' => $docId, 'oid' => $id, 'url' => $fileUrl, 'fname' => $file['name'], 'dtype' => $docType, 'by' => $uploader]
+        );
+
+        ResponseHelper::sendSuccess(['id' => $docId, 'file_url' => $fileUrl, 'file_name' => $file['name']], 'Document uploaded', 201);
+    } catch (Exception $e) {
+        Logger::error('Upload order document error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to upload document', 500);
+    }
+}
+
+// ── DELETE /orders/:id/documents/:docId ──
+if ($method === 'DELETE' && $id && $action === 'documents') {
+    Auth::requireAuth('admin');
+    $docId = $routeSegments[2] ?? null;
+    if (!$docId) { ResponseHelper::sendError('Document ID required', 400); }
+    try {
+        $conn->execute("DELETE FROM remquip_order_documents WHERE id = :did AND order_id = :oid", ['did' => $docId, 'oid' => $id]);
+        ResponseHelper::sendSuccess(null, 'Document removed');
+    } catch (Exception $e) {
+        Logger::error('Delete order document error', ['error' => $e->getMessage()]);
+        ResponseHelper::sendError('Failed to remove document', 500);
+    }
+}
+
 ResponseHelper::sendError('Order endpoint not found', 404);
 ?>

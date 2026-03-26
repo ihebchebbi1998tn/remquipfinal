@@ -40,6 +40,7 @@ const AdminProducts = lazy(() => import("@/pages/admin/AdminProducts"));
 const AdminProductEdit = lazy(() => import("@/pages/admin/AdminProductEdit"));
 const AdminInventory = lazy(() => import("@/pages/admin/AdminInventory"));
 const AdminOrders = lazy(() => import("@/pages/admin/AdminOrders"));
+const AdminOffers = lazy(() => import("@/pages/admin/AdminOffers"));
 const AdminCustomers = lazy(() => import("@/pages/admin/AdminCustomers"));
 const AdminContacts = lazy(() => import("@/pages/admin/AdminContacts"));
 const AdminLanding = lazy(() => import("@/pages/admin/AdminLanding"));
@@ -129,6 +130,8 @@ const App = () => (
                       <Route path="inventory"      element={<PermissionGate permission="canManageInventory"><AdminInventory /></PermissionGate>} />
                       <Route path="orders"         element={<PermissionGate permission="canManageOrders"><AdminOrders /></PermissionGate>} />
                       <Route path="orders/:orderId" element={<PermissionGate permission="canManageOrders"><AdminOrders /></PermissionGate>} />
+                      <Route path="offers"         element={<PermissionGate permission="canManageOrders"><AdminOffers /></PermissionGate>} />
+                      <Route path="offers/:offerId" element={<PermissionGate permission="canManageOrders"><AdminOffers /></PermissionGate>} />
                       <Route path="carts"          element={<PermissionGate permission="canManageOrders"><AdminCarts /></PermissionGate>} />
                       <Route path="customers"      element={<PermissionGate permission="canManageCustomers"><AdminCustomers /></PermissionGate>} />
                       <Route path="customers/:customerId" element={<PermissionGate permission="canManageCustomers"><AdminCustomers /></PermissionGate>} />

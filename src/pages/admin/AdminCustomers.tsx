@@ -116,9 +116,21 @@ export default function AdminCustomers() {
 
   const [newCustomer, setNewCustomer] = useState({
     company_name: "",
+    neq: "",
+    tax_id: "",
     full_name: "",
     email: "",
     phone: "",
+    addresses: "",
+    fleet_details: "",
+    brands_serviced: "",
+    primary_contact_name: "",
+    primary_contact_phone: "",
+    primary_contact_email: "",
+    ap_contact_name: "",
+    ap_contact_email: "",
+    ap_phone: "",
+    payment_method: "",
     create_account: true,
   });
   const [editForm, setEditForm] = useState({
@@ -156,7 +168,25 @@ export default function AdminCustomers() {
       onSuccess: (res: any) => {
         queryClient.invalidateQueries({ queryKey: ['customers'] });
         setShowCreateModal(false);
-        setNewCustomer({ company_name: "", full_name: "", email: "", phone: "", create_account: true });
+        setNewCustomer({
+          company_name: "",
+          neq: "",
+          tax_id: "",
+          full_name: "",
+          email: "",
+          phone: "",
+          addresses: "",
+          fleet_details: "",
+          brands_serviced: "",
+          primary_contact_name: "",
+          primary_contact_phone: "",
+          primary_contact_email: "",
+          ap_contact_name: "",
+          ap_contact_email: "",
+          ap_phone: "",
+          payment_method: "",
+          create_account: true,
+        });
         if (res?.data?.account_created || res?.account_created) {
           showSuccessToast("Customers", "Customer created and welcome email with credentials sent.");
         } else {
@@ -1218,51 +1248,142 @@ export default function AdminCustomers() {
           <h2 className="font-display font-bold text-lg md:text-xl mb-6">Create New Customer</h2>
 
           <form onSubmit={handleCreateCustomer} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Company Name</label>
-                <input
-                  type="text"
-                  value={newCustomer.company_name}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, company_name: e.target.value })}
-                  placeholder="e.g., Acme Transport"
-                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
-                />
+            {/* Company Block */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wider text-muted-foreground">1. Company Details</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Company Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCustomer.company_name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, company_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Company Address</label>
+                  <input
+                    type="text"
+                    value={newCustomer.addresses}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, addresses: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">NEQ (Quebec Enterprise Number)</label>
+                  <input
+                    type="text"
+                    value={newCustomer.neq}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, neq: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Tax IDs (GST/QST)</label>
+                  <input
+                    type="text"
+                    value={newCustomer.tax_id}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, tax_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Contact Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={newCustomer.full_name}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, full_name: e.target.value })}
-                  placeholder="e.g., John Smith"
-                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
-                />
+            {/* Main User Block */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wider text-muted-foreground">2. Primary User / Login Content</h3>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCustomer.full_name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, full_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Phone</label>
+                  <input
+                    type="tel"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={newCustomer.email}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                  placeholder="e.g., john@acme.com"
-                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
-                />
+            {/* Additional Contacts Block */}
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold mb-3 uppercase tracking-wider text-muted-foreground">3. Additional Contacts & Profile</h3>
+              <div className="grid md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">A/P Contact Name</label>
+                  <input
+                    type="text"
+                    value={newCustomer.ap_contact_name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, ap_contact_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">A/P Email</label>
+                  <input
+                    type="email"
+                    value={newCustomer.ap_contact_email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, ap_contact_email: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">A/P Phone</label>
+                  <input
+                    type="tel"
+                    value={newCustomer.ap_phone}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, ap_phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Phone</label>
-                <input
-                  type="tel"
-                  value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                  placeholder="e.g., +1 (555) 000-0000"
-                  className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
-                />
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Fleet Details / Number of Techs</label>
+                  <input
+                    type="text"
+                    value={newCustomer.fleet_details}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, fleet_details: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Preferred Payment Method</label>
+                  <select
+                    value={newCustomer.payment_method}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, payment_method: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-sm text-sm bg-background outline-none focus:ring-2 focus:ring-accent"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Net 30/Terms">Net 30 Terms</option>
+                    <option value="EFT/Bank Transfer">EFT / Bank Transfer</option>
+                  </select>
+                </div>
               </div>
             </div>
 

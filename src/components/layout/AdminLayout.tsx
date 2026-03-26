@@ -42,6 +42,7 @@ const navGroups: NavGroup[] = [
     label: "Sales",
     items: [
       { label: "Orders",          icon: ShoppingBag,  path: "/admin/orders",        permission: "canManageOrders" },
+      { label: "Offers",          icon: FileText,     path: "/admin/offers",        permission: "canManageOrders" },
       { label: "Abandoned Carts", icon: ShoppingCart, path: "/admin/carts",         permission: "canManageOrders" },
       { label: "Customers",       icon: Users,        path: "/admin/customers",     permission: "canManageCustomers" },
       { label: "Applications",    icon: FileText,     path: "/admin/applications",  permission: "canManageCustomers" },

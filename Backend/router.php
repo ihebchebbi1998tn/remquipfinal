@@ -7,7 +7,7 @@ function remquip_known_resources(): array
 {
     return [
         'auth', 'users', 'products', 'categories', 'inventory', 'customers',
-        'orders', 'discounts', 'uploads', 'analytics', 'cms', 'health',
+        'orders', 'offers', 'discounts', 'uploads', 'analytics', 'cms', 'health',
         'dashboard', 'audit', 'user', 'admin', 'admin-contacts', 'settings', 'contact-map', 'landing-theme',
         'chat', 'carts', 'stripe', 'account-applications',
     ];
@@ -187,6 +187,9 @@ function remquip_dispatch(array $segments): void
             break;
         case 'account-applications':
             $safeRequire(__DIR__ . '/routes/account-applications.php');
+            break;
+        case 'offers':
+            $safeRequire(__DIR__ . '/routes/offers.php');
             break;
         default:
             ResponseHelper::sendError('Resource not found', 404);

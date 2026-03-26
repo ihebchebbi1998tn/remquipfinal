@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Eye, Search, X, ChevronDown, ChevronUp, Package, Truck, CheckCircle, Clock, Printer, Download, Mail, ArrowLeft, MapPin, CreditCard, FileText, Loader2, AlertCircle } from "lucide-react";
-import { useOrders, useOrder, useApiMutation } from "@/hooks/useApi";
+import { Eye, Search, X, ChevronDown, ChevronUp, Package, Truck, CheckCircle, Clock, Printer, Download, Mail, ArrowLeft, MapPin, CreditCard, FileText, Loader2, AlertCircle, Upload, Trash2 } from "lucide-react";
+import { useOrders, useOrder, useApiMutation, useOrderDocuments, useUploadOrderDocument, useDeleteOrderDocument } from "@/hooks/useApi";
 import { api, Order, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
@@ -497,6 +497,9 @@ export default function AdminOrders() {
           </div>
         </div>
 
+        {/* Documents Component inserted here */}
+        <OrderDocuments order={selectedOrder} />
+
         {/* Notes */}
         <div className="dashboard-card">
           <h3 className="font-display font-bold text-sm uppercase mb-4 flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Activity & Notes</h3>
@@ -696,6 +699,100 @@ export default function AdminOrders() {
             >
               Next
             </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// DOCUMENTS COMPONENT (Order Documents)
+// ==========================================
+function OrderDocuments({ order }: { order: any }) {
+  const { data: docsData, refetch } = useOrderDocuments(order.id);
+  const uploadMutation = useUploadOrderDocument();
+  const deleteMutation = useDeleteOrderDocument();
+  const [isUploading, setIsUploading] = useState(false);
+
+  // The backend might return documents inside order.documents (e.g. from a join) or we fetch them dynamically.
+  const documents = docsData?.data || order.documents || [];
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showErrorToast("File is too large (max 10MB)");
+      return;
+    }
+    setIsUploading(true);
+    try {
+      await uploadMutation.mutateAsync({ file, orderId: order.id, documentType: "attachment" });
+      showSuccessToast("Success", "Document uploaded successfully");
+      refetch();
+    } catch (err) {
+      showErrorToast("Error", "Failed to upload document");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleDelete = async (docId: string) => {
+    if (!confirm("Are you sure you want to delete this document?")) return;
+    try {
+      await deleteMutation.mutateAsync({ orderId: order.id, documentId: docId });
+      showSuccessToast("Success", "Document removed");
+      refetch();
+    } catch (err) {
+      showErrorToast("Error", "Failed to remove document");
+    }
+  };
+
+  return (
+    <div className="dashboard-card">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-display font-bold text-sm uppercase flex items-center gap-1.5"><FileText className="h-4 w-4" /> Documents & Files</h3>
+        <div>
+          <label className={`btn-primary px-3 py-1.5 text-xs cursor-pointer flex items-center gap-2 ${isUploading ? "opacity-70 pointer-events-none" : ""}`}>
+            <Upload className="w-3.5 h-3.5" /> {isUploading ? "Uploading..." : "Upload File"}
+            <input type="file" onChange={handleUpload} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png" />
+          </label>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {documents.map((doc: any) => (
+          <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:border-emerald-200 hover:bg-emerald-50/30 transition-colors group">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded text-slate-500">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div>
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-slate-900 hover:text-emerald-700 hover:underline line-clamp-1">
+                  {doc.file_name}
+                </a>
+                <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                  <span>{new Date(doc.created_at).toLocaleString()}</span>
+                  <span>•</span>
+                  <span>{doc.uploaded_by || 'Admin'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <a href={doc.file_url} download className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded">
+                <Download className="w-4 h-4" />
+              </a>
+              <button onClick={() => handleDelete(doc.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {documents.length === 0 && (
+          <div className="text-center py-6 border-2 border-dashed rounded-lg bg-slate-50/50">
+            <FileText className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+            <p className="text-xs text-slate-500">No documents attached.</p>
           </div>
         )}
       </div>

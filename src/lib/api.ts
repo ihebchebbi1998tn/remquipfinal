@@ -345,6 +345,64 @@ export interface OrderNote {
   text: string;
 }
 
+// Offers
+export interface Offer {
+  id: string;
+  offer_number: string;
+  customer_id: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted';
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  valid_until?: string | null;
+  notes?: string | null;
+  item_count?: number;
+  items?: OfferItem[];
+  documents?: OfferDocument[];
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OfferItem {
+  id: string;
+  offer_id?: string;
+  product_id: string | null;
+  product_name: string;
+  product_name_live?: string;
+  sku: string;
+  product_sku_live?: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  notes?: string | null;
+}
+
+export interface OfferDocument {
+  id: string;
+  offer_id?: string;
+  file_url: string;
+  file_name: string;
+  document_type: string;
+  uploaded_by?: string | null;
+  created_at: string;
+}
+
+export interface OrderDocument {
+  id: string;
+  order_id?: string;
+  file_url: string;
+  file_name: string;
+  document_type: string;
+  uploaded_by?: string | null;
+  created_at: string;
+}
+
 // Discounts
 export interface Discount {
   id: string;
@@ -1311,6 +1369,71 @@ class APIService {
 
   getOrderNotes(orderId: string): Promise<ApiResponse<OrderNote[]>> {
     return this.request('GET', API_ENDPOINTS.ORDERS.GET_NOTES.replace(':id', orderId));
+  }
+
+  // ==================== ORDER DOCUMENTS ====================
+
+  async getOrderDocuments(orderId: string): Promise<ApiResponse<OrderDocument[]>> {
+    return this.request('GET', `orders/${orderId}/documents`);
+  }
+
+  async uploadOrderDocument(file: File, orderId: string, documentType: string = 'attachment'): Promise<ApiResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('document_type', documentType);
+    return this.request('POST', `orders/${orderId}/documents`, formData);
+  }
+
+  async deleteOrderDocument(orderId: string, documentId: string): Promise<ApiResponse> {
+    return this.request('DELETE', `orders/${orderId}/documents/${documentId}`);
+  }
+
+  // ==================== OFFERS ====================
+
+  async getOffers(page: number = 1, limit: number = 20, status?: string, search?: string): Promise<PaginatedResponse<Offer>> {
+    let url = `offers?page=${page}&limit=${limit}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    return normalizePaginated<Offer>(await this.request('GET', url));
+  }
+
+  async getOffer(id: string): Promise<ApiResponse<Offer>> {
+    return this.request('GET', `offers/${id}`);
+  }
+
+  async createOffer(data: Record<string, unknown>): Promise<ApiResponse> {
+    return this.request('POST', 'offers', data);
+  }
+
+  async updateOffer(id: string, data: Record<string, unknown>): Promise<ApiResponse> {
+    return this.request('PUT', `offers/${id}`, data);
+  }
+
+  async updateOfferStatus(id: string, status: string): Promise<ApiResponse> {
+    return this.request('PUT', `offers/${id}/status`, { status });
+  }
+
+  async convertOfferToOrder(id: string): Promise<ApiResponse> {
+    return this.request('POST', `offers/${id}/convert`);
+  }
+
+  async deleteOffer(id: string): Promise<ApiResponse> {
+    return this.request('DELETE', `offers/${id}`);
+  }
+
+  async getOfferDocuments(offerId: string): Promise<ApiResponse<OfferDocument[]>> {
+    return this.request('GET', `offers/${offerId}/documents`);
+  }
+
+  async uploadOfferDocument(file: File, offerId: string, documentType: string = 'attachment'): Promise<ApiResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('document_type', documentType);
+    return this.request('POST', `offers/${offerId}/documents`, formData);
+  }
+
+  async deleteOfferDocument(offerId: string, documentId: string): Promise<ApiResponse> {
+    return this.request('DELETE', `offers/${offerId}/documents/${documentId}`);
   }
 
   /** B2B orders for a user where customer email matches user email (Backend: users.php). */

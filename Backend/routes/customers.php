@@ -287,23 +287,41 @@ if ($method === 'POST' && !$id) {
         }
         $conn->execute(
             "INSERT INTO remquip_customers
-              (id, company_name, contact_person, email, phone, customer_type, address, city, province, postal_code, country, tax_number, assigned_contact_id)
+              (id, company_name, contact_person, email, phone, customer_type, address, city, province, postal_code, country, tax_number, assigned_contact_id,
+               neq_tva, contact_title, distributor_type, num_trucks, num_trailers, billing_address, shipping_address,
+               accounting_contact, accounting_phone, billing_email, payment_terms, payment_method, credit_limit, sales_representative)
              VALUES
-              (:id, :companyName, :contactPerson, :email, :phone, :type, :address, :city, :province, :postalCode, :country, :taxNumber, :assignedContactId)",
+              (:id, :companyName, :contactPerson, :email, :phone, :type, :address, :city, :province, :postalCode, :country, :taxNumber, :assignedContactId,
+               :neqTva, :contactTitle, :distributorType, :numTrucks, :numTrailers, :billingAddress, :shippingAddress,
+               :accountingContact, :accountingPhone, :billingEmail, :paymentTerms, :paymentMethod, :creditLimit, :salesRep)",
             [
                 'id' => $customerId,
                 'companyName' => $companyName,
                 'contactPerson' => $contactPerson,
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? '',
-                'type' => $data['customerType'] ?? 'Wholesale',
+                'type' => $data['customerType'] ?? $data['customer_type'] ?? 'Wholesale',
                 'address' => $data['address'] ?? '',
                 'city' => $data['city'] ?? '',
                 'province' => $data['province'] ?? '',
-                'postalCode' => $data['postalCode'] ?? '',
+                'postalCode' => $data['postalCode'] ?? $data['postal_code'] ?? '',
                 'country' => $data['country'] ?? '',
-                'taxNumber' => $data['taxNumber'] ?? '',
+                'taxNumber' => $data['taxNumber'] ?? $data['tax_number'] ?? '',
                 'assignedContactId' => $assignedContactId,
+                'neqTva' => $data['neq_tva'] ?? $data['neqTva'] ?? null,
+                'contactTitle' => $data['contact_title'] ?? $data['contactTitle'] ?? null,
+                'distributorType' => isset($data['distributor_type']) ? (is_array($data['distributor_type']) ? json_encode($data['distributor_type']) : $data['distributor_type']) : null,
+                'numTrucks' => isset($data['num_trucks']) ? (int)$data['num_trucks'] : null,
+                'numTrailers' => isset($data['num_trailers']) ? (int)$data['num_trailers'] : null,
+                'billingAddress' => $data['billing_address'] ?? $data['billingAddress'] ?? null,
+                'shippingAddress' => $data['shipping_address'] ?? $data['shippingAddress'] ?? null,
+                'accountingContact' => $data['accounting_contact'] ?? $data['accountingContact'] ?? null,
+                'accountingPhone' => $data['accounting_phone'] ?? $data['accountingPhone'] ?? null,
+                'billingEmail' => $data['billing_email'] ?? $data['billingEmail'] ?? null,
+                'paymentTerms' => $data['payment_terms'] ?? $data['paymentTerms'] ?? null,
+                'paymentMethod' => $data['payment_method'] ?? $data['paymentMethod'] ?? null,
+                'creditLimit' => isset($data['credit_limit']) || isset($data['creditLimit']) ? (float)($data['credit_limit'] ?? $data['creditLimit']) : null,
+                'salesRep' => $data['sales_representative'] ?? $data['salesRepresentative'] ?? null,
             ]
         );
 

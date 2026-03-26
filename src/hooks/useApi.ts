@@ -856,3 +856,158 @@ export function useUpdateUserPermissions() {
     }
   );
 }
+
+// ==================== ORDER / OFFER DOCUMENTS ====================
+
+export function useOrderDocuments(orderId: string) {
+  return useApiQuery(
+    ['order', orderId, 'documents'],
+    () => api.getOrderDocuments(orderId),
+    { enabled: !!orderId }
+  );
+}
+
+export function useUploadOrderDocument() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { file: File; orderId: string; documentType?: string }) => 
+      api.uploadOrderDocument(vars.file, vars.orderId, vars.documentType),
+    {
+      onSuccess: (_res, vars) => {
+        queryClient.invalidateQueries({ queryKey: ['order', vars.orderId, 'documents'] });
+        queryClient.invalidateQueries({ queryKey: ['order', vars.orderId] });
+      },
+    }
+  );
+}
+
+export function useDeleteOrderDocument() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { orderId: string; documentId: string }) => 
+      api.deleteOrderDocument(vars.orderId, vars.documentId),
+    {
+      onSuccess: (_res, vars) => {
+        queryClient.invalidateQueries({ queryKey: ['order', vars.orderId, 'documents'] });
+        queryClient.invalidateQueries({ queryKey: ['order', vars.orderId] });
+      },
+    }
+  );
+}
+
+export function useOfferDocuments(offerId: string) {
+  return useApiQuery(
+    ['offer', offerId, 'documents'],
+    () => api.getOfferDocuments(offerId),
+    { enabled: !!offerId }
+  );
+}
+
+export function useUploadOfferDocument() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { file: File; offerId: string; documentType?: string }) => 
+      api.uploadOfferDocument(vars.file, vars.offerId, vars.documentType),
+    {
+      onSuccess: (_res, vars) => {
+        queryClient.invalidateQueries({ queryKey: ['offer', vars.offerId, 'documents'] });
+        queryClient.invalidateQueries({ queryKey: ['offer', vars.offerId] });
+      },
+    }
+  );
+}
+
+export function useDeleteOfferDocument() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (vars: { offerId: string; documentId: string }) => 
+      api.deleteOfferDocument(vars.offerId, vars.documentId),
+    {
+      onSuccess: (_res, vars) => {
+        queryClient.invalidateQueries({ queryKey: ['offer', vars.offerId, 'documents'] });
+        queryClient.invalidateQueries({ queryKey: ['offer', vars.offerId] });
+      },
+    }
+  );
+}
+
+// ==================== OFFERS HOOKS ====================
+
+export function useOffers(page: number = 1, limit: number = 20, status?: string, search?: string) {
+  return useApiQuery(
+    ['offers', page, limit, status, search],
+    () => api.getOffers(page, limit, status, search)
+  );
+}
+
+export function useOffer(id: string) {
+  return useApiQuery(
+    ['offer', id],
+    () => api.getOffer(id),
+    { enabled: !!id }
+  );
+}
+
+export function useCreateOffer() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (data: Record<string, unknown>) => api.createOffer(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['offers'] });
+      },
+    }
+  );
+}
+
+export function useUpdateOffer(id: string) {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (data: Record<string, unknown>) => api.updateOffer(id, data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['offer', id] });
+        queryClient.invalidateQueries({ queryKey: ['offers'] });
+      },
+    }
+  );
+}
+
+export function useUpdateOfferStatus(id: string) {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (status: string) => api.updateOfferStatus(id, status),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['offer', id] });
+        queryClient.invalidateQueries({ queryKey: ['offers'] });
+      },
+    }
+  );
+}
+
+export function useConvertOfferToOrder() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    (id: string) => api.convertOfferToOrder(id),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['offer'] });
+        queryClient.invalidateQueries({ queryKey: ['offers'] });
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+      },
+    }
+  );
+}
+
+export function useDeleteOffer(id: string) {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    () => api.deleteOffer(id),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['offers'] });
+      },
+    }
+  );
+}
