@@ -8,6 +8,7 @@ import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
+import ReportPreviewModal from "@/components/reports/ReportPreviewModal";
 
 const statusStyles: Record<string, string> = {
   pending: "badge-warning",
@@ -171,6 +172,7 @@ export default function AdminOrders() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(orderId || null);
+  const [showReport, setShowReport] = useState(false);
 
   // Sync state if URL changes (e.g. searching/clicking new result)
   useEffect(() => {
@@ -314,6 +316,7 @@ export default function AdminOrders() {
     const currentIdx = statusFlow.indexOf(selectedOrder.status);
 
     return (
+      <>
       <div className="space-y-6">
         <button onClick={() => setSelectedOrderId(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" /> Back to Orders
@@ -328,16 +331,10 @@ export default function AdminOrders() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={printSelectedReceipt}
-              className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
+              onClick={() => setShowReport(true)}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border border-[#48698e] text-[#1f354d] hover:bg-[#e8eef5] transition-colors flex items-center gap-1.5"
             >
-              <Printer className="h-3.5 w-3.5" /> Print Invoice
-            </button>
-            <button
-              onClick={printSelectedReceipt}
-              className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
-            >
-              <Download className="h-3.5 w-3.5" /> Export PDF
+              <Printer className="h-3.5 w-3.5" /> Generate Report
             </button>
             <button className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">
               <Mail className="h-3.5 w-3.5" /> Email Customer
@@ -524,7 +521,39 @@ export default function AdminOrders() {
             </button>
           </div>
         </div>
+
+        {/* Documents */}
+        <OrderDocuments order={selectedOrder} />
+
+        {showReport && (
+          <ReportPreviewModal
+            onClose={() => setShowReport(false)}
+            defaultType="invoice"
+            source={{
+              documentNumber: selectedOrder.order_number,
+              issueDate: selectedOrder.order_date,
+              customer: {
+                name: selectedOrder.customer_email.split('@')[0],
+                email: selectedOrder.customer_email,
+              },
+              items: (selectedOrder.items || []).map((it: any) => ({
+                description: it.product_name || it.name || 'Item',
+                sku: it.sku || it.product_id,
+                qty: Number(it.quantity || 1),
+                unitPrice: Number(it.unit_price || 0),
+                lineTotal: Number(it.line_total || (it.quantity * it.unit_price) || 0),
+              })),
+              subtotal: Number((selectedOrder as any).subtotal_amount || (selectedOrder as any).subtotal || 0),
+              discount: Number((selectedOrder as any).discount_amount || (selectedOrder as any).discount || 0),
+              shipping: Number((selectedOrder as any).shipping_amount || (selectedOrder as any).shipping || 0),
+              total: Number((selectedOrder as any).total_amount || (selectedOrder as any).total || 0),
+              notes: selectedOrder.notes,
+              paymentTerms: (selectedOrder as any).payment_method ? `Via ${(selectedOrder as any).payment_method}` : undefined
+            }}
+          />
+        )}
       </div>
+      </>
     );
   }
 

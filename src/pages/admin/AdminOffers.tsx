@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Search, Plus, FileText, CheckCircle, XCircle, Clock, Upload, X, MapPin, Download, AlertCircle, Trash2, ArrowRight } from "lucide-react";
+import { Search, Plus, FileText, CheckCircle, XCircle, Clock, Upload, X, MapPin, Download, AlertCircle, Trash2, ArrowRight, Printer } from "lucide-react";
 import { useOffers, useOffer, useCreateOffer, useUpdateOffer, useUpdateOfferStatus, useConvertOfferToOrder, useDeleteOffer, useOfferDocuments, useUploadOfferDocument, useDeleteOfferDocument, useSearchProducts, useCustomers } from "@/hooks/useApi";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
+import ReportPreviewModal from "@/components/reports/ReportPreviewModal";
 
 const statusStyles: Record<string, string> = {
   draft: "badge-secondary",
@@ -227,6 +228,7 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
   const convertMutation = useConvertOfferToOrder();
   const deleteMutation = useDeleteOffer(offerId);
   const navigate = useNavigate();
+  const [showReport, setShowReport] = useState(false);
 
   const offer = data?.data;
 
@@ -270,7 +272,8 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
   if (isError || !offer) return <AdminPageError message="Failed to load offer details" onRetry={() => refetch()} />;
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       <div className="flex items-center gap-4">
         <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500">
           <Search className="w-5 h-5 rotate-180" /> {/* Arrow left icon shortcut */}
@@ -285,6 +288,13 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
           <span className={`badge ${statusStyles[offer.status || "draft"]}`}>
             {(offer.status || "draft").toUpperCase()}
           </span>
+          <button
+            onClick={() => setShowReport(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-[#48698e] text-[#1f354d] hover:bg-[#e8eef5] transition-colors"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden sm:inline">Generate Report</span>
+          </button>
           {offer.status === "accepted" && (
             <button
               onClick={handleConvert}
@@ -434,6 +444,38 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
         </div>
       </div>
     </div>
+
+    {showReport && (
+      <ReportPreviewModal
+        onClose={() => setShowReport(false)}
+        defaultType="quote"
+        source={{
+          documentNumber: offer.offer_number,
+          issueDate: offer.created_at,
+          validUntil: offer.valid_until,
+          customer: {
+            name: (offer as any).contact_person || offer.customer_name || 'N/A',
+            company: (offer as any).company_name || offer.customer_name,
+            phone: offer.customer_phone,
+            email: offer.customer_email,
+          },
+          items: (offer.items ?? []).map((it: any) => ({
+            description: it.product_name || it.product_name_live || 'Item',
+            sku: it.sku || it.product_sku_live,
+            qty: Number(it.quantity),
+            unitPrice: Number(it.unit_price),
+            lineTotal: Number(it.line_total),
+            notes: it.notes,
+          })),
+          subtotal: Number(offer.subtotal || 0),
+          discount: Number(offer.discount || 0),
+          shipping: Number(offer.shipping || 0),
+          total: Number(offer.total || 0),
+          notes: offer.notes,
+        }}
+      />
+    )}
+    </>
   );
 }
 
