@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, type AccountApplication, unwrapPagination } from "@/lib/api";
 import {
@@ -279,11 +279,11 @@ export default function AdminApplications() {
             <InfoRow label="Signatory" value={a.signatory_name} />
             <InfoRow label="Title" value={a.signatory_title} />
             <InfoRow label="Date" value={a.signature_date} />
-            { (a.signature_data || a.signature_url) && (
+            { (a.signature_data || (a as any).signature_url) && (
               <div className="mt-3">
                 <p className="text-xs text-muted-foreground mb-2">Signature:</p>
                 <div className="bg-white rounded-lg p-3 inline-block border border-border">
-                  <img src={a.signature_url || a.signature_data} alt="Signature" className="h-20 object-contain" />
+                  <img src={(a as any).signature_url || a.signature_data} alt="Signature" className="h-20 object-contain" />
                 </div>
               </div>
             )}

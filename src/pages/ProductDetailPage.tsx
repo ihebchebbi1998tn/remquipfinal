@@ -271,7 +271,7 @@ export default function ProductDetailPage() {
                   type="button"
                   onClick={() => addItem(product, qty)}
                   disabled={product.stock === 0}
-                  className="flex-1 bg-foreground text-background h-[56px] rounded-xl font-display font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-accent hover:text-accent-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+                  className="flex-1 bg-primary text-primary-foreground h-[56px] rounded-xl font-display font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-accent hover:text-accent-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
                 >
                   <ShoppingCart className="h-5 w-5" strokeWidth={2.5} /> {t("products.add_to_cart")}
                 </button>
@@ -383,12 +383,12 @@ export default function ProductDetailPage() {
                         <p className="text-lg font-display font-black text-foreground tracking-tight">{formatPrice(rp.price)}</p>
                       </div>
                       <div className="mt-0 lg:max-h-0 lg:opacity-0 lg:overflow-hidden lg:group-hover:mt-4 lg:group-hover:max-h-[60px] lg:group-hover:opacity-100 transition-all duration-300 ease-out">
-                        <button type="button" onClick={() => addItem(rp)} disabled={isOutOfStock} className="w-full bg-foreground text-background text-[10px] py-3 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+                        <button type="button" onClick={() => addItem(rp)} disabled={isOutOfStock} className="w-full bg-primary text-primary-foreground text-[10px] py-3 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
                           <ShoppingCart className="h-3.5 w-3.5" strokeWidth={2.5} /> {t("products.add_to_cart")}
                         </button>
                       </div>
                       <div className="mt-4 lg:hidden">
-                        <button type="button" onClick={() => addItem(rp)} disabled={isOutOfStock} className="w-full bg-foreground text-background text-[10px] py-3 rounded-lg font-display font-black uppercase tracking-widest active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+                        <button type="button" onClick={() => addItem(rp)} disabled={isOutOfStock} className="w-full bg-primary text-primary-foreground text-[10px] py-3 rounded-lg font-display font-black uppercase tracking-widest active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
                           <ShoppingCart className="h-3.5 w-3.5" strokeWidth={2.5} /> {t("products.add_to_cart")}
                         </button>
                       </div>

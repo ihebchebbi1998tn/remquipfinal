@@ -18,7 +18,7 @@ export default function Footer() {
   const storeAddress = pub.store_address || "Quebec City, QC, Canada";
 
   return (
-    <footer className="bg-[#0a0a0b] text-[#9ca3af] border-t border-white/10 relative overflow-hidden font-sans">
+    <footer className="bg-[#1f354d] text-[#9ca3af] border-t border-white/10 relative overflow-hidden font-sans">
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50 block" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-24 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.05),transparent_70%)] pointer-events-none" />
       
@@ -36,7 +36,7 @@ export default function Footer() {
             </div>
             <div className="w-full lg:w-auto relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-white/20 to-white/5 rounded-xl blur opacity-30 group-focus-within:opacity-100 transition duration-1000 group-hover:duration-200" />
-              <div className="relative flex flex-col sm:flex-row items-center bg-[#111113] border border-white/10 rounded-xl p-1.5 focus-within:border-white/30 transition-colors">
+              <div className="relative flex flex-col sm:flex-row items-center bg-[#253d59] border border-white/10 rounded-xl p-1.5 focus-within:border-white/30 transition-colors">
                 <input
                   type="email"
                   placeholder={t("newsletter.placeholder")}
@@ -44,7 +44,7 @@ export default function Footer() {
                 />
                 <button
                   type="button"
-                  className="w-full sm:w-auto mt-2 sm:mt-0 px-6 py-3 rounded-lg bg-white text-black font-display font-black text-[11px] uppercase tracking-widest hover:bg-[#e5e7eb] transition-colors flex items-center justify-center gap-2 shrink-0"
+                  className="w-full sm:w-auto mt-2 sm:mt-0 px-6 py-3 rounded-lg bg-white text-[#1f354d] font-display font-black text-[11px] uppercase tracking-widest hover:bg-[#e5e7eb] transition-colors flex items-center justify-center gap-2 shrink-0"
                 >
                   {t("newsletter.cta")} <ArrowRight className="h-3.5 w-3.5" strokeWidth={3} />
                 </button>
@@ -170,7 +170,7 @@ export default function Footer() {
                   onClick={() => setLang(loc)}
                   className={`flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider px-3 py-2 rounded-lg transition-all border ${
                     lang === loc
-                      ? "bg-white text-black border-white shadow-sm"
+                      ? "bg-white text-[#1f354d] border-white shadow-sm"
                       : "text-[#9ca3af] hover:text-white border-white/10 hover:bg-white/5 hover:border-white/20 bg-transparent"
                   }`}
                 >
@@ -194,7 +194,7 @@ export default function Footer() {
                   onClick={() => setCurrency(code as "CAD" | "USD" | "EUR")}
                   className={`flex items-center gap-2 text-[11px] font-bold tracking-wider px-3 py-2 rounded-lg transition-all border ${
                     currency === code
-                      ? "bg-white text-black border-white shadow-sm"
+                      ? "bg-white text-[#1f354d] border-white shadow-sm"
                       : "text-[#9ca3af] hover:text-white border-white/10 hover:bg-white/5 hover:border-white/20 bg-transparent"
                   }`}
                 >
@@ -206,7 +206,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-white/5 bg-black/40 text-[#6b7280]">
+      <div className="border-t border-white/5 bg-[#1a2e43] text-[#6b7280]">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[11px] font-display font-bold uppercase tracking-widest pl-2">
             © {new Date().getFullYear()} {storeName}.

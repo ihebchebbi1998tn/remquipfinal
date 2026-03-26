@@ -105,7 +105,7 @@ export function HeaderSearch({ onMobileClose, isMobile = false }: HeaderSearchPr
     <div ref={containerRef} className={`relative ${isMobile ? 'w-full' : 'mx-auto w-full md:max-w-xl lg:max-w-2xl'}`}>
       <form onSubmit={handleSubmit} className="relative z-20 group" role="search">
         <div className={`flex items-center overflow-hidden transition-all duration-300 bg-background/50 backdrop-blur-md border outline-none
-          ${showResults && !isMobile ? 'rounded-t-2xl border-b-transparent border-accent/30 shadow-lg shadow-accent/5' : 'rounded-full border-border hover:border-accent/40 focus-within:ring-2 focus-within:ring-accent/20 focus-within:border-accent/60'}
+          ${showResults && !isMobile ? 'rounded-t-2xl border-b-transparent border-[#1f354d]/30 shadow-lg shadow-[#1f354d]/5' : 'rounded-full border-border hover:border-[#1f354d]/40 focus-within:ring-2 focus-within:ring-[#1f354d]/20 focus-within:border-[#1f354d]/60'}
         `}>
           <span className="flex items-center justify-center pl-4 pr-2 text-muted-foreground/70 group-focus-within:text-accent transition-colors" aria-hidden>
             <Search className="h-[18px] w-[18px]" strokeWidth={2.5} />
@@ -124,7 +124,7 @@ export function HeaderSearch({ onMobileClose, isMobile = false }: HeaderSearchPr
       </form>
 
       {showResults && (
-        <div className={`absolute left-0 right-0 top-full z-[100] ${isMobile ? 'mt-1.5 rounded-xl border shadow-md' : 'rounded-b-2xl border border-t-0 shadow-xl shadow-accent/5'} bg-card/95 backdrop-blur-xl border-border/60 overflow-hidden transition-all duration-300 transform origin-top animate-in slide-in-from-top-2 fade-in-0`}>
+        <div className={`absolute left-0 right-0 top-full z-[100] ${isMobile ? 'mt-1.5 rounded-xl border shadow-md' : 'rounded-b-2xl border border-t-0 shadow-xl shadow-[#1f354d]/5'} bg-card/95 backdrop-blur-xl border-border/60 overflow-hidden transition-all duration-300 transform origin-top animate-in slide-in-from-top-2 fade-in-0`}>
           <div className="max-h-[380px] overflow-y-auto overflow-x-hidden divide-y divide-border/40 scrollbar-thin scrollbar-thumb-border">
             {!showSearchPending && searchResults.length > 0 && (
               <div className="sticky top-0 z-[1] border-b border-border/40 bg-muted/30 px-4 py-2 backdrop-blur-md">

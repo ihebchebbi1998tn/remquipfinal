@@ -7,18 +7,18 @@
 @layer base {
   :root {
     --background: 214 30% 96%;
-    --foreground: 213 43% 21%;
+    --foreground: 212 42% 21%;
     --card: 210 25% 99%;
-    --card-foreground: 213 43% 21%;
+    --card-foreground: 212 42% 21%;
     --popover: 210 25% 99%;
-    --popover-foreground: 213 43% 21%;
-    --primary: 213 43% 21%;
+    --popover-foreground: 212 42% 21%;
+    --primary: 212 42% 21%;
     --primary-foreground: 210 25% 97%;
-    --primary-container: 213 32% 42%;
+    --primary-container: 212 33% 42%;
     --secondary: 214 30% 95%;
-    --secondary-foreground: 213 43% 21%;
-    --tertiary: 213 43% 21%;
-    --tertiary-container: 213 32% 32%;
+    --secondary-foreground: 212 42% 21%;
+    --tertiary: 212 42% 21%;
+    --tertiary-container: 212 33% 32%;
     --surface: 214 30% 96%;
     --surface-container: 214 22% 93%;
     --surface-container-low: 214 28% 95%;
@@ -37,10 +37,10 @@
     --ring: 213 43% 21%;
     --radius: 0.75rem;
 
-    --nav-bg: 213 43% 21%;
+    --nav-bg: 212 42% 21%;
     --nav-foreground: 214 30% 96%;
     --nav-accent: 38 92% 50%;
-    --category-bar: 213 32% 32%;
+    --category-bar: 212 33% 32%;
     --category-bar-foreground: 214 30% 96%;
     --category-bar-active: 38 92% 50%;
 
@@ -51,13 +51,13 @@
     --info: 210 92% 45%;
     --info-foreground: 0 0% 100%;
 
-    --sidebar-background: 213 43% 18%;
+    --sidebar-background: 212 42% 18%;
     --sidebar-foreground: 214 30% 92%;
     --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 213 43% 21%;
-    --sidebar-accent: 213 32% 28%;
+    --sidebar-primary-foreground: 212 42% 21%;
+    --sidebar-accent: 212 33% 28%;
     --sidebar-accent-foreground: 214 30% 92%;
-    --sidebar-border: 213 35% 26%;
+    --sidebar-border: 212 35% 26%;
     --sidebar-ring: 38 92% 50%;
 
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

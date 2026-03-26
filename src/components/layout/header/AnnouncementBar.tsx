@@ -24,7 +24,7 @@ export function AnnouncementBar({
   if (!announcement || !isVisible) return null;
 
   return (
-    <div className="bg-foreground text-background relative overflow-hidden transition-all duration-300 ease-in-out" role="region" aria-label={t("nav.announcement")}>
+    <div className="bg-primary text-primary-foreground relative overflow-hidden transition-all duration-300 ease-in-out" role="region" aria-label={t("nav.announcement")}>
       {/* Decorative gradient background */}
       <div className="absolute inset-0 bg-gradient-to-r from-accent/20 via-transparent to-accent/10 opacity-70 pointer-events-none" />
       

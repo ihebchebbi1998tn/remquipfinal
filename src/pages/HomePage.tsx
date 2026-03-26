@@ -28,12 +28,7 @@ function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   }
 }
 
-const DEFAULT_VALUE_PROPS = [
-  { icon: "ShieldCheck", text: "home.value_prop.certified" },
-  { icon: "Truck", text: "home.value_prop.shipping" },
-  { icon: "Wrench", text: "home.value_prop.support" },
-  { icon: "PackageCheck", text: "home.value_prop.stock" },
-];
+const DEFAULT_VALUE_PROPS: any[] = [];
 
 const DEFAULT_HERO_SECONDARY = [];
 
@@ -399,7 +394,7 @@ export default function HomePage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
                   <div className="absolute inset-0 p-6 flex flex-col justify-end">
                     <h3 className="font-display text-xl font-black uppercase text-white drop-shadow-md mb-4">{cat.name}</h3>
-                    <span className="w-fit px-4 py-2 rounded-lg font-display text-[10px] font-black tracking-widest uppercase border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white hover:text-black transition-colors shadow-sm">
+                    <span className="w-fit px-4 py-2 rounded-lg font-display text-[10px] font-black tracking-widest uppercase border border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white hover:text-[#1f354d] transition-colors shadow-sm">
                       Explore
                     </span>
                   </div>
@@ -469,13 +464,13 @@ export default function HomePage() {
                         
                         {/* Desktop Hover animated CTA */}
                         <div className="mt-0 lg:max-h-0 lg:opacity-0 lg:overflow-hidden lg:group-hover:mt-6 lg:group-hover:max-h-[80px] lg:group-hover:opacity-100 transition-all duration-300 ease-out">
-                          <button type="button" onClick={() => addItem(product)} disabled={isOutOfStock} className="w-full bg-foreground text-background text-[11px] py-3.5 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+                          <button type="button" onClick={() => addItem(product)} disabled={isOutOfStock} className="w-full bg-primary text-primary-foreground text-[11px] py-3.5 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
                             <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={2.5} /> {t("products.add_to_cart")}
                           </button>
                         </div>
                         {/* Mobile static CTA */}
                         <div className="mt-6 lg:hidden">
-                          <button type="button" onClick={() => addItem(product)} disabled={isOutOfStock} className="w-full bg-foreground text-background text-[11px] py-3.5 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+                          <button type="button" onClick={() => addItem(product)} disabled={isOutOfStock} className="w-full bg-primary text-primary-foreground text-[11px] py-3.5 rounded-lg font-display font-black uppercase tracking-widest hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
                             <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={2.5} /> {t("products.add_to_cart")}
                           </button>
                         </div>
@@ -585,7 +580,7 @@ export default function HomePage() {
                   ))}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <Link to={wholesaleData.cta_primary_link || "/register"} className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-display font-black text-sm uppercase tracking-widest text-background bg-foreground hover:bg-accent transition-colors shadow-xl hover:shadow-2xl hover:-translate-y-1">
+                  <Link to={wholesaleData.cta_primary_link || "/register"} className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-display font-black text-sm uppercase tracking-widest text-primary-foreground bg-primary hover:bg-accent transition-colors shadow-xl hover:shadow-2xl hover:-translate-y-1">
                     {wholesaleData.cta_primary_label || "Join wholesale"} <ArrowRight className="h-4 w-4" strokeWidth={3} />
                   </Link>
                   <Link to={wholesaleData.cta_secondary_link || "/contact"} className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-display font-black text-sm uppercase tracking-widest text-foreground bg-transparent border-2 border-border hover:border-foreground transition-all">
