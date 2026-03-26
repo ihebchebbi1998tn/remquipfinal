@@ -487,14 +487,37 @@ export default function AdminCustomers() {
                     {customerDocuments.map(doc => {
                       const isAppForm = doc.document_type === 'application_form';
                       return (
-                        <div key={doc.id} className={`p-3 border rounded-sm flex items-start gap-3 ${isAppForm ? 'border-accent/30 bg-accent/5' : 'border-border'}`}>
-                          <div className={`p-2 rounded-sm ${isAppForm ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'}`}><FileText className="h-4 w-4" /></div>
-                          <div className="flex-1 min-w-0">
-                            <a href={resolveBackendUploadUrl(doc.file_url)} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold truncate block hover:text-accent">{doc.file_name || "Document"}</a>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{doc.document_type.replace('_', ' ')} · {new Date(doc.created_at).toLocaleDateString()}</p>
-                            <a href={resolveBackendUploadUrl(doc.file_url)} target="_blank" rel="noopener noreferrer" className="text-[10px] text-accent font-medium mt-2 inline-block">Download</a>
+                        <div key={doc.id} className={`p-4 border rounded-xl flex items-start gap-4 transition-all hover:shadow-md ${isAppForm ? 'border-accent/40 bg-accent/5 ring-1 ring-accent/10' : 'border-border bg-card'}`}>
+                          <div className={`p-3 rounded-lg flex items-center justify-center ${isAppForm ? 'bg-accent/20 text-accent' : 'bg-secondary text-muted-foreground'}`}>
+                            {isAppForm ? <FileText className="h-5 w-5" strokeWidth={2.5} /> : <FileText className="h-5 w-5" />}
                           </div>
-                          <button onClick={() => confirm("Delete document?") && deleteDocumentMutation.mutate({ documentId: doc.id, customerId: c.id })} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-foreground truncate">{doc.file_name || (isAppForm ? "Account Application" : "Document")}</span>
+                              {isAppForm && <span className="px-1.5 py-0.5 rounded-full bg-accent/10 text-accent text-[9px] font-black uppercase tracking-tighter">Official</span>}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">
+                              {isAppForm ? "Generated PDF" : doc.document_type.replace('_', ' ')} · {new Date(doc.created_at).toLocaleDateString()}
+                            </p>
+                            <div className="flex items-center gap-3 mt-3">
+                              <a 
+                                href={resolveBackendUploadUrl(doc.file_url)} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className={`text-[11px] font-bold flex items-center gap-1 transition-colors ${isAppForm ? 'text-accent hover:text-accent/80' : 'text-primary hover:text-primary/80'}`}
+                              >
+                                {isAppForm ? "Download Application PDF" : "Download File"}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => confirm("Delete this document permanently?") && deleteDocumentMutation.mutate({ documentId: doc.id, customerId: c.id })} 
+                            className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       );
                     })}
