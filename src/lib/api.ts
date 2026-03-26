@@ -1438,6 +1438,14 @@ class APIService {
     return this.request('DELETE', `offers/${offerId}/documents/${documentId}`);
   }
 
+  async sendOfferEmail(offerId: string, data: { message?: string; subject?: string }): Promise<ApiResponse> {
+    return this.request('POST', `offers/${offerId}/send`, data);
+  }
+
+  async sendOrderEmail(orderId: string, data: { email_type?: string; message?: string; subject?: string }): Promise<ApiResponse> {
+    return this.request('POST', `orders/${orderId}/send`, data);
+  }
+
   async uploadSignature(file: File): Promise<ApiResponse<{ url: string }>> {
     const formData = new FormData();
     formData.append('file', file);
@@ -1939,8 +1947,8 @@ class APIService {
   }
 
   /** Admin: approve an application (creates customer + user account). */
-  async approveAccountApplication(id: string): Promise<ApiResponse<{ id: string; customer_id: string; account_created: boolean; generated_email?: string | null; generated_password?: string | null; }>> {
-    return this.request('PATCH', API_ENDPOINTS.ACCOUNT_APPLICATIONS.APPROVE.replace(':id', id));
+  async approveAccountApplication(id: string, pdfUrl?: string): Promise<ApiResponse<{ id: string; customer_id: string; account_created: boolean; generated_email?: string | null; generated_password?: string | null; }>> {
+    return this.request('PATCH', API_ENDPOINTS.ACCOUNT_APPLICATIONS.APPROVE.replace(':id', id), { pdf_url: pdfUrl });
   }
 
   /** Admin: reject an application with optional reason. */

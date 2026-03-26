@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://remquip.ca/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://remquip.ca/products</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://remquip.ca/products/air-suspension</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://remquip.ca/products/brake-shoes-pads</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://remquip.ca/products/brake-chambers</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://remquip.ca/products/brake-drums</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://remquip.ca/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://remquip.ca/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://remquip.ca/login</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://remquip.ca/register</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://remquip.ca/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://remquip.ca/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://remquip.ca/shipping</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://remquip.ca/refund</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://remquip.ca/cookie</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+</urlset>

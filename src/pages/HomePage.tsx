@@ -218,28 +218,28 @@ export default function HomePage() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
               {siteHeaderCms.social_facebook ? (
-                <a href={siteHeaderCms.social_facebook} target="_blank" rel="noopener noreferrer" className="text-[#94a3b8] hover:text-white transition-all transform hover:scale-110">
+                <a href={siteHeaderCms.social_facebook} target="_blank" rel="noopener noreferrer" className="text-white hover:text-accent transition-all transform hover:scale-110">
                   <Facebook className="h-3.5 w-3.5" />
                   <span className="sr-only">Facebook</span>
                 </a>
               ) : (
-                <span className="text-[#94a3b8] opacity-30 cursor-not-allowed"><Facebook className="h-3.5 w-3.5" /></span>
+                <span className="text-white cursor-not-allowed"><Facebook className="h-3.5 w-3.5" /></span>
               )}
               {siteHeaderCms.social_instagram ? (
-                <a href={siteHeaderCms.social_instagram} target="_blank" rel="noopener noreferrer" className="text-[#94a3b8] hover:text-white transition-all transform hover:scale-110">
+                <a href={siteHeaderCms.social_instagram} target="_blank" rel="noopener noreferrer" className="text-white hover:text-accent transition-all transform hover:scale-110">
                   <Instagram className="h-3.5 w-3.5" />
                   <span className="sr-only">Instagram</span>
                 </a>
               ) : (
-                 <span className="text-[#94a3b8] opacity-30 cursor-not-allowed"><Instagram className="h-3.5 w-3.5" /></span>
+                 <span className="text-white cursor-not-allowed"><Instagram className="h-3.5 w-3.5" /></span>
               )}
               {siteHeaderCms.social_linkedin ? (
-                <a href={siteHeaderCms.social_linkedin} target="_blank" rel="noopener noreferrer" className="text-[#94a3b8] hover:text-white transition-all transform hover:scale-110">
+                <a href={siteHeaderCms.social_linkedin} target="_blank" rel="noopener noreferrer" className="text-white hover:text-accent transition-all transform hover:scale-110">
                   <Linkedin className="h-3.5 w-3.5" />
                   <span className="sr-only">LinkedIn</span>
                 </a>
               ) : (
-                 <span className="text-[#94a3b8] opacity-30 cursor-not-allowed"><Linkedin className="h-3.5 w-3.5" /></span>
+                 <span className="text-white cursor-not-allowed"><Linkedin className="h-3.5 w-3.5" /></span>
               )}
             </div>
             <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
@@ -311,22 +311,6 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            {rawValuePropsContent && valuePropsParsed.row?.length ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mt-16 md:mt-20 pt-16 md:pt-20 border-t border-border/40">
-                {valuePropsParsed.row.map(({ icon: iconKey, text }) => {
-                  const Icon = ICON_MAP[iconKey] ?? CheckCircle;
-                  const label = text.includes(".") ? t(text) : text;
-                  return (
-                    <div key={text} className="flex flex-col items-center justify-center gap-5 p-8 rounded-3xl bg-muted/10 border border-border/40 hover:bg-muted/20 hover:border-accent/30 transition-all duration-300 shadow-sm group/prop">
-                      <div className="p-5 rounded-2xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 group-hover:scale-110 transition-transform duration-500">
-                        <Icon className="h-7 w-7" strokeWidth={2.5} />
-                      </div>
-                      <span className="landing-value-prop-text text-foreground font-display font-black uppercase tracking-[0.2em] text-[10px] sm:text-xs text-center leading-tight">{label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
           </div>
         </section>
       </EditableSection>

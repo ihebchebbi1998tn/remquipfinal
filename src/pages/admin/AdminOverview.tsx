@@ -5,6 +5,7 @@ import { api, Order, unwrapApiList } from "@/lib/api";
 import { products } from "@/config/products";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageLoading } from "@/components/admin/AdminPageState";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DashboardStats {
   totalProducts: number;
@@ -39,6 +40,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function AdminOverview() {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: products.length,
     totalOrders: 0,
@@ -106,17 +108,17 @@ export default function AdminOverview() {
   }
 
   const statsArray = [
-    { label: "Total Products", value: stats.totalProducts.toString(), icon: Package, change: "+3 this month", color: "accent" },
-    { label: "Total Orders", value: stats.totalOrders.toString(), icon: ShoppingBag, change: "+12 this week", color: "info" },
-    { label: "Customers", value: stats.totalCustomers.toString(), icon: Users, change: "+5 this month", color: "success" },
-    { label: "Revenue", value: `C$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, change: "+18% vs last month", color: "accent" },
+    { label: t("admin.overview.total_products"), value: stats.totalProducts.toString(), icon: Package, change: "+3 this month", color: "accent" },
+    { label: t("admin.overview.total_orders"), value: stats.totalOrders.toString(), icon: ShoppingBag, change: "+12 this week", color: "info" },
+    { label: t("admin.overview.customers"), value: stats.totalCustomers.toString(), icon: Users, change: "+5 this month", color: "success" },
+    { label: t("admin.overview.revenue"), value: `C$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, change: "+18% vs last month", color: "accent" },
   ];
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title="Overview"
-        subtitle="Operational snapshot of your store"
+        title={t("admin.overview.title")}
+        subtitle={t("admin.overview.subtitle")}
       />
 
       {/* Stats */}
@@ -146,10 +148,10 @@ export default function AdminOverview() {
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
               <ShoppingBag className="h-4 w-4 text-accent" />
-              Recent Orders
+              {t("admin.overview.recent_orders")}
             </h3>
             <Link to="/admin/orders" className="admin-btn--ghost text-xs px-2 py-1 gap-1">
-              View All <ArrowRight className="h-3 w-3" />
+              {t("admin.overview.view_all")} <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
@@ -177,11 +179,11 @@ export default function AdminOverview() {
             <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="table-header">
-                  <th className="text-left px-3 py-2.5">Order</th>
-                  <th className="text-left px-3 py-2.5">Customer</th>
-                  <th className="text-left px-3 py-2.5">Total</th>
-                  <th className="text-left px-3 py-2.5">Status</th>
-                  <th className="text-left px-3 py-2.5">Date</th>
+                  <th className="text-left px-3 py-2.5">{t("admin.overview.order")}</th>
+                  <th className="text-left px-3 py-2.5">{t("admin.overview.customer")}</th>
+                  <th className="text-left px-3 py-2.5">{t("admin.overview.total")}</th>
+                  <th className="text-left px-3 py-2.5">{t("admin.overview.status")}</th>
+                  <th className="text-left px-3 py-2.5">{t("admin.overview.date")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -198,7 +200,7 @@ export default function AdminOverview() {
             </table>
           </div>
           {recentOrders.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No recent orders.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t("admin.overview.no_orders")}</p>
           )}
         </div>
 
@@ -206,9 +208,9 @@ export default function AdminOverview() {
         <div className="dashboard-card">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" /> Low Stock
+              <AlertTriangle className="h-4 w-4 text-warning" /> {t("admin.overview.low_stock")}
             </h3>
-            <Link to="/admin/inventory" className="admin-btn--ghost text-xs px-2 py-1">View All</Link>
+            <Link to="/admin/inventory" className="admin-btn--ghost text-xs px-2 py-1">{t("admin.overview.view_all")}</Link>
           </div>
           <div className="space-y-3">
             {lowStockProducts.slice(0, 6).map((p) => (
@@ -234,7 +236,7 @@ export default function AdminOverview() {
                 </div>
               </div>
             ))}
-            {lowStockProducts.length === 0 && <p className="text-sm text-muted-foreground">All products well-stocked.</p>}
+            {lowStockProducts.length === 0 && <p className="text-sm text-muted-foreground">{t("admin.overview.all_stocked")}</p>}
           </div>
         </div>
       </div>
@@ -243,7 +245,7 @@ export default function AdminOverview() {
       <div className="dashboard-card">
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-            <Clock className="h-4 w-4 text-accent" /> Recent Activity
+              <Clock className="h-4 w-4 text-accent" /> {t("admin.overview.recent_activity")}
           </h3>
         </div>
         <div className="admin-timeline">
@@ -267,10 +269,10 @@ export default function AdminOverview() {
       {/* Quick actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Add Product", to: "/admin/products/new", icon: Package },
-          { label: "View Orders", to: "/admin/orders", icon: ShoppingBag },
-          { label: "Discounts", to: "/admin/discounts", icon: Tag },
-          { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
+          { label: t("admin.overview.add_product"), to: "/admin/products/new", icon: Package },
+          { label: t("admin.overview.view_orders"), to: "/admin/orders", icon: ShoppingBag },
+          { label: t("admin.nav.discounts"), to: "/admin/discounts", icon: Tag },
+          { label: t("admin.nav.analytics"), to: "/admin/analytics", icon: BarChart3 },
         ].map((action) => (
           <Link
             key={action.to}

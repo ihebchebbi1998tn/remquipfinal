@@ -249,7 +249,7 @@ if ($method === 'GET' && $id && $action === 'logs') {
         )['total'] ?? 0;
         
         $logs = $conn->fetchAll(
-            "SELECT il.*, u.full_name as user
+            "SELECT il.*, u.full_name as user_name
              FROM remquip_inventory_logs il
              LEFT JOIN remquip_users u ON il.user_id = u.id
              WHERE il.product_id = :id

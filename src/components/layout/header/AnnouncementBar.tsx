@@ -72,7 +72,7 @@ export function AnnouncementBar({
             <button
               onClick={() => setIsVisible(false)}
               className="p-1 -mr-2 rounded-full text-background/60 hover:text-background hover:bg-white/10 transition-colors ml-2"
-              aria-label="Close announcement"
+              aria-label={t("close")}
             >
               <X className="h-3.5 w-3.5" />
             </button>

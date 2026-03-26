@@ -1011,3 +1011,25 @@ export function useDeleteOffer(id: string) {
     }
   );
 }
+
+export function useSendOfferEmail() {
+  const queryClient = useQueryClient();
+  return useApiMutation(
+    ({ offerId, message, subject }: { offerId: string; message?: string; subject?: string }) =>
+      api.sendOfferEmail(offerId, { message, subject }),
+    {
+      onSuccess: (_data, vars) => {
+        // Auto-status advance: refresh the offer so it shows 'sent'
+        queryClient.invalidateQueries({ queryKey: ['offer', vars.offerId] });
+        queryClient.invalidateQueries({ queryKey: ['offers'] });
+      },
+    }
+  );
+}
+
+export function useSendOrderEmail() {
+  return useApiMutation(
+    ({ orderId, emailType, message, subject }: { orderId: string; emailType?: string; message?: string; subject?: string }) =>
+      api.sendOrderEmail(orderId, { email_type: emailType, message, subject })
+  );
+}

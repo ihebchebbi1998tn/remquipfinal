@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Search, Plus, FileText, CheckCircle, XCircle, Clock, Upload, X, MapPin, Download, AlertCircle, Trash2, ArrowRight, Printer } from "lucide-react";
-import { useOffers, useOffer, useCreateOffer, useUpdateOffer, useUpdateOfferStatus, useConvertOfferToOrder, useDeleteOffer, useOfferDocuments, useUploadOfferDocument, useDeleteOfferDocument, useSearchProducts, useCustomers } from "@/hooks/useApi";
+import { Search, Plus, FileText, CheckCircle, XCircle, Clock, Upload, X, MapPin, Download, AlertCircle, Trash2, ArrowRight, Printer, Mail, Loader2, Send } from "lucide-react";
+import { useOffers, useOffer, useCreateOffer, useUpdateOffer, useUpdateOfferStatus, useConvertOfferToOrder, useDeleteOffer, useOfferDocuments, useUploadOfferDocument, useDeleteOfferDocument, useSearchProducts, useCustomers, useSendOfferEmail } from "@/hooks/useApi";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageError, AdminPageLoading } from "@/components/admin/AdminPageState";
 import { showSuccessToast, showErrorToast } from "@/lib/toast";
@@ -227,8 +227,10 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
   const statusMutation = useUpdateOfferStatus(offerId);
   const convertMutation = useConvertOfferToOrder();
   const deleteMutation = useDeleteOffer(offerId);
+  const sendEmailMutation = useSendOfferEmail();
   const navigate = useNavigate();
   const [showReport, setShowReport] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   const offer = data?.data;
 
@@ -295,6 +297,17 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
             <Printer className="w-4 h-4" />
             <span className="hidden sm:inline">Generate Report</span>
           </button>
+          {offer.status !== "converted" && (
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-colors"
+            >
+              <Mail className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {offer.status === "draft" ? "Send to Customer" : "Resend to Customer"}
+              </span>
+            </button>
+          )}
           {offer.status === "accepted" && (
             <button
               onClick={handleConvert}
@@ -475,7 +488,116 @@ function AdminOfferDetail({ offerId, onBack }: { offerId: string; onBack: () => 
         }}
       />
     )}
+    {showEmailModal && (
+      <OfferEmailModal
+        offer={offer}
+        isPending={sendEmailMutation.isPending}
+        onClose={() => setShowEmailModal(false)}
+        onSend={async ({ subject, message }) => {
+          try {
+            await sendEmailMutation.mutateAsync({ offerId, subject, message });
+            showSuccessToast("Email Sent", `Offer ${offer.offer_number} sent to ${offer.customer_email}`);
+            setShowEmailModal(false);
+            refetch();
+          } catch {
+            showErrorToast("Error", "Failed to send email — check SMTP settings");
+          }
+        }}
+      />
+    )}
     </>
+  );
+}
+
+// ==========================================
+// OFFER EMAIL MODAL
+// ==========================================
+
+function OfferEmailModal({
+  offer,
+  isPending,
+  onClose,
+  onSend,
+}: {
+  offer: any;
+  isPending: boolean;
+  onClose: () => void;
+  onSend: (data: { subject: string; message: string }) => void;
+}) {
+  const defaultSubject = `REMQUIP: Your Quote ${offer.offer_number}`;
+  const [subject, setSubject] = useState(defaultSubject);
+  const [message, setMessage] = useState("");
+
+  const customerLabel = [(offer as any).contact_person, (offer as any).company_name]
+    .filter(Boolean).join(" — ") || offer.customer_email;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-5 border-b">
+          <div className="flex items-center gap-2">
+            <Send className="w-5 h-5 text-emerald-600" />
+            <h2 className="text-base font-semibold text-slate-900">Send Offer to Customer</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-600 flex items-start gap-2">
+            <Mail className="w-4 h-4 mt-0.5 shrink-0 text-slate-400" />
+            <div>
+              <span className="font-medium text-slate-800">To:</span> {offer.customer_email}
+              {customerLabel !== offer.customer_email && (
+                <span className="ml-1 text-slate-400">({customerLabel})</span>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Personalised Message <span className="text-slate-400 font-normal">(optional — shown above the quote table)</span>
+            </label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={5}
+              placeholder={`Dear ${(offer as any).contact_person || 'Customer'},\n\nPlease find enclosed your quote for the requested items…`}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            />
+          </div>
+
+          <div className="p-3 bg-emerald-50 rounded-lg text-xs text-emerald-700">
+            The email will include the full quote details (items, pricing, totals).
+            {offer.status === "draft" && " The offer status will automatically advance to <strong>Sent</strong>."}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 p-5 border-t bg-slate-50 rounded-b-xl">
+          <button onClick={onClose} disabled={isPending} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => onSend({ subject, message })}
+            disabled={isPending || !subject.trim()}
+            className="btn-accent flex items-center gap-2 px-5 py-2 disabled:opacity-50"
+          >
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {isPending ? "Sending…" : "Send Offer"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

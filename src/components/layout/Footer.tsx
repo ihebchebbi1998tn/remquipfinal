@@ -31,7 +31,7 @@ export default function Footer() {
                 {t("newsletter.title")}
               </span>
               <h3 className="font-display text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tight text-white leading-tight">
-                Stay updated on our heavy-duty inventory.
+                {t("footer.newsletter_heading")}
               </h3>
             </div>
             <div className="w-full lg:w-auto relative group">
@@ -62,7 +62,7 @@ export default function Footer() {
               {storeName}
             </h4>
             <p className="text-sm text-[#9ca3af] mb-8 leading-relaxed max-w-sm">
-              Heavy-duty truck parts and equipment supplier. Trusted by fleets across North America. Built for demanding operators.
+              {t("footer.description")}
             </p>
             <div className="space-y-4 text-sm">
               <div className="flex items-start gap-4">
@@ -126,7 +126,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/faq" className="text-sm font-medium text-[#d1d5db] hover:text-white hover:translate-x-1 transition-all inline-block">
-                  FAQ
+                  {t("footer.faq")}
                 </Link>
               </li>
             </ul>
@@ -212,7 +212,7 @@ export default function Footer() {
             © {new Date().getFullYear()} {storeName}.
           </p>
           <div className="flex items-center gap-4 text-[10px] font-display font-bold uppercase tracking-widest opacity-60">
-             <span>Engineered for scale</span>
+             <span>{t("footer.tagline")}</span>
           </div>
         </div>
       </div>

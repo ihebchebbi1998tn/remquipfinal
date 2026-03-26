@@ -197,7 +197,7 @@ export default function Header() {
                     className="flex items-center justify-center gap-1.5 h-10 px-3 rounded-full text-sm font-bold transition-all duration-300 text-white/80 hover:bg-white/10"
                   >
                     <FlagIcon country={langFlag as any} className="w-5 h-3.5 rounded-[2px] overflow-hidden" />
-                    <span className="opacity-90">{lang === "en" ? "EN" : "FR"}</span>
+                    <span className="opacity-90">{lang.toUpperCase()}</span>
                     <ChevronDown className="h-3 w-3 opacity-60 ml-0.5" strokeWidth={3} />
                   </button>
                   {langOpen && (

@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import en from "@/translations/en.json";
 import fr from "@/translations/fr.json";
+import es from "@/translations/es.json";
 import { useStorefrontRates } from "@/hooks/useApi";
 
-const translations: Record<string, Record<string, string>> = { en, fr };
+const translations: Record<string, Record<string, string>> = { en, fr, es };
 
 const LOCALE_LABELS: Record<string, string> = {
   en: "English",
@@ -44,7 +45,10 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { data: storefront } = useStorefrontRates();
-  const supportedLocales = (storefront as { data?: { supported_locales?: string[] } } | undefined)?.data?.supported_locales ?? ["en", "fr"];
+  const apiLocales = (storefront as { data?: { supported_locales?: string[] } } | undefined)?.data?.supported_locales;
+  const supportedLocales = apiLocales && apiLocales.length > 0
+    ? Array.from(new Set([...apiLocales, "en", "fr", "es"]))
+    : ["en", "fr", "es"];
 
   const [lang, setLangState] = useState<string>("en");
 

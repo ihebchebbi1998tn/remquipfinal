@@ -6,7 +6,8 @@
       "Bash(find /c/Users/ihebc/OneDrive/Desktop/freelance/remquipfinal -name *.php -type f)",
       "Bash(find /c/Users/ihebc/OneDrive/Desktop/freelance/remquipfinal/backend -name *email* -o -name *mail* -o -name *smtp*)",
       "Bash(xargs grep:*)",
-      "Bash(grep -r \"exit\\\\|die\" Backend/*.php)"
+      "Bash(grep -r \"exit\\\\|die\" Backend/*.php)",
+      "Bash(grep -n \"userId\\\\|subAction\\\\|$id\\\\|$action\" \"c:/Users/iheb.chebbi/Desktop/remquipfinal/Backend/router.php\")"
     ]
   }
 }

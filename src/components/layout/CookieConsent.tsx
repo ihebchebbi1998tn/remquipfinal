@@ -79,7 +79,7 @@ export function CookieConsent() {
                 type="button"
                 onClick={() => setIsVisible(false)}
                 className="absolute top-2 right-2 md:relative md:top-0 md:right-0 p-2 text-muted-foreground/40 hover:text-foreground transition-colors group/x"
-                aria-label="Dismiss"
+                aria-label={t("close")}
               >
                 <X className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" strokeWidth={2.5} />
               </button>

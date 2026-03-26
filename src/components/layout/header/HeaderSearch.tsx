@@ -104,10 +104,10 @@ export function HeaderSearch({ onMobileClose, isMobile = false }: HeaderSearchPr
   return (
     <div ref={containerRef} className={`relative ${isMobile ? 'w-full' : 'mx-auto w-full md:max-w-xl lg:max-w-2xl'}`}>
       <form onSubmit={handleSubmit} className="relative z-20 group" role="search">
-        <div className={`flex items-center overflow-hidden transition-all duration-300 bg-background/50 backdrop-blur-md border outline-none
-          ${showResults && !isMobile ? 'rounded-t-2xl border-b-transparent border-[#1f354d]/30 shadow-lg shadow-[#1f354d]/5' : 'rounded-full border-border hover:border-[#1f354d]/40 focus-within:ring-2 focus-within:ring-[#1f354d]/20 focus-within:border-[#1f354d]/60'}
+          <div className={`flex items-center overflow-hidden transition-all duration-300 ${isMobile ? 'bg-background/50' : 'bg-white/10'} backdrop-blur-md border outline-none
+          ${showResults && !isMobile ? 'rounded-t-2xl border-b-transparent border-white/20 shadow-lg shadow-[#1f354d]/5' : `rounded-full ${isMobile ? 'border-border hover:border-[#1f354d]/40' : 'border-white/20 hover:border-white/40'} focus-within:ring-2 focus-within:ring-white/20 focus-within:border-white/40`}
         `}>
-          <span className="flex items-center justify-center pl-4 pr-2 text-muted-foreground/70 group-focus-within:text-accent transition-colors" aria-hidden>
+          <span className={`flex items-center justify-center pl-4 pr-2 ${isMobile ? 'text-muted-foreground/70 group-focus-within:text-accent' : 'text-white/60 group-focus-within:text-white'} transition-colors`} aria-hidden>
             <Search className="h-[18px] w-[18px]" strokeWidth={2.5} />
           </span>
           <input
@@ -117,7 +117,7 @@ export function HeaderSearch({ onMobileClose, isMobile = false }: HeaderSearchPr
             onChange={(e) => handleSearch(e.target.value)}
             onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
             placeholder={t("nav.search.placeholder")}
-            className="w-full bg-transparent py-2.5 md:py-3 text-[15px] font-medium text-foreground outline-none placeholder:text-muted-foreground/60 placeholder:font-normal"
+            className={`w-full bg-transparent py-2.5 md:py-3 text-[15px] font-medium outline-none ${isMobile ? 'text-foreground placeholder:text-muted-foreground/60' : 'text-white placeholder:text-white/50'} placeholder:font-normal`}
             title={t("nav.search.enter_hint")}
           />
         </div>

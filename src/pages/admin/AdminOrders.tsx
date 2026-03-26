@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Eye, Search, X, ChevronDown, ChevronUp, Package, Truck, CheckCircle, Clock, Printer, Download, Mail, ArrowLeft, MapPin, CreditCard, FileText, Loader2, AlertCircle, Upload, Trash2 } from "lucide-react";
-import { useOrders, useOrder, useApiMutation, useOrderDocuments, useUploadOrderDocument, useDeleteOrderDocument } from "@/hooks/useApi";
+import { useOrders, useOrder, useApiMutation, useOrderDocuments, useUploadOrderDocument, useDeleteOrderDocument, useSendOrderEmail } from "@/hooks/useApi";
 import { api, Order, unwrapApiList, unwrapPagination } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
@@ -185,6 +185,9 @@ export default function AdminOrders() {
   const [showShipment, setShowShipment] = useState<string | null>(null);
   const [shipmentCarrier, setShipmentCarrier] = useState("Purolator");
   const [shipmentTracking, setShipmentTracking] = useState("");
+  const [showOrderEmailModal, setShowOrderEmailModal] = useState(false);
+
+  const sendOrderEmailMutation = useSendOrderEmail();
 
   const queryClient = useQueryClient();
 
@@ -336,7 +339,10 @@ export default function AdminOrders() {
             >
               <Printer className="h-3.5 w-3.5" /> Generate Report
             </button>
-            <button className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5">
+            <button
+              onClick={() => setShowOrderEmailModal(true)}
+              className="px-3 py-2 border border-border rounded-sm text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-1.5"
+            >
               <Mail className="h-3.5 w-3.5" /> Email Customer
             </button>
             {selectedOrder.status === "processing" && (
@@ -552,6 +558,27 @@ export default function AdminOrders() {
             }}
           />
         )}
+        {showOrderEmailModal && (
+          <OrderEmailModal
+            order={selectedOrder}
+            isPending={sendOrderEmailMutation.isPending}
+            onClose={() => setShowOrderEmailModal(false)}
+            onSend={async ({ emailType, subject, message }) => {
+              try {
+                await sendOrderEmailMutation.mutateAsync({
+                  orderId: selectedOrder.id,
+                  emailType,
+                  subject,
+                  message,
+                });
+                showSuccessToast("Email Sent", `Email sent to ${selectedOrder.customer_email}`);
+                setShowOrderEmailModal(false);
+              } catch {
+                showErrorToast("Error", "Failed to send email — check SMTP settings");
+              }
+            }}
+          />
+        )}
       </div>
       </>
     );
@@ -730,6 +757,117 @@ export default function AdminOrders() {
             </button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// ORDER EMAIL MODAL
+// ==========================================
+
+function OrderEmailModal({
+  order,
+  isPending,
+  onClose,
+  onSend,
+}: {
+  order: any;
+  isPending: boolean;
+  onClose: () => void;
+  onSend: (data: { emailType: string; subject: string; message: string }) => void;
+}) {
+  const [emailType, setEmailType] = useState<"status" | "custom">("status");
+  const defaultSubject = `REMQUIP: Order ${order.order_number} — ${order.status}`;
+  const [subject, setSubject] = useState(defaultSubject);
+  const [message, setMessage] = useState("");
+
+  function handleTypeChange(t: "status" | "custom") {
+    setEmailType(t);
+    if (t === "status") setSubject(`REMQUIP: Order ${order.order_number} — ${order.status}`);
+    else setSubject(`REMQUIP: Regarding Order ${order.order_number}`);
+    setMessage("");
+  }
+
+  const canSend = subject.trim() && (emailType === "status" || message.trim());
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-5 border-b">
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-blue-600" />
+            <h2 className="text-base font-semibold text-slate-900">Email Customer</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-600 flex items-start gap-2">
+            <Mail className="h-4 w-4 mt-0.5 shrink-0 text-slate-400" />
+            <span><span className="font-medium text-slate-800">To:</span> {order.customer_email}</span>
+          </div>
+
+          <div className="flex gap-2">
+            {(["status", "custom"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => handleTypeChange(t)}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                  emailType === t
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                }`}
+              >
+                {t === "status" ? "Status Update" : "Custom Message"}
+              </button>
+            ))}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {emailType === "status" ? (
+            <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+              A status notification email will be sent for order <strong>{order.order_number}</strong> with current status: <strong className="capitalize">{order.status}</strong>.
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Message <span className="text-slate-400 font-normal">(required)</span>
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={6}
+                placeholder={`Hi,\n\nRegarding your order ${order.order_number}…`}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 p-5 border-t bg-slate-50 rounded-b-xl">
+          <button onClick={onClose} disabled={isPending} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => onSend({ emailType, subject, message })}
+            disabled={isPending || !canSend}
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
+          >
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+            {isPending ? "Sending…" : "Send Email"}
+          </button>
+        </div>
       </div>
     </div>
   );

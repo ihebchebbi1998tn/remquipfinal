@@ -583,7 +583,11 @@ INSERT IGNORE INTO remquip_category_translations (id, category_id, locale, name,
 ('ec000002-0000-4000-8000-000000000005', 'e4000001-0000-4000-8000-000000000001', 'fr', 'Suspension pneumatique', 'Ressorts pneumatiques, soufflets et composants de suspension'),
 ('ec000002-0000-4000-8000-000000000006', 'e4000002-0000-4000-8000-000000000002', 'fr', 'Garnitures et plaquettes de frein', 'Garnitures, plaquettes et quincaillerie de freinage'),
 ('ec000002-0000-4000-8000-000000000007', 'e4000003-0000-4000-8000-000000000003', 'fr', 'Chambres de frein', 'Chambres à ressort et de service'),
-('ec000002-0000-4000-8000-000000000008', 'e4000004-0000-4000-8000-000000000004', 'fr', 'Tambours de frein', 'Tambours de frein pour charges lourdes');
+('ec000002-0000-4000-8000-000000000008', 'e4000004-0000-4000-8000-000000000004', 'fr', 'Tambours de frein', 'Tambours de frein pour charges lourdes'),
+('ec000003-0000-4000-8000-000000000009', 'e4000001-0000-4000-8000-000000000001', 'es', 'Suspensión neumática', 'Resortes neumáticos, fuelles y componentes de suspensión'),
+('ec000003-0000-4000-8000-000000000010', 'e4000002-0000-4000-8000-000000000002', 'es', 'Zapatas y pastillas de freno', 'Zapatas, pastillas y kits de herrajes de freno'),
+('ec000003-0000-4000-8000-000000000011', 'e4000003-0000-4000-8000-000000000003', 'es', 'Cámaras de freno', 'Cámaras de freno de resorte y de servicio'),
+('ec000003-0000-4000-8000-000000000012', 'e4000004-0000-4000-8000-000000000004', 'es', 'Tambores de freno', 'Tambores de freno para servicio pesado');
 
 -- Products + primary images (featured / catalog API)
 INSERT IGNORE INTO remquip_products (id, category_id, sku, name, description, base_price, cost_price, is_active) VALUES
@@ -638,7 +642,8 @@ INSERT IGNORE INTO remquip_banners (id, title, description, image_url, link_url,
 ('b2000001-0000-4000-8000-000000000001', 'Fleet pricing available', 'Ask about volume programs', '/Backend/uploads/images/placeholder-banner.svg', '/products', 1, 0);
 
 INSERT IGNORE INTO remquip_banner_translations (id, banner_id, locale, title, description) VALUES
-('b2000002-0000-4000-8000-000000000001', 'b2000001-0000-4000-8000-000000000001', 'fr', 'Tarifs flotte disponibles', 'Renseignez-vous sur les programmes volume');
+('b2000002-0000-4000-8000-000000000001', 'b2000001-0000-4000-8000-000000000001', 'fr', 'Tarifs flotte disponibles', 'Renseignez-vous sur les programmes volume'),
+('b2000002-0000-4000-8000-000000000002', 'b2000001-0000-4000-8000-000000000001', 'es', 'Precios para flotas disponibles', 'Consulte sobre programas de volumen');
 
 -- User dashboard “Contact us” directory
 INSERT IGNORE INTO remquip_admin_contacts (id, name, email, phone, department, specialization, is_available, display_order) VALUES
@@ -666,7 +671,7 @@ INSERT IGNORE INTO remquip_settings (id, setting_key, setting_value, data_type, 
 ('s0000001-0000-4000-8000-000000000011', 'portal_email_notifications_default', '1', 'string', 'Default for user dashboard email toggle', 0),
 ('s0000001-0000-4000-8000-000000000012', 'notif_recipient_email', '', 'string', 'Admin notification inbox; empty uses contact_email', 0),
 ('s0000001-0000-4000-8000-000000000013', 'notif_from_email', '', 'string', 'From: for outbound mail; empty uses contact_email', 0),
-('s0000001-0000-4000-8000-000000000014', 'supported_locales', '["en","fr"]', 'json', 'Enabled languages for CMS, categories, banners. Add codes like es, de for future languages.', 1),
+('s0000001-0000-4000-8000-000000000014', 'supported_locales', '["en","fr","es"]', 'json', 'Enabled languages for CMS, categories, banners.', 1),
 ('s0000001-0000-4000-8000-000000000015', 'notif_order_status', '1', 'string', 'Email: order status update (non-shipped)', 0);
 
 -- Contact page map (GET /contact-map, PUT admin)
@@ -699,6 +704,16 @@ INSERT IGNORE INTO remquip_cms_page_translations (id, page_id, locale, title, ex
   'Page contact',
   '{"sections":{"intro":{"title":"Écrivez-nous","description":"Nous contacter","image_url":"","content":"Des questions sur nos produits ou nos programmes de gros? Écrivez-nous; nous répondons sous 24 h."},"form_labels":{"title":"","description":"","image_url":"","content":"{\"name\":\"Votre Nom\",\"email\":\"Adresse Courriel\",\"subject\":\"Sujet\",\"message\":\"Message\",\"send\":\"Envoyer le message\"}"},"sidebar":{"title":"","description":"","image_url":"","content":"{\"address_label\":\"Adresse\",\"phone_label\":\"Téléphone\",\"phone\":\"+1 (418) 555-0199\",\"email_label\":\"Courriel\",\"email\":\"info@remquip.ca\",\"hours_label\":\"Heures\",\"hours\":\"Lun - Ven: 8h00 - 17h00 HNE\"}"},"map":{"title":"Nous trouver","description":"La position et l''adresse se configurent dans Admin - CMS (carte Contact).","image_url":"","content":""}}}'
 );
+
+-- Spanish homepage
+INSERT IGNORE INTO remquip_cms_page_translations (id, page_id, locale, title, excerpt, content) VALUES
+('b1000002-0000-4000-8000-000000000020', 'b1000001-0000-4000-8000-000000000001', 'es', 'Inicio', 'REMQUIP — piezas para camiones y remolques pesados.',
+ '{"sections":{"hero":{"title":"Piezas de grado industrial para flotas en Norteamérica","description":"Más de 500 referencias en stock. Entrega en 48 horas. Confianza de operadores de flotas en Norteamérica durante más de 15 años.","image_url":"","content":"{\\"cta_primary_label\\":\\"Explorar catálogo\\",\\"cta_primary_link\\":\\"/products\\",\\"cta_secondary_label\\":\\"Programa mayorista\\",\\"cta_secondary_link\\":\\"/register\\"}"},"stats":{"title":"","description":"","image_url":"","content":"[{\\"value\\":\\"500+\\",\\"label\\":\\"Refs. en stock\\"},{\\"value\\":\\"48h\\",\\"label\\":\\"Entrega prom.\\"},{\\"value\\":\\"15+\\",\\"label\\":\\"Años de experiencia\\"}]"},"value_props":{"title":"","description":"","image_url":"","content":"[{\\"icon\\":\\"Shield\\",\\"text\\":\\"Certificado y probado\\"},{\\"icon\\":\\"Truck\\",\\"text\\":\\"Entrega rápida\\"},{\\"icon\\":\\"Wrench\\",\\"text\\":\\"Soporte experto\\"},{\\"icon\\":\\"CheckCircle\\",\\"text\\":\\"En stock\\"}]"},"categories_intro":{"title":"Explorar soluciones","description":"Categorías de productos","image_url":"","content":""},"featured_intro":{"title":"Alta demanda","description":"Productos populares","image_url":"","content":""},"why_remquip":{"title":"¿Por qué REMQUIP?","description":"Diseñado para operaciones de flota","image_url":"","content":"{\\"subtitle\\":\\"Nos especializamos en piezas de calidad, precios competitivos y un servicio al cliente que mantiene su flota en funcionamiento.\\",\\"cards\\":[{\\"icon\\":\\"Package\\",\\"title\\":\\"Inventario extenso\\",\\"desc\\":\\"Más de 500 referencias listas para enviar. La mayoría en stock para entrega inmediata a flotas en Norteamérica.\\"},{\\"icon\\":\\"Users\\",\\"title\\":\\"Soporte dedicado\\",\\"desc\\":\\"Equipo de expertos a su disposición. Asesoría técnica, cotizaciones a granel y servicio personalizado.\\"},{\\"icon\\":\\"BarChart3\\",\\"title\\":\\"Trayectoria comprobada\\",\\"desc\\":\\"Más de 15 años sirviendo a operadores de flotas. Confianza en fiabilidad y precios competitivos.\\"}]}"},"wholesale_cta":{"title":"Soluciones para flotas","description":"Programas mayoristas para operadores de flotas","image_url":"","content":"{\\"body\\":\\"Precios competitivos al por mayor, soporte dedicado y pedidos simplificados para su flota.\\",\\"cta_primary_label\\":\\"Unirse al programa\\",\\"cta_primary_link\\":\\"/register\\",\\"cta_secondary_label\\":\\"Contactar ventas\\",\\"cta_secondary_link\\":\\"/contact\\"}"}}}');
+
+-- Spanish contact page
+INSERT IGNORE INTO remquip_cms_page_translations (id, page_id, locale, title, excerpt, content) VALUES
+('b1000004-0000-4000-8000-000000000002', 'b1000003-0000-4000-8000-000000000001', 'es', 'Contacto', 'Página de contacto',
+ '{"sections":{"intro":{"title":"Escríbanos","description":"Contáctenos","image_url":"","content":"¿Tiene preguntas sobre nuestros productos o programas mayoristas? Escríbanos y responderemos en 24 horas."},"form_labels":{"title":"","description":"","image_url":"","content":"{\\"name\\":\\"Su nombre\\",\\"email\\":\\"Correo electrónico\\",\\"subject\\":\\"Asunto\\",\\"message\\":\\"Mensaje\\",\\"send\\":\\"Enviar mensaje\\"}"},"sidebar":{"title":"","description":"","image_url":"","content":"{\\"address_label\\":\\"Dirección\\",\\"phone_label\\":\\"Teléfono\\",\\"phone\\":\\"+1 (418) 555-0199\\",\\"email_label\\":\\"Correo\\",\\"email\\":\\"info@remquip.ca\\",\\"hours_label\\":\\"Horario\\",\\"hours\\":\\"Lun - Vie: 8:00 AM - 5:00 PM EST\\"}"},"map":{"title":"Encuéntrenos","description":"La ubicación y dirección se configuran en Admin - CMS (mapa de contacto).","image_url":"","content":""}}}');
 
 -- =============================================================================
 -- END — 29 tables; optional legacy patches: database/migrate_*.sql

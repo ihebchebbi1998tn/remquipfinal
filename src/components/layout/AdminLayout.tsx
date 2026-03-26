@@ -6,74 +6,75 @@ import {
   Phone, MessageCircle, LogOut, ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { RemquipLoadingScreen } from "@/components/RemquipLoadingScreen";
 import { usePermissions, AdminPermissions } from "@/hooks/usePermissions";
 import { AdminGlobalSearch } from "@/components/admin/AdminGlobalSearch";
 
 type NavItem = {
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   path: string;
   permission?: keyof AdminPermissions;
 };
 
 type NavGroup = {
-  label: string;
+  labelKey: string;
   items: NavItem[];
 };
 
 const navGroups: NavGroup[] = [
   {
-    label: "Main",
+    labelKey: "admin.nav.group.main",
     items: [
-      { label: "Overview",   icon: LayoutDashboard, path: "/admin",            permission: "canViewDashboard" },
-      { label: "Analytics",  icon: BarChart3,        path: "/admin/analytics",  permission: "canManageAnalytics" },
+      { labelKey: "admin.nav.overview",   icon: LayoutDashboard, path: "/admin",            permission: "canViewDashboard" },
+      { labelKey: "admin.nav.analytics",  icon: BarChart3,        path: "/admin/analytics",  permission: "canManageAnalytics" },
     ],
   },
   {
-    label: "Catalog",
+    labelKey: "admin.nav.group.catalog",
     items: [
-      { label: "Products",   icon: Package,  path: "/admin/products",   permission: "canManageProducts" },
-      { label: "Categories", icon: Layers,   path: "/admin/categories", permission: "canManageProducts" },
-      { label: "Inventory",  icon: Warehouse, path: "/admin/inventory", permission: "canManageInventory" },
+      { labelKey: "admin.nav.products",   icon: Package,  path: "/admin/products",   permission: "canManageProducts" },
+      { labelKey: "admin.nav.categories", icon: Layers,   path: "/admin/categories", permission: "canManageProducts" },
+      { labelKey: "admin.nav.inventory",  icon: Warehouse, path: "/admin/inventory", permission: "canManageInventory" },
     ],
   },
   {
-    label: "Sales",
+    labelKey: "admin.nav.group.sales",
     items: [
-      { label: "Orders",          icon: ShoppingBag,  path: "/admin/orders",        permission: "canManageOrders" },
-      { label: "Offers",          icon: FileText,     path: "/admin/offers",        permission: "canManageOrders" },
-      { label: "Abandoned Carts", icon: ShoppingCart, path: "/admin/carts",         permission: "canManageOrders" },
-      { label: "Customers",       icon: Users,        path: "/admin/customers",     permission: "canManageCustomers" },
-      { label: "Applications",    icon: FileText,     path: "/admin/applications",  permission: "canManageCustomers" },
-      { label: "Discounts",       icon: Tag,          path: "/admin/discounts",     permission: "canManageDiscounts" },
+      { labelKey: "admin.nav.orders",          icon: ShoppingBag,  path: "/admin/orders",        permission: "canManageOrders" },
+      { labelKey: "admin.nav.offers",          icon: FileText,     path: "/admin/offers",        permission: "canManageOrders" },
+      { labelKey: "admin.nav.abandoned_carts", icon: ShoppingCart, path: "/admin/carts",         permission: "canManageOrders" },
+      { labelKey: "admin.nav.customers",       icon: Users,        path: "/admin/customers",     permission: "canManageCustomers" },
+      { labelKey: "admin.nav.applications",    icon: FileText,     path: "/admin/applications",  permission: "canManageCustomers" },
+      { labelKey: "admin.nav.discounts",       icon: Tag,          path: "/admin/discounts",     permission: "canManageDiscounts" },
     ],
   },
   {
-    label: "Content",
+    labelKey: "admin.nav.group.content",
     items: [
-      { label: "Landing", icon: LayoutTemplate, path: "/admin/landing", permission: "canManageCMS" },
-      { label: "CMS",     icon: FileText,        path: "/admin/cms",     permission: "canManageCMS" },
+      { labelKey: "admin.nav.landing", icon: LayoutTemplate, path: "/admin/landing", permission: "canManageCMS" },
+      { labelKey: "admin.nav.cms",     icon: FileText,        path: "/admin/cms",     permission: "canManageCMS" },
     ],
   },
   {
-    label: "System",
+    labelKey: "admin.nav.group.system",
     items: [
-      { label: "Users",          icon: Users,          path: "/admin/users",          permission: "canManageUsers" },
-      { label: "Admin Contacts", icon: Phone,          path: "/admin/admin-contacts", permission: "canManageUsers" },
-      { label: "Access Control", icon: Shield,         path: "/admin/access",         permission: "canManageUsers" },
-      { label: "Chat Inbox",     icon: MessageCircle,  path: "/admin/chat",           permission: "canViewDashboard" },
-      { label: "Settings",       icon: Settings,       path: "/admin/settings",       permission: "canEditSettings" },
+      { labelKey: "admin.nav.users",          icon: Users,          path: "/admin/users",          permission: "canManageUsers" },
+      { labelKey: "admin.nav.admin_contacts", icon: Phone,          path: "/admin/admin-contacts", permission: "canManageUsers" },
+      { labelKey: "admin.nav.access_control", icon: Shield,         path: "/admin/access",         permission: "canManageUsers" },
+      { labelKey: "admin.nav.chat_inbox",     icon: MessageCircle,  path: "/admin/chat",           permission: "canViewDashboard" },
+      { labelKey: "admin.nav.settings",       icon: Settings,       path: "/admin/settings",       permission: "canEditSettings" },
     ],
   },
 ];
 
 
-function getGreeting(): string {
+function getGreetingKey(): string {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return "admin.greeting.morning";
+  if (h < 18) return "admin.greeting.afternoon";
+  return "admin.greeting.evening";
 }
 
 function getInitials(name?: string | null, email?: string | null): string {
@@ -91,6 +92,7 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { t } = useLanguage();
   const { canAccess } = usePermissions();
 
   // Show loading state while checking auth
@@ -169,10 +171,10 @@ export default function AdminLayout() {
         {/* Nav groups */}
         <nav className="flex-1 py-3 px-2 overflow-y-auto admin-scroll space-y-1">
           {visibleGroups.map((group, gi) => (
-            <div key={group.label}>
+            <div key={group.labelKey}>
               {(!collapsed || isMobile) && (
                 <div className="admin-section-label mt-3 first:mt-0 mb-1 px-2">
-                  <span>{group.label}</span>
+                  <span>{t(group.labelKey)}</span>
                 </div>
               )}
               {collapsed && !isMobile && gi > 0 && (
@@ -184,7 +186,7 @@ export default function AdminLayout() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    title={collapsed && !isMobile ? item.label : undefined}
+                    title={collapsed && !isMobile ? t(item.labelKey) : undefined}
                     onClick={isMobile ? () => setMobileNav(false) : undefined}
                     className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
                       active
@@ -200,7 +202,7 @@ export default function AdminLayout() {
                         collapsed && !isMobile ? "group-hover:scale-110" : ""
                       }`} />
                     </div>
-                    {(!collapsed || isMobile) && <span>{item.label}</span>}
+                    {(!collapsed || isMobile) && <span>{t(item.labelKey)}</span>}
                   </Link>
                 );
               })}
@@ -232,17 +234,17 @@ export default function AdminLayout() {
             }`}
           >
             <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
-            {(!collapsed || isMobile) && <span>Back to Store</span>}
+            {(!collapsed || isMobile) && <span>{t("admin.back_to_store")}</span>}
           </Link>
           <button
             onClick={() => logout()}
-            title="Sign out"
+            title={t("admin.sign_out")}
             className={`w-full flex items-center gap-2 text-xs text-destructive/70 hover:text-destructive transition-colors px-2 py-1.5 rounded-lg hover:bg-destructive/10 ${
               collapsed && !isMobile ? "justify-center" : ""
             }`}
           >
             <LogOut className="h-3.5 w-3.5 flex-shrink-0" />
-            {(!collapsed || isMobile) && <span>Sign Out</span>}
+            {(!collapsed || isMobile) && <span>{t("admin.sign_out")}</span>}
           </button>
         </div>
       </>
@@ -275,9 +277,9 @@ export default function AdminLayout() {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground hidden sm:inline">{getGreeting()}</span>
+              <span className="text-muted-foreground hidden sm:inline">{t(getGreetingKey())}</span>
               <span className="text-muted-foreground hidden sm:inline">·</span>
-              <h2 className="font-display font-bold text-base md:text-lg truncate">{currentPage?.label || "Admin Dashboard"}</h2>
+              <h2 className="font-display font-bold text-base md:text-lg truncate">{currentPage ? t(currentPage.labelKey) : t("admin.dashboard")}</h2>
             </div>
           </div>
 

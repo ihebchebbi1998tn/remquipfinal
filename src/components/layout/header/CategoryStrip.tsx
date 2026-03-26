@@ -20,7 +20,7 @@ export function CategoryStrip() {
                 key={cat.id}
                 to={catPath}
                 className={`group relative flex-shrink-0 whitespace-nowrap px-4 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] transition-all duration-300
-                  ${catActive ? "text-accent" : "text-muted-foreground hover:text-foreground"}
+                  ${catActive ? "text-accent" : "text-white/70 hover:text-white"}
                 `}
               >
                 {t(cat.translationKey)}
@@ -32,7 +32,7 @@ export function CategoryStrip() {
           <Link
             to="/products"
             className={`group relative flex-shrink-0 whitespace-nowrap px-4 py-3.5 text-[11px] font-bold uppercase tracking-[0.16em] transition-all duration-300
-              ${path === "/products" ? "text-accent" : "text-muted-foreground hover:text-foreground"}
+              ${path === "/products" ? "text-accent" : "text-white/70 hover:text-white"}
             `}
           >
             {t("cat.shop_all")}

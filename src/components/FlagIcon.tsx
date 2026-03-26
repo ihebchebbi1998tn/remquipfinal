@@ -39,6 +39,12 @@ const flags: Record<string, React.FC<{ className?: string }>> = {
       <rect fill="#ed2939" x="426.7" width="213.3" height="480" />
     </svg>
   ),
+  es: ({ className }) => (
+    <svg viewBox="0 0 640 480" className={className}>
+      <rect fill="#c60b1e" width="640" height="480" />
+      <rect fill="#ffc400" y="120" width="640" height="240" />
+    </svg>
+  ),
 };
 
 export default function FlagIcon({ country, className = "w-5 h-4 inline-block rounded-sm overflow-hidden" }: FlagIconProps) {
